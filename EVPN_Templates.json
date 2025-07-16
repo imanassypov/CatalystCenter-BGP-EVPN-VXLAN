@@ -1,0 +1,2319 @@
+[
+  {
+    "name": "DEFN-VNIOFFSETS",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{# NAMING CONVENTIONS   #}\n{# L3VNI {{L3VNIOFFSET}}{{ VRF ID }} #}\n{# L3VNI 50XXX #}\n{# L2VNI {{L2VNIOFFSET}}+{{ VLAN ID }} #}\n{# L2VNI 10XXX #}\n\n{% set L2VNIOFFSET = 10000 %}\n{% set L3VNIOFFSET = 50 %}\n{% set FABRIC_RP_SCOPE = '239.190.0.0 0.0.255.255' %}",
+    "templateParams": [],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{# NAMING CONVENTIONS   #}\n{# L3VNI {{L3VNIOFFSET}}{{ VRF ID }} #}\n{# L3VNI 50XXX #}\n{# L2VNI {{L2VNIOFFSET}}+{{ VLAN ID }} #}\n{# L2VNI 10XXX #}\n\n{% set L2VNIOFFSET = 10000 %}\n{% set L3VNIOFFSET = 50 %}\n{% set FABRIC_RP_SCOPE = '239.190.0.0 0.0.255.255' %}",
+    "promotedTemplateParams": [],
+    "customParamsOrder": false,
+    "createTime": 1751564225060,
+    "lastUpdateTime": 1751919359219,
+    "latestVersionTime": 1751919365483,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "460afba4-4a81-4c7e-be78-dda724eb7f3c",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "0. BGP-EVPN",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateParams": [],
+    "rollbackTemplateParams": [],
+    "composite": true,
+    "containingTemplates": [
+      {
+        "name": "1. FABRIC-VRF",
+        "composite": false,
+        "language": "JINJA",
+        "description": "",
+        "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\nip multicast-routing\n!\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            !\n            vrf definition {{ vrf.name }}\n             description VRF {{ vrf.name }} definition\n             rd {{ DEFN_LOOP_UNDERLAY[__device.hostname] }}:{{ vrf.id }}\n             !\n             address-family ipv4\n              mdt auto-discovery vxlan\n              mdt default vxlan {{ vrf.mdt_default }}\n              mdt data vxlan {{ vrf.mdt_data }} 0.0.0.255\n              mdt data threshold 1\n              mdt overlay use-bgp\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n             exit-address-family\n            !\n            ip multicast-routing vrf {{ vrf.name }} \n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+        "templateParams": [
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "blue",
+                "903": "green"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          },
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": "65001",
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 3,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          }
+        ],
+        "projectName": "EVPN",
+        "deviceTypes": [
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9500 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9300 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9400 Series Switches"
+          }
+        ],
+        "promotedTemplateParams": [
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": "65001",
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 3,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "blue",
+                "903": "green"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          },
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          }
+        ],
+        "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\nip multicast-routing\n!\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            !\n            vrf definition {{ vrf.name }}\n             description VRF {{ vrf.name }} definition\n             rd {{ DEFN_LOOP_UNDERLAY[__device.hostname] }}:{{ vrf.id }}\n             !\n             address-family ipv4\n              mdt auto-discovery vxlan\n              mdt default vxlan {{ vrf.mdt_default }}\n              mdt data vxlan {{ vrf.mdt_data }} 0.0.0.255\n              mdt data threshold 1\n              mdt overlay use-bgp\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n             exit-address-family\n            !\n            ip multicast-routing vrf {{ vrf.name }} \n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+        "tags": [
+          {
+            "id": "beef51f1-8050-4165-b480-acf787866643",
+            "name": "SPINE"
+          },
+          {
+            "id": "a537c0c1-4326-4a15-884c-8ea471a3e670",
+            "name": "BORDER LEAF"
+          },
+          {
+            "id": "50bd51e9-15e5-4cb5-9102-0c4d454d4145",
+            "name": "LEAF"
+          }
+        ],
+        "parentTemplateId": "ff22268c-c812-48a6-871f-b86a2d94c33c"
+      },
+      {
+        "name": "2. FABRIC-LOOPBACKS",
+        "composite": false,
+        "language": "JINJA",
+        "description": "",
+        "templateContent": "{% if vlan_id is not defined %}\n{% set blah = \"EVPN\" + \"/DEFN-VRF\" %}\n{% endif %}\n\n{% include blah %}\n! {{blah}}\n\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\n{# UNDERLAY LOOPBACKS #}\ninterface {{DEFN_LOOP_NAME['UNDERLAY']}}\ndescription UNDERLAY-NVE-INTERFACE\nip address {{DEFN_LOOP_UNDERLAY[__device.hostname]}} 255.255.255.255\nip pim sparse-mode\n!\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] or __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n{# SKIP #}\n{% else %}\n    {% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n    {% if vrf.name == input_vrf %}\n        {% set ip = DEFN_LOOP_UNDERLAY[__device.hostname] %}\n        {% set split_ip = ip.split('\\\\.') %}\n        {% set last_octet = split_ip[3] %}\n        interface Loopback{{vrf.id}}\n        description OVERLAY-VRF-{{vrf.name}}\n        ip address {{DEFN_LOOP_OVERLAY[vrf.name]}}{{last_octet}} 255.255.255.255\n        ip pim sparse-mode\n        !\n    {% endif %}\n    {% endfor %}\n    {% endfor %}\n{% endif %}",
+        "templateParams": [
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": false,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          }
+        ],
+        "projectName": "EVPN",
+        "deviceTypes": [
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9500 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9300 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9400 Series Switches"
+          }
+        ],
+        "promotedTemplateParams": [
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": false,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          },
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          }
+        ],
+        "promotedTemplateContent": "{% if vlan_id is not defined %}\n{% set blah = \"EVPN\" + \"/DEFN-VRF\" %}\n{% endif %}\n\n{% include blah %}\n! {{blah}}\n\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\n{# UNDERLAY LOOPBACKS #}\ninterface {{DEFN_LOOP_NAME['UNDERLAY']}}\ndescription UNDERLAY-NVE-INTERFACE\nip address {{DEFN_LOOP_UNDERLAY[__device.hostname]}} 255.255.255.255\nip pim sparse-mode\n!\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] or __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n{# SKIP #}\n{% else %}\n    {% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n    {% if vrf.name == input_vrf %}\n        {% set ip = DEFN_LOOP_UNDERLAY[__device.hostname] %}\n        {% set split_ip = ip.split('\\\\.') %}\n        {% set last_octet = split_ip[3] %}\n        interface Loopback{{vrf.id}}\n        description OVERLAY-VRF-{{vrf.name}}\n        ip address {{DEFN_LOOP_OVERLAY[vrf.name]}}{{last_octet}} 255.255.255.255\n        ip pim sparse-mode\n        !\n    {% endif %}\n    {% endfor %}\n    {% endfor %}\n{% endif %}",
+        "tags": [
+          {
+            "id": "a537c0c1-4326-4a15-884c-8ea471a3e670",
+            "name": "BORDER LEAF"
+          },
+          {
+            "id": "beef51f1-8050-4165-b480-acf787866643",
+            "name": "SPINE"
+          },
+          {
+            "id": "50bd51e9-15e5-4cb5-9102-0c4d454d4145",
+            "name": "LEAF"
+          }
+        ],
+        "parentTemplateId": "ae01da59-1af1-4f5f-803d-c88af7eea117"
+      },
+      {
+        "name": "3. FABRIC-NVE",
+        "composite": false,
+        "language": "JINJA",
+        "description": "",
+        "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            {% set l3vni_id = (L3VNIOFFSET|string) + vrf.id %}\n            vlan {{vrf.id}}\n            name L3-VRF-CORE-{{vrf.id}}\n            !\n            vlan configuration {{vrf.id}}\n            member vni {{l3vni_id}}\n            !\n            interface vlan {{vrf.id}}\n            ! description L3-CORE-VLAN-SVI-INTERFACE\n            vrf forwarding {{ vrf.name }}\n            description ** SVI for {{ vrf.name }} L3VNI **\n            vrf forwarding {{ vrf.name }}\n            ip unnumbered {{DEFN_LOOP_NAME['UNDERLAY']}}\n            no ip redirects\n            no ip unreachables\n            no ip proxy-arp\n            ip pim sparse-mode\n            load-interval 30\n            carrier-delay msec 0\n            no autostate\n            hold-queue 4094 in\n            hold-queue 4094 out\n            no autostate\n            !\n            interface nve1\n            description ** NVE Interface for VXLAN **\n            no ip address\n            source-interface {{DEFN_LOOP_NAME['UNDERLAY']}}\n            host-reachability protocol bgp\n            member vni {{l3vni_id}} vrf {{ vrf.name }}\n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+        "templateParams": [
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          },
+          {
+            "parameterName": "l3vni_id",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": true,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          }
+        ],
+        "projectName": "EVPN",
+        "deviceTypes": [
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9500 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9300 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9400 Series Switches"
+          }
+        ],
+        "promotedTemplateParams": [
+          {
+            "parameterName": "l3vni_id",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": true,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          }
+        ],
+        "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            {% set l3vni_id = (L3VNIOFFSET|string) + vrf.id %}\n            vlan {{vrf.id}}\n            name L3-VRF-CORE-{{vrf.id}}\n            !\n            vlan configuration {{vrf.id}}\n            member vni {{l3vni_id}}\n            !\n            interface vlan {{vrf.id}}\n            ! description L3-CORE-VLAN-SVI-INTERFACE\n            vrf forwarding {{ vrf.name }}\n            description ** SVI for {{ vrf.name }} L3VNI **\n            vrf forwarding {{ vrf.name }}\n            ip unnumbered {{DEFN_LOOP_NAME['UNDERLAY']}}\n            no ip redirects\n            no ip unreachables\n            no ip proxy-arp\n            ip pim sparse-mode\n            load-interval 30\n            carrier-delay msec 0\n            no autostate\n            hold-queue 4094 in\n            hold-queue 4094 out\n            no autostate\n            !\n            interface nve1\n            description ** NVE Interface for VXLAN **\n            no ip address\n            source-interface {{DEFN_LOOP_NAME['UNDERLAY']}}\n            host-reachability protocol bgp\n            member vni {{l3vni_id}} vrf {{ vrf.name }}\n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+        "tags": [],
+        "parentTemplateId": "da6e99c4-e31b-403f-8a35-0bc02b69c46a"
+      },
+      {
+        "name": "4. FABRIC-EVPN",
+        "composite": false,
+        "language": "JINJA",
+        "description": "",
+        "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\nrouter bgp {{FABRIC_BGP_ASN}}\nbgp router-id interface Loopback0\nbgp log-neighbor-changes\nbgp graceful-restart\nno bgp default ipv4-unicast\nmaximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n!\nip multicast-routing\n!\n{#Scope Fabric MCAST to specific RP in-fabric#}\nip access-list standard FABRIC-RP-SCOPE\npermit {{FABRIC_RP_SCOPE}}\nip pim rp-address {{DEFN_LOOP_ANYCAST}} FABRIC-RP-SCOPE\n\nrouter bgp {{FABRIC_BGP_ASN}}\n{# THIS NODE IS A ROUTE REFLECTOR #}\n{% if __device.hostname in DEFN_NODE_ROLES['RR']%}\n    !\n    template peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    description LEAF-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source {{DEFN_LOOP_NAME['UNDERLAY']}}\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    route-reflector-client\n    !\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A RR CLIENT (ie LEAF or BORDER) #}\n{% if __device.hostname in DEFN_NODE_ROLES['CLIENT'] %}\n    !\n    template peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    description SPINE-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source Loopback0\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    !\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A SPINE #}\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] %}\n    {# ANYCAST RP INTERFACE #}\n    {% for spine in DEFN_NODE_ROLES['SPINE'] %}\n    ip msdp peer {{DEFN_LOOP_UNDERLAY[spine]}} connect-source Loopback0 remote-as {{FABRIC_BGP_ASN}}\n    ip msdp cache-sa-state\n    {% endfor %}\n    !\n{% endif %}",
+        "templateParams": [
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          }
+        ],
+        "projectName": "EVPN",
+        "deviceTypes": [
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9500 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9300 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9400 Series Switches"
+          }
+        ],
+        "promotedTemplateParams": [
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          }
+        ],
+        "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\nrouter bgp {{FABRIC_BGP_ASN}}\nbgp router-id interface Loopback0\nbgp log-neighbor-changes\nbgp graceful-restart\nno bgp default ipv4-unicast\nmaximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n!\nip multicast-routing\n!\n{#Scope Fabric MCAST to specific RP in-fabric#}\nip access-list standard FABRIC-RP-SCOPE\npermit {{FABRIC_RP_SCOPE}}\nip pim rp-address {{DEFN_LOOP_ANYCAST}} FABRIC-RP-SCOPE\n\nrouter bgp {{FABRIC_BGP_ASN}}\n{# THIS NODE IS A ROUTE REFLECTOR #}\n{% if __device.hostname in DEFN_NODE_ROLES['RR']%}\n    !\n    template peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    description LEAF-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source {{DEFN_LOOP_NAME['UNDERLAY']}}\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    route-reflector-client\n    !\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A RR CLIENT (ie LEAF or BORDER) #}\n{% if __device.hostname in DEFN_NODE_ROLES['CLIENT'] %}\n    !\n    template peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    description SPINE-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source Loopback0\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    !\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A SPINE #}\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] %}\n    {# ANYCAST RP INTERFACE #}\n    {% for spine in DEFN_NODE_ROLES['SPINE'] %}\n    ip msdp peer {{DEFN_LOOP_UNDERLAY[spine]}} connect-source Loopback0 remote-as {{FABRIC_BGP_ASN}}\n    ip msdp cache-sa-state\n    {% endfor %}\n    !\n{% endif %}",
+        "tags": [],
+        "parentTemplateId": "d77b692c-d44f-4303-91ed-c73d55b14937"
+      },
+      {
+        "name": "5. FABRIC-L3OUT",
+        "composite": false,
+        "language": "JINJA",
+        "description": "",
+        "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-L3OUT\" %}\n\n{% if vrf_list and FABRIC_BGP_ASN is not none and __device.hostname is not none %}\n{% for vrf in vrf_list %}\n{% for l3out in DEFN_L3OUT %}\n      {% if l3out.vrf == vrf and l3out.node == __device.hostname %}\n        router bgp {{FABRIC_BGP_ASN}}\n              address-family ipv4 vrf {{l3out.vrf}}\n              advertise l2vpn evpn\n              {% for aggregate in l3out.aggregate %}\n              aggregate-address {{aggregate}} summary-only\n              {% endfor %}\n              redistribute static\n              redistribute connected\n              exit-address-family\n        {% for interface,params in l3out.interfaces.items() %}\n            !\n            interface {{interface}}\n             encapsulation dot1Q {{params.vlan}}\n             vrf forwarding {{l3out.vrf}}\n             ip address {{params.ipaddr}}\n             ip pim sparse-mode\n            !\n            !\n            router bgp {{FABRIC_BGP_ASN}}\n            address-family ipv4 vrf {{l3out.vrf}}\n            neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}\n            neighbor {{params.neighbour}} activate\n            exit-address-family\n        {% endfor %}\n      {% endif %}\n{% endfor %}\n{% endfor %}\n{% endif %}",
+        "templateParams": [
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": false,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          },
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": "65001",
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "FABRIC BGP ASN"
+          },
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 3,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          }
+        ],
+        "projectName": "EVPN",
+        "deviceTypes": [
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9500 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9300 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9400 Series Switches"
+          }
+        ],
+        "promotedTemplateParams": [
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": "65001",
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "FABRIC BGP ASN"
+          },
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 3,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": false,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          }
+        ],
+        "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-L3OUT\" %}\n\n{% if vrf_list and FABRIC_BGP_ASN is not none and __device.hostname is not none %}\n{% for vrf in vrf_list %}\n{% for l3out in DEFN_L3OUT %}\n      {% if l3out.vrf == vrf and l3out.node == __device.hostname %}\n        router bgp {{FABRIC_BGP_ASN}}\n              address-family ipv4 vrf {{l3out.vrf}}\n              advertise l2vpn evpn\n              {% for aggregate in l3out.aggregate %}\n              aggregate-address {{aggregate}} summary-only\n              {% endfor %}\n              redistribute static\n              redistribute connected\n              exit-address-family\n        {% for interface,params in l3out.interfaces.items() %}\n            !\n            interface {{interface}}\n             encapsulation dot1Q {{params.vlan}}\n             vrf forwarding {{l3out.vrf}}\n             ip address {{params.ipaddr}}\n             ip pim sparse-mode\n            !\n            !\n            router bgp {{FABRIC_BGP_ASN}}\n            address-family ipv4 vrf {{l3out.vrf}}\n            neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}\n            neighbor {{params.neighbour}} activate\n            exit-address-family\n        {% endfor %}\n      {% endif %}\n{% endfor %}\n{% endfor %}\n{% endif %}",
+        "tags": [
+          {
+            "id": "beef51f1-8050-4165-b480-acf787866643",
+            "name": "SPINE"
+          }
+        ],
+        "parentTemplateId": "d4dc0132-34e5-45dd-b604-bc04a2bafb86"
+      },
+      {
+        "name": "6. FABRIC-OVERLAY",
+        "composite": false,
+        "language": "JINJA",
+        "description": "",
+        "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-OVERLAY\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% if FABRIC_BGP_ASN is not none and vrf_list is not none and __device.hostname is not none %}\n\n{% for vrf in vrf_list %}\n    {% for overlay in DEFN_OVERLAY %}\n        {% if overlay.vrf == vrf %}\n            {% for node in overlay.nodes %}\n            {# EXPECTED TO EXECUTE ON NON-SPINE ONLY#}\n            {% if node == __device.hostname %}\n                {#Overlay BGP vpnv4#}\n                router bgp {{FABRIC_BGP_ASN}}\n                address-family ipv4 vrf {{vrf}}\n                advertise l2vpn evpn\n                redistribute connected\n                maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n                !\n                {% for vlan, params in overlay.vlans.items() %}\n                {% set l2vni_id = (L2VNIOFFSET|int) + (vlan|int) %}\n                {% set l2evpn_id = vlan %}\n                {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n                  {# Do nothing or border-specific logic #}\n                {% else %}\n                {# Logic for devices NOT in BORDER list #}\n                l2vpn evpn instance {{l2evpn_id}} vlan-based\n                encapsulation vxlan\n                replication-type static\n                !\n                vlan {{ vlan }}\n                name DAG-EDGE-VLAN-{{params.name}}\n                !\n                vlan configuration {{vlan}}\n                member evpn-instance {{l2evpn_id}} vni {{l2vni_id}}\n                !\n                interface nve1\n                member vni {{l2vni_id}} mcast-group {{params.bum_addr}}\n                !\n                interface Vlan{{vlan}}\n                description DAG-SVI-INTERFACE-{{params.name}}\n                vrf forwarding {{overlay.vrf}}\n                mac-address {{params.mac}}\n                ip address {{params.ipaddr}}\n                ip dhcp relay source-interface {{params.dhcp_source}}\n                ip helper-address {{params.dhcp_helper}}\n                ip pim sparse-mode\n                !\n                {% endif %}\n                {% endfor %}\n            {% endif %}\n            {% endfor %}\n        {% endif %}\n    {% endfor %}\n{% endfor %}\n{% endif %}",
+        "templateParams": [
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 3,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": false,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          },
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": "65001",
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "FABRIC BGP ASN"
+          }
+        ],
+        "projectName": "EVPN",
+        "deviceTypes": [
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9500 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9300 Series Switches"
+          },
+          {
+            "productFamily": "Switches and Hubs",
+            "productSeries": "Cisco Catalyst 9400 Series Switches"
+          }
+        ],
+        "promotedTemplateParams": [
+          {
+            "parameterName": "__device",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": null,
+            "group": null,
+            "order": 3,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": null
+          },
+          {
+            "parameterName": "vrf_list",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": false,
+            "notParam": false,
+            "paramArray": true,
+            "instructionText": null,
+            "group": null,
+            "order": 1,
+            "customOrder": 0,
+            "selection": {
+              "selectionType": "MULTI_SELECT",
+              "selectionValues": {
+                "901": "red",
+                "902": "green",
+                "903": "blue"
+              },
+              "defaultSelectedValues": [],
+              "id": null
+            },
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "VRF Names List"
+          },
+          {
+            "parameterName": "FABRIC_BGP_ASN",
+            "dataType": "STRING",
+            "defaultValue": null,
+            "description": null,
+            "required": true,
+            "notParam": false,
+            "paramArray": false,
+            "instructionText": "65001",
+            "group": null,
+            "order": 2,
+            "customOrder": 0,
+            "selection": null,
+            "range": [],
+            "key": null,
+            "provider": null,
+            "binding": "",
+            "sensitiveField": false,
+            "id": null,
+            "displayName": "FABRIC BGP ASN"
+          }
+        ],
+        "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-OVERLAY\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% if FABRIC_BGP_ASN is not none and vrf_list is not none and __device.hostname is not none %}\n\n{% for vrf in vrf_list %}\n    {% for overlay in DEFN_OVERLAY %}\n        {% if overlay.vrf == vrf %}\n            {% for node in overlay.nodes %}\n            {# EXPECTED TO EXECUTE ON NON-SPINE ONLY#}\n            {% if node == __device.hostname %}\n                {#Overlay BGP vpnv4#}\n                router bgp {{FABRIC_BGP_ASN}}\n                address-family ipv4 vrf {{vrf}}\n                advertise l2vpn evpn\n                redistribute connected\n                maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n                !\n                {% for vlan, params in overlay.vlans.items() %}\n                {% set l2vni_id = (L2VNIOFFSET|int) + (vlan|int) %}\n                {% set l2evpn_id = vlan %}\n                {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n                  {# Do nothing or border-specific logic #}\n                {% else %}\n                {# Logic for devices NOT in BORDER list #}\n                l2vpn evpn instance {{l2evpn_id}} vlan-based\n                encapsulation vxlan\n                replication-type static\n                !\n                vlan {{ vlan }}\n                name DAG-EDGE-VLAN-{{params.name}}\n                !\n                vlan configuration {{vlan}}\n                member evpn-instance {{l2evpn_id}} vni {{l2vni_id}}\n                !\n                interface nve1\n                member vni {{l2vni_id}} mcast-group {{params.bum_addr}}\n                !\n                interface Vlan{{vlan}}\n                description DAG-SVI-INTERFACE-{{params.name}}\n                vrf forwarding {{overlay.vrf}}\n                mac-address {{params.mac}}\n                ip address {{params.ipaddr}}\n                ip dhcp relay source-interface {{params.dhcp_source}}\n                ip helper-address {{params.dhcp_helper}}\n                ip pim sparse-mode\n                !\n                {% endif %}\n                {% endfor %}\n            {% endif %}\n            {% endfor %}\n        {% endif %}\n    {% endfor %}\n{% endfor %}\n{% endif %}",
+        "tags": [
+          {
+            "id": "a537c0c1-4326-4a15-884c-8ea471a3e670",
+            "name": "BORDER LEAF"
+          },
+          {
+            "id": "50bd51e9-15e5-4cb5-9102-0c4d454d4145",
+            "name": "LEAF"
+          }
+        ],
+        "parentTemplateId": "ec5ed7d7-21f3-4465-8993-e866d2fe68ec"
+      }
+    ],
+    "failurePolicy": "ABORT_TARGET_ON_ERROR",
+    "language": "JINJA",
+    "promotedTemplateContent": "[{\"name\":\"1. FABRIC-VRF\",\"id\":\"ff22268c-c812-48a6-871f-b86a2d94c33c\",\"composite\":false,\"language\":\"JINJA\",\"description\":\"\"},{\"name\":\"2. FABRIC-LOOPBACKS\",\"id\":\"ae01da59-1af1-4f5f-803d-c88af7eea117\",\"composite\":false,\"language\":\"JINJA\",\"description\":\"\"},{\"name\":\"3. FABRIC-NVE\",\"id\":\"da6e99c4-e31b-403f-8a35-0bc02b69c46a\",\"composite\":false,\"language\":\"JINJA\",\"description\":\"\"},{\"name\":\"4. FABRIC-EVPN\",\"id\":\"d77b692c-d44f-4303-91ed-c73d55b14937\",\"composite\":false,\"language\":\"JINJA\",\"description\":\"\"},{\"name\":\"5. FABRIC-L3OUT\",\"id\":\"d4dc0132-34e5-45dd-b604-bc04a2bafb86\",\"composite\":false,\"language\":\"JINJA\",\"description\":\"\"},{\"name\":\"6. FABRIC-OVERLAY\",\"id\":\"ec5ed7d7-21f3-4465-8993-e866d2fe68ec\",\"composite\":false,\"language\":\"JINJA\",\"description\":\"\"}]",
+    "promotedTemplateParams": [],
+    "customParamsOrder": false,
+    "createTime": 1751564228096,
+    "lastUpdateTime": 1752174667212,
+    "latestVersionTime": 1751564228096,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "59e865df-edc2-4978-87a7-670f198e5244",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "DEFN-VRF",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{# NAMING CONVENTION#}\n{#MDT DEFAULT: 239.190.1XX.1#}\n{#MDT DATA:    239.190. XX.1#}\n{% set DEFN_VRF = [\n  {'id':'901','name':'red', 'mdt_default':'239.190.0.1', 'mdt_data':'239.190.1.0'},\n  {'id':'902','name':'blue', 'mdt_default':'239.190.0.2', 'mdt_data':'239.190.2.0'},\n  {'id':'903','name':'green', 'mdt_default':'239.190.0.3', 'mdt_data':'239.190.3.0'}\n  ]\n%}",
+    "templateParams": [],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{# NAMING CONVENTION#}\n{#MDT DEFAULT: 239.190.1XX.1#}\n{#MDT DATA:    239.190. XX.1#}\n{% set DEFN_VRF = [\n  {'id':'901','name':'red', 'mdt_default':'239.190.0.1', 'mdt_data':'239.190.1.0'},\n  {'id':'902','name':'blue', 'mdt_default':'239.190.0.2', 'mdt_data':'239.190.2.0'},\n  {'id':'903','name':'green', 'mdt_default':'239.190.0.3', 'mdt_data':'239.190.3.0'}\n  ]\n%}",
+    "promotedTemplateParams": [],
+    "customParamsOrder": false,
+    "createTime": 1751564225344,
+    "lastUpdateTime": 1752168726750,
+    "latestVersionTime": 1752168730872,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "623d287d-a9d0-4b5b-9dd0-fa81d0b9a7a7",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "DEFN-LOOPBACKS",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% set DEFN_LOOP_UNDERLAY =\n    {\n      'kinstone-spine1.dcloud.cisco.com':       '172.16.255.1',\n      'halifax-spine2.dcloud.cisco.com':        '172.16.255.2',\n      'apex-leaf1.dcloud.cisco.com':            '172.16.255.3',\n      'cary-leaf2.dcloud.cisco.com':            '172.16.255.4',\n      'lagrange-leaf3.dcloud.cisco.com':        '172.16.255.5',\n      'carolinas37-border1.dcloud.cisco.com':   '172.16.255.6',\n      'carolinas50-border2.dcloud.cisco.com':   '172.16.255.7'\n    }\n%}\n\n{% set DEFN_LOOP_ANYCAST =                      \n                                                '172.16.255.254'\n%}\n\n{% set DEFN_LOOP_OVERLAY =\n    {\n      'red':                                    '10.1.91.',\n      'blue':                                   '10.1.92.',\n      'green':                                  '10.1.93.'\n    }\n%}\n\n{% set DEFN_LOOP_NAME =\n    {\n        'UNDERLAY': 'Loopback0',\n        'ANYCAST':  'Loopback250'\n    }\n%}\n",
+    "templateParams": [],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% set DEFN_LOOP_UNDERLAY =\n    {\n      'kinstone-spine1.dcloud.cisco.com':       '172.16.255.1',\n      'halifax-spine2.dcloud.cisco.com':        '172.16.255.2',\n      'apex-leaf1.dcloud.cisco.com':            '172.16.255.3',\n      'cary-leaf2.dcloud.cisco.com':            '172.16.255.4',\n      'lagrange-leaf3.dcloud.cisco.com':        '172.16.255.5',\n      'carolinas37-border1.dcloud.cisco.com':   '172.16.255.6',\n      'carolinas50-border2.dcloud.cisco.com':   '172.16.255.7'\n    }\n%}\n\n{% set DEFN_LOOP_ANYCAST =                      \n                                                '172.16.255.254'\n%}\n\n{% set DEFN_LOOP_OVERLAY =\n    {\n      'red':                                    '10.1.91.',\n      'blue':                                   '10.1.92.',\n      'green':                                  '10.1.93.'\n    }\n%}\n\n{% set DEFN_LOOP_NAME =\n    {\n        'UNDERLAY': 'Loopback0',\n        'ANYCAST':  'Loopback250'\n    }\n%}\n",
+    "promotedTemplateParams": [],
+    "customParamsOrder": false,
+    "createTime": 1752163682776,
+    "lastUpdateTime": 1752169274045,
+    "latestVersionTime": 1752169278531,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "6c2fb9da-c59c-4b1c-8a4c-711d6f1429b2",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "DEFN-L3OUT",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% set DEFN_L3OUT = [\n  {\n    'vrf': 'red',\n    'node': 'kinstone-spine1.dcloud.cisco.com',\n    'neighbour_asn': '65002',\n    'aggregate': ['10.1.11.0 255.255.255.0',\n                  '10.1.12.0 255.255.255.0'],\n    'interfaces': {\n      'TenGigabitEthernet1/0/7.2': {'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.1 255.255.255.252', 'neighbour': '10.255.255.2'},\n      'TenGigabitEthernet1/0/8.2': {'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.5 255.255.255.252', 'neighbour': '10.255.255.6'}\n    }\n  },\n  {\n    'vrf': 'red',\n    'node': 'halifax-spine2.dcloud.cisco.com',\n    'neighbour_asn': '65002',\n    'aggregate': ['10.1.11.0 255.255.255.0',\n                  '10.1.12.0 255.255.255.0'],\n    'interfaces': {\n      'TenGigabitEthernet1/0/7.2': {'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.9 255.255.255.252', 'neighbour': '10.255.255.10'},\n      'TenGigabitEthernet1/0/8.2': {'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.13 255.255.255.252', 'neighbour': '10.255.255.14'}\n    }\n  }\n] %}",
+    "templateParams": [],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% set DEFN_L3OUT = [\n  {\n    'vrf': 'red',\n    'node': 'kinstone-spine1.dcloud.cisco.com',\n    'neighbour_asn': '65002',\n    'aggregate': ['10.1.11.0 255.255.255.0',\n                  '10.1.12.0 255.255.255.0'],\n    'interfaces': {\n      'TenGigabitEthernet1/0/7.2': {'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.1 255.255.255.252', 'neighbour': '10.255.255.2'},\n      'TenGigabitEthernet1/0/8.2': {'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.5 255.255.255.252', 'neighbour': '10.255.255.6'}\n    }\n  },\n  {\n    'vrf': 'red',\n    'node': 'halifax-spine2.dcloud.cisco.com',\n    'neighbour_asn': '65002',\n    'aggregate': ['10.1.11.0 255.255.255.0',\n                  '10.1.12.0 255.255.255.0'],\n    'interfaces': {\n      'TenGigabitEthernet1/0/7.2': {'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.9 255.255.255.252', 'neighbour': '10.255.255.10'},\n      'TenGigabitEthernet1/0/8.2': {'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.13 255.255.255.252', 'neighbour': '10.255.255.14'}\n    }\n  }\n] %}",
+    "promotedTemplateParams": [],
+    "customParamsOrder": false,
+    "createTime": 1751564225109,
+    "lastUpdateTime": 1751655919918,
+    "latestVersionTime": 1751655924558,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "72c1483c-bd54-4f1a-b2b0-bb7ffdd6a303",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "DEFN-ROLES",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% set DEFN_NODE_ROLES =\n  {\n  'SPINE':  ['kinstone-spine1.dcloud.cisco.com',\n             'halifax-spine2.dcloud.cisco.com'],\n  'RR':     ['kinstone-spine1.dcloud.cisco.com',\n             'halifax-spine2.dcloud.cisco.com'],\n  'CLIENT': ['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com',\n             'carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com'],\n  'BORDER': ['carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com']\n  }\n%}",
+    "templateParams": [],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% set DEFN_NODE_ROLES =\n  {\n  'SPINE':  ['kinstone-spine1.dcloud.cisco.com',\n             'halifax-spine2.dcloud.cisco.com'],\n  'RR':     ['kinstone-spine1.dcloud.cisco.com',\n             'halifax-spine2.dcloud.cisco.com'],\n  'CLIENT': ['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com',\n             'carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com'],\n  'BORDER': ['carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com']\n  }\n%}",
+    "promotedTemplateParams": [],
+    "customParamsOrder": false,
+    "createTime": 1751564225300,
+    "lastUpdateTime": 1752174355338,
+    "latestVersionTime": 1752174359933,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "9bb6fedf-ec28-4288-95ef-cfae26289f60",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "DEFN-OVERLAY",
+    "description": "",
+    "tags": [
+      {
+        "id": "a537c0c1-4326-4a15-884c-8ea471a3e670",
+        "name": "BORDER LEAF"
+      },
+      {
+        "id": "50bd51e9-15e5-4cb5-9102-0c4d454d4145",
+        "name": "LEAF"
+      }
+    ],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% set DEFN_OVERLAY = [\n  {\n    'vrf': 'red',\n    'nodes':['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com'],\n    'vlans': {\n      '101': {'name':'corp-11', 'ipaddr': '10.1.11.1 255.255.255.0', 'mac':'00:00:00:00:00:11', 'dhcp_helper':'198.18.5.253', 'dhcp_source':'Loopback0', 'bum_addr':'239.190.100.11'},\n      '201': {'name':'corp-12', 'ipaddr': '10.1.12.1 255.255.255.0', 'mac':'00:00:00:00:00:12', 'dhcp_helper':'198.18.5.253', 'dhcp_source':'Loopback0', 'bum_addr':'239.190.100.12'}\n      }\n  },\n  {\n    'vrf': 'blue',\n    'nodes':['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com',\n             'carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com'],\n    'vlans': {\n      '401': {'name':'iot-blue-401', 'ipaddr': '192.168.4.1 255.255.255.0', 'mac':'00:00:00:00:00:41', 'dhcp_helper':'198.18.7.253', 'dhcp_source':'Loopback902', 'bum_addr':'239.190.100.41'}\n      }\n  },\n  {\n    'vrf': 'green',\n    'nodes':['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com',\n             'carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com'],\n    'vlans': {\n      '501': {'name':'iot-green-501', 'ipaddr': '192.168.5.1 255.255.255.0', 'mac':'00:00:00:00:00:51', 'dhcp_helper':'198.18.7.253', 'dhcp_source':'Loopback903', 'bum_addr':'239.190.100.51'}\n      }\n  }\n] %}",
+    "templateParams": [],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% set DEFN_OVERLAY = [\n  {\n    'vrf': 'red',\n    'nodes':['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com'],\n    'vlans': {\n      '101': {'name':'corp-11', 'ipaddr': '10.1.11.1 255.255.255.0', 'mac':'00:00:00:00:00:11', 'dhcp_helper':'198.18.5.253', 'dhcp_source':'Loopback0', 'bum_addr':'239.190.100.11'},\n      '201': {'name':'corp-12', 'ipaddr': '10.1.12.1 255.255.255.0', 'mac':'00:00:00:00:00:12', 'dhcp_helper':'198.18.5.253', 'dhcp_source':'Loopback0', 'bum_addr':'239.190.100.12'}\n      }\n  },\n  {\n    'vrf': 'blue',\n    'nodes':['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com',\n             'carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com'],\n    'vlans': {\n      '401': {'name':'iot-blue-401', 'ipaddr': '192.168.4.1 255.255.255.0', 'mac':'00:00:00:00:00:41', 'dhcp_helper':'198.18.7.253', 'dhcp_source':'Loopback902', 'bum_addr':'239.190.100.41'}\n      }\n  },\n  {\n    'vrf': 'green',\n    'nodes':['apex-leaf1.dcloud.cisco.com',\n             'cary-leaf2.dcloud.cisco.com',\n             'lagrange-leaf3.dcloud.cisco.com',\n             'carolinas37-border1.dcloud.cisco.com',\n             'carolinas50-border2.dcloud.cisco.com'],\n    'vlans': {\n      '501': {'name':'iot-green-501', 'ipaddr': '192.168.5.1 255.255.255.0', 'mac':'00:00:00:00:00:51', 'dhcp_helper':'198.18.7.253', 'dhcp_source':'Loopback903', 'bum_addr':'239.190.100.51'}\n      }\n  }\n] %}",
+    "promotedTemplateParams": [],
+    "customParamsOrder": false,
+    "createTime": 1751564225219,
+    "lastUpdateTime": 1751913245064,
+    "latestVersionTime": 1751913251974,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "ab05bf93-a6a7-4140-8a1d-cd9dda437d0b",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "2. FABRIC-LOOPBACKS",
+    "description": "",
+    "tags": [
+      {
+        "id": "a537c0c1-4326-4a15-884c-8ea471a3e670",
+        "name": "BORDER LEAF"
+      },
+      {
+        "id": "beef51f1-8050-4165-b480-acf787866643",
+        "name": "SPINE"
+      },
+      {
+        "id": "50bd51e9-15e5-4cb5-9102-0c4d454d4145",
+        "name": "LEAF"
+      }
+    ],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% if vlan_id is not defined %}\n{% set blah = \"EVPN\" + \"/DEFN-VRF\" %}\n{% endif %}\n\n{% include blah %}\n! {{blah}}\n\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\n{# UNDERLAY LOOPBACKS #}\ninterface {{DEFN_LOOP_NAME['UNDERLAY']}}\ndescription UNDERLAY-NVE-INTERFACE\nip address {{DEFN_LOOP_UNDERLAY[__device.hostname]}} 255.255.255.255\nip pim sparse-mode\n!\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] or __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n{# SKIP #}\n{% else %}\n    {% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n    {% if vrf.name == input_vrf %}\n        {% set ip = DEFN_LOOP_UNDERLAY[__device.hostname] %}\n        {% set split_ip = ip.split('\\\\.') %}\n        {% set last_octet = split_ip[3] %}\n        interface Loopback{{vrf.id}}\n        description OVERLAY-VRF-{{vrf.name}}\n        ip address {{DEFN_LOOP_OVERLAY[vrf.name]}}{{last_octet}} 255.255.255.255\n        ip pim sparse-mode\n        !\n    {% endif %}\n    {% endfor %}\n    {% endfor %}\n{% endif %}",
+    "templateParams": [
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": false,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": "VRF Names List"
+      }
+    ],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% if vlan_id is not defined %}\n{% set blah = \"EVPN\" + \"/DEFN-VRF\" %}\n{% endif %}\n\n{% include blah %}\n! {{blah}}\n\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\n{# UNDERLAY LOOPBACKS #}\ninterface {{DEFN_LOOP_NAME['UNDERLAY']}}\ndescription UNDERLAY-NVE-INTERFACE\nip address {{DEFN_LOOP_UNDERLAY[__device.hostname]}} 255.255.255.255\nip pim sparse-mode\n!\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] or __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n{# SKIP #}\n{% else %}\n    {% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n    {% if vrf.name == input_vrf %}\n        {% set ip = DEFN_LOOP_UNDERLAY[__device.hostname] %}\n        {% set split_ip = ip.split('\\\\.') %}\n        {% set last_octet = split_ip[3] %}\n        interface Loopback{{vrf.id}}\n        description OVERLAY-VRF-{{vrf.name}}\n        ip address {{DEFN_LOOP_OVERLAY[vrf.name]}}{{last_octet}} 255.255.255.255\n        ip pim sparse-mode\n        !\n    {% endif %}\n    {% endfor %}\n    {% endfor %}\n{% endif %}",
+    "promotedTemplateParams": [
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": false,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": "VRF Names List"
+      },
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      }
+    ],
+    "customParamsOrder": false,
+    "createTime": 1752166725630,
+    "lastUpdateTime": 1752258363448,
+    "latestVersionTime": 1752258373683,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "ae01da59-1af1-4f5f-803d-c88af7eea117",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "5. FABRIC-L3OUT",
+    "description": "",
+    "tags": [
+      {
+        "id": "beef51f1-8050-4165-b480-acf787866643",
+        "name": "SPINE"
+      }
+    ],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-L3OUT\" %}\n\n{% if vrf_list and FABRIC_BGP_ASN is not none and __device.hostname is not none %}\n{% for vrf in vrf_list %}\n{% for l3out in DEFN_L3OUT %}\n      {% if l3out.vrf == vrf and l3out.node == __device.hostname %}\n        router bgp {{FABRIC_BGP_ASN}}\n              address-family ipv4 vrf {{l3out.vrf}}\n              advertise l2vpn evpn\n              {% for aggregate in l3out.aggregate %}\n              aggregate-address {{aggregate}} summary-only\n              {% endfor %}\n              redistribute static\n              redistribute connected\n              exit-address-family\n        {% for interface,params in l3out.interfaces.items() %}\n            !\n            interface {{interface}}\n             encapsulation dot1Q {{params.vlan}}\n             vrf forwarding {{l3out.vrf}}\n             ip address {{params.ipaddr}}\n             ip pim sparse-mode\n            !\n            !\n            router bgp {{FABRIC_BGP_ASN}}\n            address-family ipv4 vrf {{l3out.vrf}}\n            neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}\n            neighbor {{params.neighbour}} activate\n            exit-address-family\n        {% endfor %}\n      {% endif %}\n{% endfor %}\n{% endfor %}\n{% endif %}",
+    "templateParams": [
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": "65001",
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": "FABRIC BGP ASN"
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": false,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": "VRF Names List"
+      },
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 3,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      }
+    ],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-L3OUT\" %}\n\n{% if vrf_list and FABRIC_BGP_ASN is not none and __device.hostname is not none %}\n{% for vrf in vrf_list %}\n{% for l3out in DEFN_L3OUT %}\n      {% if l3out.vrf == vrf and l3out.node == __device.hostname %}\n        router bgp {{FABRIC_BGP_ASN}}\n              address-family ipv4 vrf {{l3out.vrf}}\n              advertise l2vpn evpn\n              {% for aggregate in l3out.aggregate %}\n              aggregate-address {{aggregate}} summary-only\n              {% endfor %}\n              redistribute static\n              redistribute connected\n              exit-address-family\n        {% for interface,params in l3out.interfaces.items() %}\n            !\n            interface {{interface}}\n             encapsulation dot1Q {{params.vlan}}\n             vrf forwarding {{l3out.vrf}}\n             ip address {{params.ipaddr}}\n             ip pim sparse-mode\n            !\n            !\n            router bgp {{FABRIC_BGP_ASN}}\n            address-family ipv4 vrf {{l3out.vrf}}\n            neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}\n            neighbor {{params.neighbour}} activate\n            exit-address-family\n        {% endfor %}\n      {% endif %}\n{% endfor %}\n{% endfor %}\n{% endif %}",
+    "promotedTemplateParams": [
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": "65001",
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": "FABRIC BGP ASN"
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": false,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": "VRF Names List"
+      },
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 3,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      }
+    ],
+    "customParamsOrder": false,
+    "createTime": 1751564225153,
+    "lastUpdateTime": 1752174607655,
+    "latestVersionTime": 1752174613616,
+    "validationErrors": {
+      "templateErrors": [
+        {
+          "type": "POTENTIAL_CONFLICT",
+          "lineNumber": 22,
+          "message": "This command is reserved to be used by Cisco Catalyst Center"
+        },
+        {
+          "type": "POTENTIAL_CONFLICT",
+          "lineNumber": 24,
+          "message": "This command is reserved to be used by Cisco Catalyst Center"
+        }
+      ],
+      "rollbackTemplateErrors": [],
+      "templateId": "d4dc0132-34e5-45dd-b604-bc04a2bafb86",
+      "templateVersion": null
+    },
+    "noOfConflicts": 2,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "4. FABRIC-EVPN",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\nrouter bgp {{FABRIC_BGP_ASN}}\nbgp router-id interface Loopback0\nbgp log-neighbor-changes\nbgp graceful-restart\nno bgp default ipv4-unicast\nmaximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n!\nip multicast-routing\n!\n{#Scope Fabric MCAST to specific RP in-fabric#}\nip access-list standard FABRIC-RP-SCOPE\npermit {{FABRIC_RP_SCOPE}}\nip pim rp-address {{DEFN_LOOP_ANYCAST}} FABRIC-RP-SCOPE\n\nrouter bgp {{FABRIC_BGP_ASN}}\n{# THIS NODE IS A ROUTE REFLECTOR #}\n{% if __device.hostname in DEFN_NODE_ROLES['RR']%}\n    !\n    template peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    description LEAF-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source {{DEFN_LOOP_NAME['UNDERLAY']}}\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    route-reflector-client\n    !\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A RR CLIENT (ie LEAF or BORDER) #}\n{% if __device.hostname in DEFN_NODE_ROLES['CLIENT'] %}\n    !\n    template peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    description SPINE-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source Loopback0\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    !\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A SPINE #}\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] %}\n    {# ANYCAST RP INTERFACE #}\n    {% for spine in DEFN_NODE_ROLES['SPINE'] %}\n    ip msdp peer {{DEFN_LOOP_UNDERLAY[spine]}} connect-source Loopback0 remote-as {{FABRIC_BGP_ASN}}\n    ip msdp cache-sa-state\n    {% endfor %}\n    !\n{% endif %}",
+    "templateParams": [
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      },
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      }
+    ],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\nrouter bgp {{FABRIC_BGP_ASN}}\nbgp router-id interface Loopback0\nbgp log-neighbor-changes\nbgp graceful-restart\nno bgp default ipv4-unicast\nmaximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n!\nip multicast-routing\n!\n{#Scope Fabric MCAST to specific RP in-fabric#}\nip access-list standard FABRIC-RP-SCOPE\npermit {{FABRIC_RP_SCOPE}}\nip pim rp-address {{DEFN_LOOP_ANYCAST}} FABRIC-RP-SCOPE\n\nrouter bgp {{FABRIC_BGP_ASN}}\n{# THIS NODE IS A ROUTE REFLECTOR #}\n{% if __device.hostname in DEFN_NODE_ROLES['RR']%}\n    !\n    template peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    description LEAF-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source {{DEFN_LOOP_NAME['UNDERLAY']}}\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    route-reflector-client\n    !\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for client in DEFN_NODE_ROLES['CLIENT'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A RR CLIENT (ie LEAF or BORDER) #}\n{% if __device.hostname in DEFN_NODE_ROLES['CLIENT'] %}\n    !\n    template peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    description SPINE-EVPN-PEER\n    remote-as {{FABRIC_BGP_ASN}}\n    update-source Loopback0\n    log-neighbor-changes\n    !\n    !\n    template peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    send-community both\n    soft-reconfiguration inbound\n    !\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY\n    {% endfor %}\n    !\n    address-family l2vpn evpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n    address-family ipv4 mvpn\n    {% for rr in DEFN_NODE_ROLES['RR'] %}\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} send-community both\n    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY\n    {% endfor %}\n    exit-address-family\n    !\n{% endif %}\n{# THIS NODE IS A SPINE #}\n{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] %}\n    {# ANYCAST RP INTERFACE #}\n    {% for spine in DEFN_NODE_ROLES['SPINE'] %}\n    ip msdp peer {{DEFN_LOOP_UNDERLAY[spine]}} connect-source Loopback0 remote-as {{FABRIC_BGP_ASN}}\n    ip msdp cache-sa-state\n    {% endfor %}\n    !\n{% endif %}",
+    "promotedTemplateParams": [
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      },
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      }
+    ],
+    "customParamsOrder": false,
+    "createTime": 1751564225382,
+    "lastUpdateTime": 1752174590567,
+    "latestVersionTime": 1752174596097,
+    "validationErrors": {
+      "templateErrors": [
+        {
+          "type": "POTENTIAL_CONFLICT",
+          "lineNumber": 16,
+          "message": "This command is reserved to be used by Cisco Catalyst Center"
+        }
+      ],
+      "rollbackTemplateErrors": [],
+      "templateId": "d77b692c-d44f-4303-91ed-c73d55b14937",
+      "templateVersion": null
+    },
+    "noOfConflicts": 1,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "3. FABRIC-NVE",
+    "description": "",
+    "tags": [],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            {% set l3vni_id = (L3VNIOFFSET|string) + vrf.id %}\n            vlan {{vrf.id}}\n            name L3-VRF-CORE-{{vrf.id}}\n            !\n            vlan configuration {{vrf.id}}\n            member vni {{l3vni_id}}\n            !\n            interface vlan {{vrf.id}}\n            ! description L3-CORE-VLAN-SVI-INTERFACE\n            vrf forwarding {{ vrf.name }}\n            description ** SVI for {{ vrf.name }} L3VNI **\n            vrf forwarding {{ vrf.name }}\n            ip unnumbered {{DEFN_LOOP_NAME['UNDERLAY']}}\n            no ip redirects\n            no ip unreachables\n            no ip proxy-arp\n            ip pim sparse-mode\n            load-interval 30\n            carrier-delay msec 0\n            no autostate\n            hold-queue 4094 in\n            hold-queue 4094 out\n            no autostate\n            !\n            interface nve1\n            description ** NVE Interface for VXLAN **\n            no ip address\n            source-interface {{DEFN_LOOP_NAME['UNDERLAY']}}\n            host-reachability protocol bgp\n            member vni {{l3vni_id}} vrf {{ vrf.name }}\n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+    "templateParams": [
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": "VRF Names List"
+      },
+      {
+        "parameterName": "l3vni_id",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": true,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      }
+    ],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            {% set l3vni_id = (L3VNIOFFSET|string) + vrf.id %}\n            vlan {{vrf.id}}\n            name L3-VRF-CORE-{{vrf.id}}\n            !\n            vlan configuration {{vrf.id}}\n            member vni {{l3vni_id}}\n            !\n            interface vlan {{vrf.id}}\n            ! description L3-CORE-VLAN-SVI-INTERFACE\n            vrf forwarding {{ vrf.name }}\n            description ** SVI for {{ vrf.name }} L3VNI **\n            vrf forwarding {{ vrf.name }}\n            ip unnumbered {{DEFN_LOOP_NAME['UNDERLAY']}}\n            no ip redirects\n            no ip unreachables\n            no ip proxy-arp\n            ip pim sparse-mode\n            load-interval 30\n            carrier-delay msec 0\n            no autostate\n            hold-queue 4094 in\n            hold-queue 4094 out\n            no autostate\n            !\n            interface nve1\n            description ** NVE Interface for VXLAN **\n            no ip address\n            source-interface {{DEFN_LOOP_NAME['UNDERLAY']}}\n            host-reachability protocol bgp\n            member vni {{l3vni_id}} vrf {{ vrf.name }}\n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+    "promotedTemplateParams": [
+      {
+        "parameterName": "l3vni_id",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": true,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": "VRF Names List"
+      }
+    ],
+    "customParamsOrder": false,
+    "createTime": 1751564225259,
+    "lastUpdateTime": 1752175810016,
+    "latestVersionTime": 1752175814913,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "da6e99c4-e31b-403f-8a35-0bc02b69c46a",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "6. FABRIC-OVERLAY",
+    "description": "",
+    "tags": [
+      {
+        "id": "a537c0c1-4326-4a15-884c-8ea471a3e670",
+        "name": "BORDER LEAF"
+      },
+      {
+        "id": "50bd51e9-15e5-4cb5-9102-0c4d454d4145",
+        "name": "LEAF"
+      }
+    ],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-OVERLAY\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% if FABRIC_BGP_ASN is not none and vrf_list is not none and __device.hostname is not none %}\n\n{% for vrf in vrf_list %}\n    {% for overlay in DEFN_OVERLAY %}\n        {% if overlay.vrf == vrf %}\n            {% for node in overlay.nodes %}\n            {# EXPECTED TO EXECUTE ON NON-SPINE ONLY#}\n            {% if node == __device.hostname %}\n                {#Overlay BGP vpnv4#}\n                router bgp {{FABRIC_BGP_ASN}}\n                address-family ipv4 vrf {{vrf}}\n                advertise l2vpn evpn\n                redistribute connected\n                maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n                !\n                {% for vlan, params in overlay.vlans.items() %}\n                {% set l2vni_id = (L2VNIOFFSET|int) + (vlan|int) %}\n                {% set l2evpn_id = vlan %}\n                {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n                  {# Do nothing or border-specific logic #}\n                {% else %}\n                {# Logic for devices NOT in BORDER list #}\n                l2vpn evpn instance {{l2evpn_id}} vlan-based\n                encapsulation vxlan\n                replication-type static\n                !\n                vlan {{ vlan }}\n                name DAG-EDGE-VLAN-{{params.name}}\n                !\n                vlan configuration {{vlan}}\n                member evpn-instance {{l2evpn_id}} vni {{l2vni_id}}\n                !\n                interface nve1\n                member vni {{l2vni_id}} mcast-group {{params.bum_addr}}\n                !\n                interface Vlan{{vlan}}\n                description DAG-SVI-INTERFACE-{{params.name}}\n                vrf forwarding {{overlay.vrf}}\n                mac-address {{params.mac}}\n                ip address {{params.ipaddr}}\n                ip dhcp relay source-interface {{params.dhcp_source}}\n                ip helper-address {{params.dhcp_helper}}\n                ip pim sparse-mode\n                !\n                {% endif %}\n                {% endfor %}\n            {% endif %}\n            {% endfor %}\n        {% endif %}\n    {% endfor %}\n{% endfor %}\n{% endif %}",
+    "templateParams": [
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": "65001",
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": "FABRIC BGP ASN"
+      },
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 3,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": false,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": "VRF Names List"
+      }
+    ],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-OVERLAY\" %}\n{% include \"EVPN/DEFN-VNIOFFSETS\" %}\n\n{% if FABRIC_BGP_ASN is not none and vrf_list is not none and __device.hostname is not none %}\n\n{% for vrf in vrf_list %}\n    {% for overlay in DEFN_OVERLAY %}\n        {% if overlay.vrf == vrf %}\n            {% for node in overlay.nodes %}\n            {# EXPECTED TO EXECUTE ON NON-SPINE ONLY#}\n            {% if node == __device.hostname %}\n                {#Overlay BGP vpnv4#}\n                router bgp {{FABRIC_BGP_ASN}}\n                address-family ipv4 vrf {{vrf}}\n                advertise l2vpn evpn\n                redistribute connected\n                maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}\n                !\n                {% for vlan, params in overlay.vlans.items() %}\n                {% set l2vni_id = (L2VNIOFFSET|int) + (vlan|int) %}\n                {% set l2evpn_id = vlan %}\n                {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] %}\n                  {# Do nothing or border-specific logic #}\n                {% else %}\n                {# Logic for devices NOT in BORDER list #}\n                l2vpn evpn instance {{l2evpn_id}} vlan-based\n                encapsulation vxlan\n                replication-type static\n                !\n                vlan {{ vlan }}\n                name DAG-EDGE-VLAN-{{params.name}}\n                !\n                vlan configuration {{vlan}}\n                member evpn-instance {{l2evpn_id}} vni {{l2vni_id}}\n                !\n                interface nve1\n                member vni {{l2vni_id}} mcast-group {{params.bum_addr}}\n                !\n                interface Vlan{{vlan}}\n                description DAG-SVI-INTERFACE-{{params.name}}\n                vrf forwarding {{overlay.vrf}}\n                mac-address {{params.mac}}\n                ip address {{params.ipaddr}}\n                ip dhcp relay source-interface {{params.dhcp_source}}\n                ip helper-address {{params.dhcp_helper}}\n                ip pim sparse-mode\n                !\n                {% endif %}\n                {% endfor %}\n            {% endif %}\n            {% endfor %}\n        {% endif %}\n    {% endfor %}\n{% endfor %}\n{% endif %}",
+    "promotedTemplateParams": [
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 3,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": false,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "green",
+            "903": "blue"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": "VRF Names List"
+      },
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": "65001",
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": "FABRIC BGP ASN"
+      }
+    ],
+    "customParamsOrder": false,
+    "createTime": 1751564224507,
+    "lastUpdateTime": 1752174626482,
+    "latestVersionTime": 1752174631187,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "ec5ed7d7-21f3-4465-8993-e866d2fe68ec",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  },
+  {
+    "name": "1. FABRIC-VRF",
+    "description": "",
+    "tags": [
+      {
+        "id": "beef51f1-8050-4165-b480-acf787866643",
+        "name": "SPINE"
+      },
+      {
+        "id": "a537c0c1-4326-4a15-884c-8ea471a3e670",
+        "name": "BORDER LEAF"
+      },
+      {
+        "id": "50bd51e9-15e5-4cb5-9102-0c4d454d4145",
+        "name": "LEAF"
+      }
+    ],
+    "author": "admin",
+    "deviceTypes": [
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9500 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9300 Series Switches"
+      },
+      {
+        "productFamily": "Switches and Hubs",
+        "productSeries": "Cisco Catalyst 9400 Series Switches"
+      }
+    ],
+    "softwareType": "IOS",
+    "softwareVariant": "XE",
+    "templateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\nip multicast-routing\n!\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            !\n            vrf definition {{ vrf.name }}\n             description VRF {{ vrf.name }} definition\n             rd {{ DEFN_LOOP_UNDERLAY[__device.hostname] }}:{{ vrf.id }}\n             !\n             address-family ipv4\n              mdt auto-discovery vxlan\n              mdt default vxlan {{ vrf.mdt_default }}\n              mdt data vxlan {{ vrf.mdt_data }} 0.0.0.255\n              mdt data threshold 1\n              mdt overlay use-bgp\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n             exit-address-family\n            !\n            ip multicast-routing vrf {{ vrf.name }} \n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+    "templateParams": [
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      },
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": "65001",
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 3,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": null
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "blue",
+            "903": "green"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "displayName": "VRF Names List"
+      }
+    ],
+    "rollbackTemplateParams": [],
+    "composite": false,
+    "containingTemplates": [],
+    "language": "JINJA",
+    "promotedTemplateContent": "{% include \"EVPN/DEFN-VRF\" %}\n{% include \"EVPN/DEFN-ROLES\" %}\n{% include \"EVPN/DEFN-LOOPBACKS\" %}\n\nip multicast-routing\n!\n{% for input_vrf in vrf_list %}\n    {% for vrf in DEFN_VRF %}\n        {% if vrf.name == input_vrf %}\n            !\n            vrf definition {{ vrf.name }}\n             description VRF {{ vrf.name }} definition\n             rd {{ DEFN_LOOP_UNDERLAY[__device.hostname] }}:{{ vrf.id }}\n             !\n             address-family ipv4\n              mdt auto-discovery vxlan\n              mdt default vxlan {{ vrf.mdt_default }}\n              mdt data vxlan {{ vrf.mdt_data }} 0.0.0.255\n              mdt data threshold 1\n              mdt overlay use-bgp\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }}\n              route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n              route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching\n             exit-address-family\n            !\n            ip multicast-routing vrf {{ vrf.name }} \n        {% endif %}\n    {% endfor %}\n{% endfor %}",
+    "promotedTemplateParams": [
+      {
+        "parameterName": "__device",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 2,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      },
+      {
+        "parameterName": "FABRIC_BGP_ASN",
+        "dataType": "STRING",
+        "defaultValue": "65001",
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": false,
+        "instructionText": null,
+        "group": null,
+        "order": 3,
+        "customOrder": 0,
+        "selection": null,
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": null
+      },
+      {
+        "parameterName": "vrf_list",
+        "dataType": "STRING",
+        "defaultValue": null,
+        "description": null,
+        "required": true,
+        "notParam": false,
+        "paramArray": true,
+        "instructionText": null,
+        "group": null,
+        "order": 1,
+        "customOrder": 0,
+        "selection": {
+          "selectionType": "MULTI_SELECT",
+          "selectionValues": {
+            "901": "red",
+            "902": "blue",
+            "903": "green"
+          },
+          "defaultSelectedValues": [],
+          "id": null
+        },
+        "range": [],
+        "key": null,
+        "provider": null,
+        "binding": "",
+        "sensitiveField": false,
+        "id": null,
+        "displayName": "VRF Names List"
+      }
+    ],
+    "customParamsOrder": false,
+    "createTime": 1751564224786,
+    "lastUpdateTime": 1752266305954,
+    "latestVersionTime": 1752266310243,
+    "validationErrors": {
+      "templateErrors": [],
+      "rollbackTemplateErrors": [],
+      "templateId": "ff22268c-c812-48a6-871f-b86a2d94c33c",
+      "templateVersion": null
+    },
+    "noOfConflicts": 0,
+    "documentDatabase": false,
+    "projectAssociated": true
+  }
+]
