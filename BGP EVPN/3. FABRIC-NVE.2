@@ -1,0 +1,54 @@
+{% include "EVPN/DEFN-VRF" %}
+{% include "EVPN/DEFN-ROLES" %}
+{% include "EVPN/DEFN-LOOPBACKS" %}
+{% include "EVPN/DEFN-VNIOFFSETS" %}
+
+{# Resolve the VRF objects upfront #}
+{% set vrf_objs = [] %}
+{% for input_vrf in vrf_list %}
+  {% set _vrf = (DEFN_VRF | selectattr("name", "equalto", input_vrf) | list | first) %}
+  {% if _vrf %}{% do vrf_objs.append(_vrf | first) %}{% endif %}
+{% endfor %}
+
+{# --- VLAN SECTION --- #}
+! @start-ignore-compliance 
+{% for vrf in vrf_objs %}
+vlan {{ vrf.id }}
+ name L3-VRF-CORE-{{ vrf.id }}
+!
+{% endfor %}
+! @end-ignore-compliance
+
+{# --- VLAN CONFIGURATION SECTION --- #}
+{% for vrf in vrf_objs %}
+vlan configuration {{ vrf.id }}
+ member vni {{ (L3VNIOFFSET|string) + vrf.id }}
+!
+{% endfor %}
+
+{# --- INTERFACE VLAN SECTION --- #}
+{% for vrf in vrf_objs %}
+interface Vlan{{ vrf.id }}
+ description ** SVI for {{ vrf.name }} L3VNI **
+ vrf forwarding {{ vrf.name }}
+ ip unnumbered {{ DEFN_LOOP_NAME['UNDERLAY'] }}
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ ip pim sparse-mode
+ load-interval 30
+ carrier-delay msec 0
+ no autostate
+ hold-queue 4094 in
+ hold-queue 4094 out
+{% endfor %}
+
+{# --- INTERFACE NVE1 SECTION --- #}
+interface nve1
+ description ** NVE Interface for VXLAN **
+ no ip address
+ source-interface {{ DEFN_LOOP_NAME['UNDERLAY'] }}
+ host-reachability protocol bgp
+{% for vrf in vrf_objs %}
+ member vni {{ (L3VNIOFFSET|string) + vrf.id }} vrf {{ vrf.name }}
+{% endfor %}

@@ -1,0 +1,26 @@
+{% set DEFN_LOOP_UNDERLAY =
+    {
+      'kinstone-spine1.dcloud.cisco.com':       '172.16.255.1',
+      'halifax-spine2.dcloud.cisco.com':        '172.16.255.2',
+      'apex-leaf1.dcloud.cisco.com':            '172.16.255.3',
+      'cary-leaf2.dcloud.cisco.com':            '172.16.255.4',
+      'lagrange-leaf3.dcloud.cisco.com':        '172.16.255.5',
+      'carolinas37-border1.dcloud.cisco.com':   '172.16.255.6',
+      'carolinas50-border2.dcloud.cisco.com':   '172.16.255.7'
+    }
+%}
+
+{% set DEFN_LOOP_OVERLAY =
+    {
+      'red':                                    '10.1.91.',
+      'blue':                                   '10.1.92.',
+      'green':                                  '10.1.93.'
+    }
+%}
+
+{% set DEFN_LOOP_NAME =
+    {
+        'UNDERLAY': 'Loopback0',
+        'ANYCAST':  'Loopback2'
+    }
+%}

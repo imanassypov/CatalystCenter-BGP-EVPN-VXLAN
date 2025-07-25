@@ -1,0 +1,24 @@
+{% include "EVPN/DEFN-VRF" %}
+{% include "EVPN/DEFN-ROLES" %}
+{% include "EVPN/DEFN-LOOPBACKS" %}
+
+{# Resolve the VRF objects upfront #}
+{% set vrf_objs = [] %}
+{% for input_vrf in vrf_list %}
+  {% set _vrf = (DEFN_VRF | selectattr("name", "equalto", input_vrf) | list | first) %}
+  {% if _vrf %}{% do vrf_objs.append(_vrf | first) %}{% endif %}
+{% endfor %}
+
+{% for vrf in vrf_objs %}
+vrf definition {{ vrf.name }}
+description VRF {{ vrf.name }} definition
+rd {{ DEFN_LOOP_UNDERLAY[__device.hostname] }}:{{ vrf.id }}
+!
+address-family ipv4
+route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }}
+route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }}
+route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching
+route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching
+exit-address-family
+!
+{% endfor %}

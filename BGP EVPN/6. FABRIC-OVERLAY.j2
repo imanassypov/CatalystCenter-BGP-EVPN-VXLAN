@@ -1,0 +1,132 @@
+{% include "EVPN/DEFN-VRF" %}
+{% include "EVPN/DEFN-ROLES" %}
+{% include "EVPN/DEFN-OVERLAY" %}
+{% include "EVPN/DEFN-VNIOFFSETS" %}
+
+{% if FABRIC_BGP_ASN is not none and vrf_list is not none and __device.hostname is not none %}
+
+{# === ROUTER BGP SECTION === #}
+router bgp {{FABRIC_BGP_ASN}}
+{% for vrf in vrf_list %}
+  {% for overlay in DEFN_OVERLAY %}
+    {% if overlay.vrf == vrf %}
+    address-family ipv4 vrf {{vrf}}
+    advertise l2vpn evpn
+    import path selection all
+    redistribute connected
+    maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}
+    exit-address-family
+    !
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+
+{# === L2VPN EVPN INSTANCE SECTION === #}
+{% for vrf in vrf_list %}
+  {% for overlay in DEFN_OVERLAY %}
+  {% if overlay.vrf == vrf %}
+    {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] or __device.hostname in DEFN_NODE_ROLES['SPINE']%}
+    {# SKIP SPINE AND BORDER L2 DEFN #}
+    {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
+    {% else %}
+    {% for vlan, params in overlay.vlans.items() %}
+    {% set l2evpn_id = vlan %}
+    l2vpn evpn instance {{l2evpn_id}} vlan-based
+    encapsulation vxlan
+    replication-type static
+    !
+    {% endfor %}
+    {% endif %}
+  {% endif %}
+  {% endfor %}
+{% endfor %}
+
+{# === VLAN SECTION === #}
+! @start-ignore-compliance
+{% for vrf in vrf_list %}
+  {% for overlay in DEFN_OVERLAY %}
+  {% if overlay.vrf == vrf %}
+  {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] or __device.hostname in DEFN_NODE_ROLES['SPINE']%}
+  {# SKIP SPINE AND BORDER L2 DEFN #}
+  {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
+  {% else %}
+    {% for vlan, params in overlay.vlans.items() %}
+    vlan {{ vlan }}
+    name DAG-{{params.name}}
+    !
+    {% endfor %}
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+{% endfor %}
+! @end-ignore-compliance
+
+{# === VLAN CONFIGURATION SECTION === #}
+{% for vrf in vrf_list %}
+  {% for overlay in DEFN_OVERLAY %}
+  {% if overlay.vrf == vrf %}
+  {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] or __device.hostname in DEFN_NODE_ROLES['SPINE']%}
+  {# SKIP SPINE AND BORDER L2 DEFN #}
+  {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
+  {% else %}
+  {% for vlan, params in overlay.vlans.items() %}
+  {% set l2evpn_id = vlan %}
+  {% set l2vni_id = (L2VNIOFFSET | int) + (vlan | int) %}
+    vlan configuration {{ vlan }}
+    member evpn-instance {{ l2evpn_id }} vni {{ l2vni_id }}
+    !
+  {% endfor %}
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+{% endfor %}
+
+{# === INTERFACE NVE1 SECTION === #}
+interface nve1
+{% for vrf in vrf_list %}
+  {% for overlay in DEFN_OVERLAY %}
+  {% if overlay.vrf == vrf %}
+  {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] or __device.hostname in DEFN_NODE_ROLES['SPINE']%}
+  {# SKIP SPINE AND BORDER L2 DEFN #}
+  {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
+  {% else %}
+  {% for vlan, params in overlay.vlans.items() %}
+  {% set l2vni_id = (L2VNIOFFSET | int) + (vlan | int) %}
+    member vni {{l2vni_id}} mcast-group {{params.bum_addr}}
+  {% endfor %}
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+{% endfor %}
+
+
+{# === INTERFACE VLANX SECTION === #}
+{% for vrf in vrf_list %}
+{% for overlay in DEFN_OVERLAY %}
+  {% if overlay.vrf == vrf %}
+  
+  {% set vrf_obj = DEFN_VRF | selectattr('name', 'equalto', vrf) | list | first %}
+  {% set dhcp_source_interface = 'Loopback' + vrf_obj.id %}
+
+  {% if __device.hostname in DEFN_NODE_ROLES['BORDER'] or __device.hostname in DEFN_NODE_ROLES['SPINE']%}
+  {# SKIP SPINE AND BORDER L2 DEFN #}
+  {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
+  {% else %}
+  {% for vlan, params in overlay.vlans.items() %}
+    interface Vlan{{ vlan }}
+    description DAG-{{ params.name }}
+    vrf forwarding {{ overlay.vrf }}
+    mac-address {{ params.mac }}
+    ip address {{ params.ipaddr }}
+    ip dhcp relay source-interface {{ dhcp_source_interface }}
+    ip helper-address {{ params.dhcp_helper }}
+    ip pim sparse-mode
+    !
+  {% endfor %}
+  {% endif %}
+  
+  {% endif %}
+{% endfor %}
+{% endfor %}
+
+{% endif %}

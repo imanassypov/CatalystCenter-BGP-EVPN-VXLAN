@@ -1,0 +1,15 @@
+{% set DEFN_NODE_ROLES =
+  {
+  'SPINE':  ['kinstone-spine1.dcloud.cisco.com',
+             'halifax-spine2.dcloud.cisco.com'],
+  'RR':     ['kinstone-spine1.dcloud.cisco.com',
+             'halifax-spine2.dcloud.cisco.com'],
+  'CLIENT': ['apex-leaf1.dcloud.cisco.com',
+             'cary-leaf2.dcloud.cisco.com',
+             'lagrange-leaf3.dcloud.cisco.com',
+             'carolinas37-border1.dcloud.cisco.com',
+             'carolinas50-border2.dcloud.cisco.com'],
+  'BORDER': ['carolinas37-border1.dcloud.cisco.com',
+             'carolinas50-border2.dcloud.cisco.com']
+  }
+%}

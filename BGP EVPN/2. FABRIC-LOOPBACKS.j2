@@ -1,0 +1,35 @@
+{% if vlan_id is not defined %}
+{% set blah = "EVPN" + "/DEFN-VRF" %}
+{% endif %}
+
+{% include blah %}
+! {{blah}}
+
+{% include "EVPN/DEFN-ROLES" %}
+{% include "EVPN/DEFN-LOOPBACKS" %}
+
+{# UNDERLAY LOOPBACKS #}
+interface {{DEFN_LOOP_NAME['UNDERLAY']}}
+description UNDERLAY-NVE-INTERFACE
+ip address {{DEFN_LOOP_UNDERLAY[__device.hostname]}} 255.255.255.255
+ip pim sparse-mode
+!
+{% if __device.hostname in DEFN_NODE_ROLES['SPINE'] or __device.hostname in DEFN_NODE_ROLES['BORDER'] %}
+{# SKIP #}
+{% else %}
+    {% for input_vrf in vrf_list %}
+    {% for vrf in DEFN_VRF %}
+    {% if vrf.name == input_vrf %}
+        {% set ip = DEFN_LOOP_UNDERLAY[__device.hostname] %}
+        {% set split_ip = ip.split('\\.') %}
+        {% set last_octet = split_ip[3] %}
+        interface Loopback{{vrf.id}}
+        description OVERLAY-VRF-{{vrf.name}}
+        vrf forwarding {{vrf.name}}
+        ip address {{DEFN_LOOP_OVERLAY[vrf.name]}}{{last_octet}} 255.255.255.255
+        ip pim sparse-mode
+        !
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+{% endif %}
