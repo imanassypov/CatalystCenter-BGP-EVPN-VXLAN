@@ -90,7 +90,7 @@ Jinja2-based CLI templates located in `BGP EVPN/` that render actual device conf
 - **Function**: Creates underlay Loopback0 and VRF-specific overlay loopbacks for non-spine nodes
 - **Renders To**: Interface configuration blocks with PIM sparse-mode enabled
 
-#### **3. FABRIC-NVE.2**
+#### **3. FABRIC-NVE.j2**
 - **Purpose**: Network Virtualization Edge (NVE) and L3VNI VLAN configuration
 - **Scope**: VLAN creation and VNI mapping for L3 services per VRF
 - **Target Devices**: Leaf and Border Leaf switches (excludes Spines)
@@ -98,7 +98,7 @@ Jinja2-based CLI templates located in `BGP EVPN/` that render actual device conf
 - **Function**: Creates L3VNI VLANs and maps them to L3VNIs for inter-subnet routing
 - **Renders To**: VLAN and VLAN configuration blocks in Leaf/Border configs
 
-#### **4. FABRIC-MCAST.2**
+#### **4. FABRIC-MCAST.j2**
 - **Purpose**: Multicast routing and PIM configuration for VXLAN BUM traffic
 - **Scope**: Global and VRF-specific multicast routing with anycast RP on spines
 - **Target Devices**: All fabric nodes with role-specific anycast RP on spines
