@@ -20,9 +20,11 @@ The template collection provides a complete solution for:
 - Cisco Catalyst 9400 Series Switches  
 - Cisco Catalyst 9300 Series Switches
 - Cisco Catalyst 9000 Series Virtual Switches
+- IPSEC functionality requires Cisco Catalyst 9300X for hardware-accelerated IPSEC crypto function
 
 **Software Requirements:**
-- IOS-XE with BGP EVPN and VXLAN support
+- IOS-XE 17.15.3. Note that 17.12.x is also supported with the exception of Multi-Cluster BGP EVPN (ie Border Switches can run 17.15.3 while the rest of the fabric can operate on 17.12.x)
+- Cisco Catalyst Center 2.3.7.9
 
 ## Template Structure
 
@@ -129,6 +131,82 @@ Jinja2-based CLI templates located in `BGP EVPN/` that render actual device conf
 - **Dependencies**: DEFN-VRF, DEFN-NAC-IOT
 - **Function**: Provides micro-segmentation, device authentication, and policy enforcement
 - **Renders To**: Class-map and policy-map configurations for device onboarding and security
+
+## Initial Preparation
+Before attempting to deploy the collection, the following DEFN Input Variables must be adjusted to suite your environment:
+1. DEFN_LOOPBACKS: device hostnames must match those configured on the target devices, ie 'spine01.dcloud.cisco.com' must match
+```
+spine01#sh run | i hostname | domain
+hostname spine01
+ip domain lookup source-interface Loopback0
+ip domain name dcloud.cisco.com
+```
+2. DEFN_ROLES: device hostanmes to match, same as (1) above
+3. DEFN_L3OUT: Interface names, vlan id, and neighbor parameters must match your core-facing interface configuration, as well as core BGP ASN.
+
+Ensure that basic underlay routing is configured and operational (ie OSPF neighbours are established, spines have BGP established towards the cores)
+
+```
+spine01#sh ip ospf neighbor 
+
+Neighbor ID     Pri   State           Dead Time   Address         Interface
+172.16.255.7      0   FULL/  -        00:00:39    172.16.16.6     GigabitEthernet1/0/5
+172.16.255.6      0   FULL/  -        00:00:36    172.16.15.5     GigabitEthernet1/0/4
+172.16.255.5      0   FULL/  -        00:00:33    172.16.14.5     GigabitEthernet1/0/3
+172.16.255.4      0   FULL/  -        00:00:31    172.16.13.4     GigabitEthernet1/0/2
+172.16.255.3      0   FULL/  -        00:00:32    172.16.12.3     GigabitEthernet1/0/1
+```
+
+```
+spine02#sh ip ospf neighbor 
+
+Neighbor ID     Pri   State           Dead Time   Address         Interface
+172.16.255.7      0   FULL/  -        00:00:38    172.16.26.6     GigabitEthernet1/0/5
+172.16.255.6      0   FULL/  -        00:00:31    172.16.25.5     GigabitEthernet1/0/4
+172.16.255.5      0   FULL/  -        00:00:38    172.16.24.5     GigabitEthernet1/0/3
+172.16.255.4      0   FULL/  -        00:00:36    172.16.23.4     GigabitEthernet1/0/2
+172.16.255.3      0   FULL/  -        00:00:39    172.16.22.3     GigabitEthernet1/0/1
+```
+
+```
+spine01#sh ip bgp summary 
+BGP router identifier 172.16.255.1, local AS number 65001
+BGP table version is 24, main routing table version 24
+23 network entries using 5704 bytes of memory
+24 path entries using 3264 bytes of memory
+4/4 BGP path/bestpath attribute entries using 1184 bytes of memory
+1 BGP AS-PATH entries using 40 bytes of memory
+2 BGP extended community entries using 100 bytes of memory
+0 BGP route-map cache entries using 0 bytes of memory
+0 BGP filter-list cache entries using 0 bytes of memory
+BGP using 10292 total bytes of memory
+BGP activity 29/0 prefixes, 30/0 paths, scan interval 60 secs
+23 networks peaked at 16:57:51 Aug 12 2025 UTC (00:01:52.693 ago)
+
+Neighbor        V           AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+172.17.1.2      4        65002       7      10       24    0    0 00:03:00        1
+172.17.2.2      4        65002       7      11       24    0    0 00:02:59        1
+```
+
+```
+spine02#sh ip bgp summary 
+BGP router identifier 172.16.255.2, local AS number 65001
+BGP table version is 24, main routing table version 24
+23 network entries using 5704 bytes of memory
+24 path entries using 3264 bytes of memory
+4/4 BGP path/bestpath attribute entries using 1184 bytes of memory
+1 BGP AS-PATH entries using 40 bytes of memory
+2 BGP extended community entries using 100 bytes of memory
+0 BGP route-map cache entries using 0 bytes of memory
+0 BGP filter-list cache entries using 0 bytes of memory
+BGP using 10292 total bytes of memory
+BGP activity 29/0 prefixes, 30/0 paths, scan interval 60 secs
+23 networks peaked at 16:57:26 Aug 12 2025 UTC (00:02:37.869 ago)
+
+Neighbor        V           AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+172.17.3.2      4        65002       7      10       24    0    0 00:02:38        1
+172.17.4.2      4        65002       7      10       24    0    0 00:02:36        1
+```
 
 ## Final Rendered Configurations
 
