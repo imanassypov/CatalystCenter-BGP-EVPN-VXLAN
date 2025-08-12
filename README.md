@@ -26,6 +26,9 @@ The template collection provides a complete solution for:
 - IOS-XE 17.15.3. Note that 17.12.x is also supported with the exception of Multi-Cluster BGP EVPN (ie Border Switches can run 17.15.3 while the rest of the fabric can operate on 17.12.x)
 - Cisco Catalyst Center 2.3.7.9
 
+**High Level CAMPUS-CORE-DMZ Routing Topology**
+![Alt text](images/cisco_evpn_ASN.pngimage.png)
+
 ## Template Structure
 
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
