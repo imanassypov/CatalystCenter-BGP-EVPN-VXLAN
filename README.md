@@ -4,6 +4,23 @@
 
 This repository contains a comprehensive collection of Cisco Catalyst Center CLI templates designed to provision and manage Campus BGP EVPN VXLAN fabric infrastructure using Cisco Catalyst 9000 series switches running IOS-XE. The templates are organized into a structured deployment sequence that enables automated configuration of modern campus network fabrics with advanced overlay capabilities.
 
+Modern organizations are faced with a set of new challenges in large-scale Campus Deployments:
+- Agility and compressed time-to-value realization
+- Shrinking Capital and Operational expenses
+- Segmentation of traffic segments
+- End-to-end linerate encryption of segmented flows across the enterprise
+- Infrastructure-as-Code-first approach
+
+Modern Cisco Campus Architecture allows to address all of the above requirements leveraging open-standards BGP EVPN VXLAN implementation on Cisco modern IOS-XE operating system. 
+
+Requirements:
+- Controller-driven segment programming at scale
+- Support for large number of 'Tenants' and 'Segments' within each 'Tenant'
+- Support for 'IOT' class of Tenants, which require specialized routing and encryption parameters. Unlike 'corporate' traffic patterns, 'IOT' must be segmented at the edge and securely routed to an isolated 'DMZ' segment, where each is handed off to northbound firewall
+- 'Corporate' tenant segments must be isolated from 'IOT' segments, and routed through IP Core handoff towards the rest of the organization
+- 'Corporate' tenant segments to support Multicast (Cisco EVPN Tenant Routable Multicast)
+- Each Tenant to support DHCP, DNS, and NAC services
+
 ## Scope and Intent
 
 The template collection provides a complete solution for:
@@ -26,6 +43,9 @@ The template collection provides a complete solution for:
 - IOS-XE 17.15.3. Note that 17.12.x is also supported with the exception of Multi-Cluster BGP EVPN (ie Border Switches can run 17.15.3 while the rest of the fabric can operate on 17.12.x)
 - Cisco Catalyst Center 2.3.7.9
 
+**Intended Outcome Topology**
+![Alt text](images/cisco_evpn_topology.png)
+
 **High Level CAMPUS-CORE-DMZ Routing Topology**
 ![Alt text](images/cisco_evpn_ASN.png)
 
@@ -33,107 +53,6 @@ The template collection provides a complete solution for:
 
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
 
-### 1. Definition Templates (DEFN-*)
-State and input variable definitions that store fabric-wide parameters:
-
-#### **DEFN-ROLES**
-- **Purpose**: Defines device roles within the EVPN fabric topology (Spine, Leaf, Border Leaf, Route Reflector, Client)
-- **Scope**: Node classification and role-based logic for configuration templates
-- **Usage**: Referenced by all numbered templates to apply role-specific configurations
-
-#### **DEFN-LOOPBACKS** 
-- **Purpose**: IP address assignments for underlay and overlay loopback interfaces
-- **Scope**: Fabric-wide loopback addressing including anycast RP addresses (172.16.255.x range)
-- **Usage**: Provides consistent addressing across all fabric nodes for BGP peering and VXLAN tunnels
-
-#### **DEFN-VRF**
-- **Purpose**: VRF definitions with route distinguishers and route targets
-- **Scope**: Multi-tenant VRF parameters (red=901, blue=902, green=903)
-- **Usage**: Defines tenant isolation boundaries and RT import/export policies
-
-#### **DEFN-OVERLAY**
-- **Purpose**: Overlay network definitions for L2/L3 services per VRF
-- **Scope**: VLAN-to-VNI mappings, SVI configurations, DHCP relay, and BUM replication groups
-- **Usage**: Maps tenant VLANs to VXLAN VNIs with associated IP addressing and multicast groups
-
-#### **DEFN-VNIOFFSETS**
-- **Purpose**: VNI offset values for VXLAN network identifier calculation
-- **Scope**: L2VNI and L3VNI offset definitions for consistent VNI allocation
-- **Usage**: Ensures non-overlapping VNI assignments across the fabric
-
-#### **DEFN-L3OUT**
-- **Purpose**: External connectivity parameters for border leaf switches
-- **Scope**: L3 exit point configurations and external BGP peering interfaces
-- **Usage**: Defines connectivity to external networks, WANs, and data centers
-
-#### **DEFN-MCAST**
-- **Purpose**: Multicast configuration parameters
-- **Scope**: PIM sparse-mode settings and anycast RP configuration
-- **Usage**: Supports VXLAN BUM traffic replication and multicast optimization
-
-#### **DEFN-NAC-IOT**
-- **Purpose**: Network Access Control and IoT device policies
-- **Scope**: Class maps and policy maps for device authentication and authorization
-- **Usage**: Provides micro-segmentation and device onboarding capabilities
-
-### 2. Configuration Templates (1-7 Sequence)
-Jinja2-based CLI templates located in `BGP EVPN/` that render actual device configurations:
-
-#### **1. FABRIC-VRF.j2**
-- **Purpose**: VRF instance configuration with route targets and export/import policies
-- **Scope**: Creates tenant VRF definitions with proper route distribution for multi-tenancy
-- **Target Devices**: All fabric nodes (Spine, Leaf, Border Leaf)
-- **Dependencies**: DEFN-VRF, DEFN-ROLES, DEFN-LOOPBACKS
-- **Function**: Establishes VRF routing domains with BGP RT configuration
-- **Renders To**: VRF definition blocks in all node configs with RD assignment based on loopback IP
-
-#### **2. FABRIC-LOOPBACKS.j2**
-- **Purpose**: Loopback interface configuration for underlay and overlay services
-- **Scope**: Configures system loopbacks for BGP peering and overlay VRF termination
-- **Target Devices**: All fabric nodes with role-specific variations
-- **Dependencies**: DEFN-LOOPBACKS, DEFN-ROLES, DEFN-VRF
-- **Function**: Creates underlay Loopback0 and VRF-specific overlay loopbacks for non-spine nodes
-- **Renders To**: Interface configuration blocks with PIM sparse-mode enabled
-
-#### **3. FABRIC-NVE.j2**
-- **Purpose**: Network Virtualization Edge (NVE) and L3VNI VLAN configuration
-- **Scope**: VLAN creation and VNI mapping for L3 services per VRF
-- **Target Devices**: Leaf and Border Leaf switches (excludes Spines)
-- **Dependencies**: DEFN-VRF, DEFN-ROLES, DEFN-VNIOFFSETS
-- **Function**: Creates L3VNI VLANs and maps them to L3VNIs for inter-subnet routing
-- **Renders To**: VLAN and VLAN configuration blocks in Leaf/Border configs
-
-#### **4. FABRIC-MCAST.j2**
-- **Purpose**: Multicast routing and PIM configuration for VXLAN BUM traffic
-- **Scope**: Global and VRF-specific multicast routing with anycast RP on spines
-- **Target Devices**: All fabric nodes with role-specific anycast RP on spines
-- **Dependencies**: DEFN-VRF, DEFN-ROLES, DEFN-LOOPBACKS, DEFN-MCAST
-- **Function**: Enables multicast routing, configures anycast RP interface on spines
-- **Renders To**: Multicast routing commands and anycast loopback interfaces
-
-#### **5. FABRIC-EVPN.j2**
-- **Purpose**: BGP EVPN peering, route reflector configuration, and L3OUT interfaces
-- **Scope**: Establishes EVPN control plane with RR topology and external connectivity
-- **Target Devices**: All fabric nodes with role-specific BGP configurations
-- **Dependencies**: DEFN-ROLES, DEFN-LOOPBACKS, DEFN-VNIOFFSETS, DEFN-L3OUT
-- **Function**: Creates BGP EVPN sessions, peer templates, and L3OUT interface configuration
-- **Renders To**: Router BGP blocks with EVPN AF, peer sessions, and external interfaces
-
-#### **6. FABRIC-OVERLAY.j2**
-- **Purpose**: Overlay service configuration for tenant networks and L2 services
-- **Scope**: EVPN instances, VLAN-to-VNI mapping, and SVI configuration per VRF
-- **Target Devices**: Leaf and Border Leaf switches (excludes Spines for L2 config)
-- **Dependencies**: DEFN-OVERLAY, DEFN-VRF, DEFN-VNIOFFSETS, DEFN-ROLES
-- **Function**: Delivers L2VPN EVPN instances, SVIs, and BGP VRF address-families
-- **Renders To**: L2VPN EVPN instances, VLAN configs, SVI interfaces, and BGP VRF sections
-
-#### **7. FABRIC-NAC-IOT.j2**
-- **Purpose**: Network Access Control and IoT device policy configuration
-- **Scope**: Class maps, policy maps, and device authentication rules per VRF
-- **Target Devices**: Access layer leaf switches where endpoints connect
-- **Dependencies**: DEFN-VRF, DEFN-NAC-IOT
-- **Function**: Provides micro-segmentation, device authentication, and policy enforcement
-- **Renders To**: Class-map and policy-map configurations for device onboarding and security
 
 ## Initial Preparation
 Before attempting to deploy the collection, the following DEFN Input Variables must be adjusted to suite your environment:
@@ -210,34 +129,6 @@ Neighbor        V           AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State
 172.17.3.2      4        65002       7      10       24    0    0 00:02:38        1
 172.17.4.2      4        65002       7      10       24    0    0 00:02:36        1
 ```
-
-## Final Rendered Configurations
-
-The `Node Configs/` folder contains the final rendered switch configurations that result from applying the above templates:
-
-### **Spine Configurations (SPINE1.cfg, SPINE2.cfg)**
-- **Role**: Route Reflectors and Anycast RP nodes
-- **Key Features**: BGP RR configuration, anycast RP interfaces, MSDP peering
-- **Templates Applied**: 1, 2, 4, 5 (excludes overlay L2 services and NVE)
-- **Notable Config**: Route reflector clients, anycast loopback interfaces, VRF definitions
-
-### **Leaf Configurations (LEAF1.cfg, LEAF2.cfg, LEAF3.cfg)**
-- **Role**: EVPN clients providing overlay services to connected endpoints
-- **Key Features**: NVE interfaces, L2VPN EVPN instances, SVI interfaces, overlay loopbacks
-- **Templates Applied**: 1, 2, 3, 4, 5, 6, 7 (full template set)
-- **Notable Config**: VXLAN tunnel endpoints, tenant SVIs, L2/L3 VNI mappings
-
-### **Border Leaf Configurations (BORDER1.cfg, BORDER2.cfg)**
-- **Role**: External connectivity gateways for campus fabric
-- **Key Features**: L3OUT interfaces, external BGP peering, fabric edge services
-- **Templates Applied**: 1, 2, 3, 4, 5, 6 (excludes NAC/IoT policies)
-- **Notable Config**: External interfaces with VRF forwarding, BGP peering to external networks
-
-### **DMZ Configuration (DMZ1.cfg)**
-- **Role**: Demilitarized zone services and external connectivity
-- **Key Features**: Security policies, external service interfaces
-- **Templates Applied**: Subset based on DMZ role requirements
-- **Notable Config**: Security-focused configurations for external service delivery
 
 ## Deployment Sequence
 
