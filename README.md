@@ -42,17 +42,22 @@ The template collection provides a complete solution for:
 **Software Requirements:**
 - IOS-XE 17.15.3. Note that 17.12.x is also supported with the exception of Multi-Cluster BGP EVPN (ie Border Switches can run 17.15.3 while the rest of the fabric can operate on 17.12.x)
 - Cisco Catalyst Center 2.3.7.9
+- Cisco Modeling Labs 2.9
 
 **Intended Outcome Topology**
 ![Alt text](images/cisco_evpn_topology.png)
+
+The above logical topology is emulated leveraging Cisco Modeling Labs (CML). Refer to corresponding CML topolgoy diagram below
+![Alt text](images/cisco_evpn_cml.png)
+
 
 **High Level CAMPUS-CORE-DMZ Routing Topology**
 ![Alt text](images/cisco_evpn_ASN.png)
 
 ## Template Structure
-
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
-
+1. 'Provisioning' Templates, which are named with a preceeding index indicating the order in which the template should be applied to the device. These templates contain the logic to differentiate between the fabric node roles, and source 'intent' (ie input variables) from the corresponding 'Input' variables located in the same folder
+2. 'Input' Templates, which contain the intended outcome, expressed in human-readable json-like structure compatible with Catalyst Center jinja2 template engine.
 
 ## Initial Preparation
 Before attempting to deploy the collection, the following DEFN Input Variables must be adjusted to suite your environment:
