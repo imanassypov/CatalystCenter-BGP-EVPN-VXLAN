@@ -27,7 +27,7 @@ The template collection provides a complete solution for:
 - Cisco Catalyst Center 2.3.7.9
 
 **High Level CAMPUS-CORE-DMZ Routing Topology**
-![Alt text](images/cisco_evpn_ASN.pngimage.png)
+![Alt text](images/cisco_evpn_ASN.png)
 
 ## Template Structure
 
