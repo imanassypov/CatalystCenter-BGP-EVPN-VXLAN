@@ -45,13 +45,23 @@ The template collection provides a complete solution for:
 - Cisco Modeling Labs 2.9
 
 **Intended Outcome Topology**
+This collection of Catalyst Center Templates is inteded to provision a simulated Campus Environment comprised of:
+- pair of 'Spines' Catalyst 9K
+- three individual 'Leaf' Catalyst 9K switches, emulating wiring LAN closet switches
+- pair of 'Border Leafs' Catalyst 9K switches, which function as VXLAN-IPSEC-VXLAN Gateways. Border Gateways take VXLAN encapsulated 'IOT' segments and transport those over hardware-accelerated IPSEC tunnels to the designated 'DMZ' place-in-the-network ensuring segmentation of the segments as well as line-rate native 100G IPSEC encryption in transit
+
+The templates are fully extensible, but for the purposes of this lab excercise we will be provisioning three individual Tenants in our emulated topology
+
+- 'RED' Tenant (ie vrf 'red'), which will be emulating User Subnets. 'RED' Tenant will provide native support for Tenant Routable Multicast in the Overlay. TRM will be assuming existence of Anycast-RP routable through the IP Core Block. For the purposes of the demonstration, we will assume Anycast RP Address: 172.17.254.100, which we will scope to the following Enterprise Multicast Range: 238.190.0.0 0.0.255.255. 'RED' Tenant is offering centralized DHCP/DNS services which are accessible to the enterprise via L3 in IP Core Segment
+
+- 'BLUE' Tenant (ie vrf 'blue'), and similarly, 'GREEN' Tenant (ie vrf 'green'). These Tenants will encapsulate any traffic coming through the Wiring Lan Closet host-facing-ports labelled with IOT Vlans, and securely transport that traffic to the DMZ, which is is an isolated segment of the network for security purposes. 'IOT' Tenants are assumed to have separate, segretated DHCP/DNS etc services available only in DMZ section of the network (ie 'Shared Services')
+
 ![Alt text](images/cisco_evpn_topology.png)
 
 The above logical topology is emulated leveraging Cisco Modeling Labs (CML). Refer to corresponding CML topolgoy diagram below
 ![Alt text](images/cisco_evpn_cml.png)
 
-
-**High Level CAMPUS-CORE-DMZ Routing Topology**
+High Level IGP / BGP Topology Diagram
 ![Alt text](images/cisco_evpn_ASN.png)
 
 ## Template Structure
