@@ -61,7 +61,8 @@ The templates are fully extensible, but for the purposes of this lab excercise w
 The above logical topology is emulated leveraging Cisco Modeling Labs (CML). Refer to corresponding CML topolgoy diagram below
 ![Alt text](images/cisco_evpn_cml.png)
 
-High Level IGP / BGP Topology Diagram
+High Level IGP / BGP Topology Diagram:
+
 ![Alt text](images/cisco_evpn_ASN.png)
 
 ## Template Structure
@@ -70,6 +71,27 @@ The project contains two main categories of templates located in the `BGP EVPN/`
 2. 'Input' Templates, which contain the intended outcome, expressed in human-readable json-like structure compatible with Catalyst Center jinja2 template engine.
 
 ## Initial Preparation
+Ensure that your IOS-XE Catalyst switches have the correct license level applied:
+```
+license boot level network-advantage addon dna-advantage
+```
+
+Confirm that Network Advantage license is applied:
+```
+leaf01#sh license summary 
+Account Information:
+  Smart Account: <none>
+  Virtual Account: <none>
+
+License Usage:
+  License                 Entitlement Tag               Count Status
+  -----------------------------------------------------------------------------
+  network-advantage       (CAT9K_VIRTUAL Network ...)       1 IN USE
+  dna-advantage           (CAT9K_VIRTUAL DNA Adva...)       1 IN USE
+
+```
+
+
 Before attempting to deploy the collection, the following DEFN Input Variables must be adjusted to suite your environment:
 1. DEFN_LOOPBACKS: device hostnames must match those configured on the target devices, ie 'spine01.dcloud.cisco.com' must match
 ```
