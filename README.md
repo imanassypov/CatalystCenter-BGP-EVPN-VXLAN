@@ -112,16 +112,24 @@ We are effectively extending segmentation domains from each individual Campus VX
 | green | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
 ---
 
-#### VRF → Loopback (Overlay) Mapping
+#### VRF Services Loopback (Overlay) Mapping
 
-| VRF   | Overlay Loopback | IP Address         |
-|-------|------------------|--------------------|
-| red   | Loopback901      | 10.1.91.3/32       |
-| blue  | Loopback902      | 10.1.92.3/32       |
-| green | Loopback903      | 10.1.93.3/32       |
+| VRF   | Hostname | Overlay Loopback | IP Address         |
+|-------|----------|------------------|--------------------|
+| red   | leaf01   | Loopback901      | 10.1.91.3/32       |
+| red   | leaf02   | Loopback901      | 10.1.91.4/32       |
+| red   | leaf03   | Loopback901      | 10.1.91.5/32       |
+| blue  | leaf01   | Loopback902      | 10.1.92.3/32       |
+| blue  | leaf02   | Loopback902      | 10.1.92.4/32       |
+| blue  | leaf03   | Loopback902      | 10.1.92.5/32       |
+| green | leaf01   | Loopback903      | 10.1.93.3/32       |
+| green | leaf02   | Loopback903      | 10.1.93.4/32       |
+| green | leaf03   | Loopback903      | 10.1.93.5/32       |
+
+**Note:** Border switches (border01, border02) and spines (spine01, spine02) do not configure VRF overlay loopbacks. Border switches use unnumbered L3VNI SVIs referencing Loopback0, while spines operate as BGP EVPN Route Reflectors without VRF participation.
 ---
 
-#### Node → Hostname → Loopback0 (Underlay) Mapping
+#### Node Loopback (Underlay) Mapping
 
 | Hostname                    | Device Role        | Loopback0 IP     | Description                          |
 |-----------------------------|--------------------|--------------------|--------------------------------------|
