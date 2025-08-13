@@ -74,6 +74,39 @@ We are effectively extending segmentation domains from each individual Campus VX
 Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
 ![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
 
+Building Blocks of the solution:
+- Underlay Routing
+The purpose of the underlay routing (in this case OSPF as an IGP) is to provide Loopback reachability between Leafs, Spines, and Border Leafs within the Fabric. Note the 'X' placeholder, which represents the index of the node on which this configuration block is present (subject to your numbering convention). 'Loopback0' interface is pivotal to the operations of all of the fabric services, as it provides for IGP/BGP router ID, NVE reachability etc.
+Fabric interfaces are also enabled with the same IGP for achieving end to end reachability.
+```
+interface Loopback0
+ description UNDERLAY-NVE-INTERFACE
+ ip address 172.16.255.3 255.255.255.255
+ ip pim sparse-mode
+ ip ospf 1 area 0
+```
+```
+router ospf 1
+ router-id 172.16.255.X
+```
+
+BGP EVPN VXLAN Fabrics require underlay multicast services for BUM replication purposes (unless you decide to implement headend replication, which is sub-optimal). 
+In our configuraiton we are breaking up our underlay multicast services into Fabric-only (ie FABRIC-RP-SCOPE) for BUM replication, as well as generic Enterprise Multicast (ie ENTERPRISE-RP-SCOPE) - used in case you decide to leave some of your client traffic in the underlay. 
+```
+ip pim rp-address 172.16.255.254 FABRIC-RP-SCOPE
+ip pim rp-address 172.17.254.100 ENTERPRISE-RP-SCOPE
+ip pim spt-threshold 0
+```
+For purposes of this Lab, it is assumed that Fabric-only and Enterprise Multicast Groups are non-overlapping. Fabric Multicast Groups are scoped to 239.190.0.0/16:
+```
+ip access-list standard FABRIC-RP-SCOPE
+ 10 permit 239.190.0.0 0.0.255.255
+```
+and Enterprise Multicast Groups are scoped to 238.190.0.0/16:
+```
+ip access-list standard ENTERPRISE-RP-SCOPE
+ 10 permit 238.190.0.0 0.0.255.255
+```
 ## Template Structure
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
 1. 'Provisioning' Templates, which are named with a preceeding index indicating the order in which the template should be applied to the device. These templates contain the logic to differentiate between the fabric node roles, and source 'intent' (ie input variables) from the corresponding 'Input' variables located in the same folder
