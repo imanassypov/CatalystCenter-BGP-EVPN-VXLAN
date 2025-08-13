@@ -212,7 +212,7 @@ This address family is one of the critical components that enables the overlay c
 - Route type 2 (MAC/IP) and route type 3 (Inclusive Multicast Ethernet Tag) advertisements
 
 
-**bgp additional-paths receive**
+##### bgp additional-paths receive
 The command "bgp additional-paths receive" is a BGP enhancement feature that allows a BGP speaker to receive multiple paths for the same destination prefix from its neighbors, rather than just the single best path that traditional BGP would advertise.
 
 In standard BGP operation, each router selects only one best path for each destination and advertises only that path to its neighbors. However, with the additional-paths feature enabled, a BGP speaker can receive and store multiple paths for the same prefix, providing several key benefits in a BGP EVPN VXLAN campus fabric environment.
@@ -221,7 +221,7 @@ In the context of this L2VPN EVPN address family configuration, this feature is 
 
 The "receive" keyword specifically indicates that this router is configured to accept additional paths from its neighbors. This feature enhances the overall resilience and performance of the VXLAN overlay network by providing multiple forwarding options for the same destination.
 
-**bgp nexthop trigger delay 0**
+##### bgp nexthop trigger delay 0
 The command "bgp nexthop trigger delay 0" is a BGP optimization feature that controls how quickly BGP reacts to changes in the reachability of next-hop addresses. This command sets the delay timer to zero, meaning BGP will immediately trigger route recalculation and convergence when a next-hop becomes unreachable or reachable again.
 
 In standard BGP operation, there is typically a built-in delay (often several seconds) before BGP processes next-hop reachability changes. This delay exists to prevent excessive processing during network instability, but it can also slow down convergence in stable environments. By setting this delay to zero, the BGP process will immediately respond to next-hop changes, significantly improving convergence times in the VXLAN fabric.
