@@ -145,7 +145,6 @@ We are effectively extending segmentation domains from each individual Campus VX
 | green | leaf01   | Loopback903      | 10.1.93.3/32       |
 | green | leaf02   | Loopback903      | 10.1.93.4/32       |
 | green | leaf03   | Loopback903      | 10.1.93.5/32       |
-
 **Note:** Border switches (border01, border02) and spines (spine01, spine02) do not configure VRF overlay loopbacks. Border switches use unnumbered L3VNI SVIs referencing Loopback0, while spines operate as BGP EVPN Route Reflectors without VRF participation.
 ---
 
@@ -153,8 +152,8 @@ We are effectively extending segmentation domains from each individual Campus VX
 Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
 ![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
 
-Building Blocks of the solution:
-- Underlay Routing
+##Building Blocks of the solution:
+###Underlay Routing - Unicast
 The purpose of the underlay routing (in this case OSPF as an IGP) is to provide Loopback reachability between Leafs, Spines, and Border Leafs within the Fabric. Note the 'X' placeholder, which represents the index of the node on which this configuration block is present (subject to your numbering convention). 'Loopback0' interface is pivotal to the operations of all of the fabric services, as it provides for IGP/BGP router ID, NVE reachability etc.
 Fabric interfaces are also enabled with the same IGP for achieving end to end reachability.
 ```
@@ -168,7 +167,7 @@ interface Loopback0
 router ospf 1
  router-id 172.16.255.X
 ```
-
+###Underlay Routing - Multicast
 BGP EVPN VXLAN Fabrics require underlay multicast services for BUM replication purposes (unless you decide to implement headend replication, which is sub-optimal). 
 In our configuraiton we are breaking up our underlay multicast services into Fabric-only (ie FABRIC-RP-SCOPE) for BUM replication, as well as generic Enterprise Multicast (ie ENTERPRISE-RP-SCOPE) - used in case you decide to leave some of your client traffic in the underlay. 
 ```
@@ -186,6 +185,26 @@ and Enterprise Multicast Groups are scoped to 238.190.0.0/16:
 ip access-list standard ENTERPRISE-RP-SCOPE
  10 permit 238.190.0.0 0.0.255.255
 ```
+Campus VXLAN Fabrics rely on in-Fabrics Anycast RP configured on Spine Nodes, where peer IP address is the Loopback0 on adjacent Spine node:
+```
+ip msdp peer 172.16.255.X connect-source Loopback0 remote-as 65001
+ip msdp originator-id Loopback0
+```
+
+###Overlay Routing - Control Plane
+Control plane is built out leveraging Spine nodes as BGP Route Reflectors, and Leafs (including Border Leafs) as Route Reflector Clients. Each BGP instance utilizies the following MP-BGP Address Families:
+- AF l2vpn evpn. This address family is one of the critical components that enables the overlay control plane functionality. The L2VPN EVPN address family allows BGP to carry MAC address and IP address reachability information across the VXLAN fabric, essentially advertising both Layer 2 and Layer 3 information between fabric nodes.
+
+When configured on spine switches (acting as BGP route reflectors) and leaf switches (acting as route reflector clients), this address family enables the distribution of:
+
+MAC address tables across the fabric
+ARP/ND information for optimized forwarding
+Ethernet segment information for multi-homing scenarios
+Route type 2 (MAC/IP) and route type 3 (Inclusive Multicast Ethernet Tag) advertisements
+
+- AF mpvn
+- AF ipv4 per vrf
+
 ## Template Structure
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
 1. 'Provisioning' Templates, which are named with a preceeding index indicating the order in which the template should be applied to the device. These templates contain the logic to differentiate between the fabric node roles, and source 'intent' (ie input variables) from the corresponding 'Input' variables located in the same folder
