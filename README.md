@@ -71,63 +71,6 @@ We are effectively extending segmentation domains from each individual Campus VX
 ![EVPN Over IPSEC Topology](images/cisco_evpn_IPSEC.png)
 
 ### Lab Reference Tables
-#### VRF → RD → Route-Targets → L3VNI → Multicast / Overlay Details
-
-| VRF   | Description         | RD                   | IPv4 RT Import           | IPv4 RT Export           | IPv6 RT Import           | IPv6 RT Export           | L3VNI  | Overlay SVI | Multicast Default | Multicast Data Range       | Overlay BGP AFs Enabled |
-|-------|---------------------|----------------------|--------------------------|--------------------------|--------------------------|--------------------------|--------|-------------|-------------------|----------------------------|-------------------------|
-| red   | VRF red definition  | 172.16.255.3:901     | 65001:901<br>65001:901 stitching | 65001:901<br>65001:901 stitching | —                        | —                        | 50901  | Vlan901     | 239.190.0.1       | 239.190.1.0/24             | IPv4 EVPN               |
-| blue  | VRF blue definition | 172.16.255.3:902     | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 50902  | Vlan902     | 239.190.0.2       | 239.190.2.0/24             | IPv4 EVPN + IPv6 EVPN   |
-| green | VRF green definition| 172.16.255.3:903     | 65001:903<br>65001:903 stitching | 65001:903<br>65001:903 stitching | —                        | —                        | 50903  | Vlan903     | 239.190.0.3       | 239.190.3.0/24             | IPv4 EVPN               |
-
-
-#### VLAN → VNI → EVPN Instance → Multicast Group
-
-| VLAN | Name                  | VNI     | EVPN Instance | VRF   | Multicast Group         |
-|------|-----------------------|---------|---------------|-------|-------------------------|
-| 61   | DAG-brownfield-61     | 10061   | 61            | red   | 239.190.100.61          |
-| 101  | DAG-corp-11           | 10101   | 101           | red   | 239.190.100.11          |
-| 102  | DAG-corp-12           | 10102   | 102           | red   | 239.190.100.12          |
-| 201  | DAG-corp-201          | 10201   | 201           | red   | 239.190.100.201         |
-| 401  | DAG-iot-blue-401      | 10401   | 401           | blue  | 239.190.100.41          |
-| 501  | DAG-iot-green-501     | 10501   | 501           | green | 239.190.100.51          |
-| 901  | L3-VRF-CORE-901       | 50901   | —             | red   | —                       |
-| 902  | L3-VRF-CORE-902       | 50902   | —             | blue  | —                       |
-| 903  | L3-VRF-CORE-903       | 50903   | —             | green | —                       |
----
-
-#### Multicast Group Ranges
-
-| Scope           | RP Address       | Group Range           |
-|-----------------|------------------|-----------------------|
-| Fabric Scope    | 172.16.255.254   | 239.190.0.0/16        |
-| Enterprise Scope| 172.17.254.100   | 238.190.0.0/16        |
----
-
-#### VRF Multicast RP Mapping
-
-| VRF   | PIM RP Address   | Scope Name           |
-|-------|------------------|----------------------|
-| red   | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
-| blue  | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
-| green | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
----
-
-#### VRF Services Loopback (Overlay) Mapping
-
-| VRF   | Hostname | Overlay Loopback | IP Address         |
-|-------|----------|------------------|--------------------|
-| red   | leaf01   | Loopback901      | 10.1.91.3/32       |
-| red   | leaf02   | Loopback901      | 10.1.91.4/32       |
-| red   | leaf03   | Loopback901      | 10.1.91.5/32       |
-| blue  | leaf01   | Loopback902      | 10.1.92.3/32       |
-| blue  | leaf02   | Loopback902      | 10.1.92.4/32       |
-| blue  | leaf03   | Loopback902      | 10.1.92.5/32       |
-| green | leaf01   | Loopback903      | 10.1.93.3/32       |
-| green | leaf02   | Loopback903      | 10.1.93.4/32       |
-| green | leaf03   | Loopback903      | 10.1.93.5/32       |
-
-**Note:** Border switches (border01, border02) and spines (spine01, spine02) do not configure VRF overlay loopbacks. Border switches use unnumbered L3VNI SVIs referencing Loopback0, while spines operate as BGP EVPN Route Reflectors without VRF participation.
----
 
 #### Node Loopback (Underlay) Mapping
 
@@ -146,6 +89,65 @@ We are effectively extending segmentation domains from each individual Campus VX
 
 **Note:** Spines also configure anycast RP loopback (Loopback250) with IP 172.16.255.254/32 for multicast services.
 
+---
+
+#### VRF Definitions
+
+| VRF   | Description         | RD                   | IPv4 RT Import           | IPv4 RT Export           | IPv6 RT Import           | IPv6 RT Export           | L3VNI  | Overlay SVI | Multicast Default | Multicast Data Range       | Overlay BGP AFs Enabled |
+|-------|---------------------|----------------------|--------------------------|--------------------------|--------------------------|--------------------------|--------|-------------|-------------------|----------------------------|-------------------------|
+| red   | VRF red definition  | 172.16.255.3:901     | 65001:901<br>65001:901 stitching | 65001:901<br>65001:901 stitching | —                        | —                        | 50901  | Vlan901     | 239.190.0.1       | 239.190.1.0/24             | IPv4 EVPN               |
+| blue  | VRF blue definition | 172.16.255.3:902     | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 50902  | Vlan902     | 239.190.0.2       | 239.190.2.0/24             | IPv4 EVPN + IPv6 EVPN   |
+| green | VRF green definition| 172.16.255.3:903     | 65001:903<br>65001:903 stitching | 65001:903<br>65001:903 stitching | —                        | —                        | 50903  | Vlan903     | 239.190.0.3       | 239.190.3.0/24             | IPv4 EVPN               |
+---
+
+#### VRF Multicast RP Mapping
+
+| VRF   | PIM RP Address   | Scope Name           |
+|-------|------------------|----------------------|
+| red   | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
+| blue  | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
+| green | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
+---
+
+#### VLAN, VNI, EVPN Instance, VRF, Multicast Group Mappings
+
+| VLAN | Name                  | VNI     | EVPN Instance | VRF   | Multicast Group         |
+|------|-----------------------|---------|---------------|-------|-------------------------|
+| 101  | DAG-corp-11           | 10101   | 101           | red   | 239.190.100.11          |
+| 102  | DAG-corp-12           | 10102   | 102           | red   | 239.190.100.12          |
+| 201  | DAG-corp-201          | 10201   | 201           | red   | 239.190.100.201         |
+| 401  | DAG-iot-blue-401      | 10401   | 401           | blue  | 239.190.100.41          |
+| 501  | DAG-iot-green-501     | 10501   | 501           | green | 239.190.100.51          |
+| 901  | L3-VRF-CORE-901       | 50901   | —             | red   | —                       |
+| 902  | L3-VRF-CORE-902       | 50902   | —             | blue  | —                       |
+| 903  | L3-VRF-CORE-903       | 50903   | —             | green | —                       |
+---
+
+#### Multicast Group Ranges
+
+| Scope           | RP Address       | Group Range           |
+|-----------------|------------------|-----------------------|
+| Fabric Scope    | 172.16.255.254   | 239.190.0.0/16        |
+| Enterprise Scope| 172.17.254.100   | 238.190.0.0/16        |
+**Note:** Fabric Scope Group Range is limited to each Campus Fabric only, and thus can be reused at multiple locations for the same purpose. 
+Tenant Routable Multicast is configured to leverage centralized Anycast-RP services that are common for all the Fabric Locations.
+---
+
+#### VRF Services Loopback (Overlay) Mapping
+
+| VRF   | Hostname | Overlay Loopback | IP Address         |
+|-------|----------|------------------|--------------------|
+| red   | leaf01   | Loopback901      | 10.1.91.3/32       |
+| red   | leaf02   | Loopback901      | 10.1.91.4/32       |
+| red   | leaf03   | Loopback901      | 10.1.91.5/32       |
+| blue  | leaf01   | Loopback902      | 10.1.92.3/32       |
+| blue  | leaf02   | Loopback902      | 10.1.92.4/32       |
+| blue  | leaf03   | Loopback902      | 10.1.92.5/32       |
+| green | leaf01   | Loopback903      | 10.1.93.3/32       |
+| green | leaf02   | Loopback903      | 10.1.93.4/32       |
+| green | leaf03   | Loopback903      | 10.1.93.5/32       |
+
+**Note:** Border switches (border01, border02) and spines (spine01, spine02) do not configure VRF overlay loopbacks. Border switches use unnumbered L3VNI SVIs referencing Loopback0, while spines operate as BGP EVPN Route Reflectors without VRF participation.
 ---
 
 ### Cisco IOS-XE BGP EVPN CLI dependency map
