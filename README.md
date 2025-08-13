@@ -61,14 +61,18 @@ The templates are fully extensible, but for the purposes of this lab excercise w
 The above logical topology is emulated leveraging Cisco Modeling Labs (CML). Refer to corresponding CML topolgoy diagram below
 ![Alt text](images/cisco_evpn_cml.png)
 
-### High Level IGP / BGP / IPSEC Topology Diagram:
+### High Level IGP / BGP / IPSEC Topology Diagram
 At a high level, we have three discrete BGP routing blocks in this topology:
 - BGP control plane for the Campus Fabric
 - BGP control plane for routing services in the Enterprise Core
 - BGP control plane for DMZ Fabric 
 We are effectively extending segmentation domains from each individual Campus VXLAN Fabric to the centralized DMZ VXLAN Fabric over secure IPSEC transport, which is terminated on individual Border Leaf Nodes in each Campus Fabric, and the DMZ VXLAN Node.
-![Alt text](images/cisco_evpn_ASN.png)
-![Alt text](images/cisco_evpn_IPSEC.png)
+![EVPN ASN Relationship](images/cisco_evpn_ASN.png)
+![EVPN Over IPSEC Topology](images/cisco_evpn_IPSEC.png)
+
+### Cisco IOS-XE BGP EVPN CLI dependency map
+Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
+![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
 
 ## Template Structure
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
