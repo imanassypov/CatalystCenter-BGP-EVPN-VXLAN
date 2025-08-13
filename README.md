@@ -70,6 +70,29 @@ We are effectively extending segmentation domains from each individual Campus VX
 ![EVPN ASN Relationship](images/cisco_evpn_ASN.png)
 ![EVPN Over IPSEC Topology](images/cisco_evpn_IPSEC.png)
 
+### Lab Reference Tables
+#### VLAN → VNI → EVPN Instance → Multicast Group
+
+| VLAN | Name                  | VNI     | EVPN Instance | VRF   | Multicast Group         |
+|------|-----------------------|---------|---------------|-------|-------------------------|
+| 61   | DAG-brownfield-61     | 10061   | 61            | red   | 239.190.100.61          |
+| 101  | DAG-corp-11           | 10101   | 101           | red   | 239.190.100.11          |
+| 102  | DAG-corp-12           | 10102   | 102           | red   | 239.190.100.12          |
+| 201  | DAG-corp-201          | 10201   | 201           | red   | 239.190.100.201         |
+| 401  | DAG-iot-blue-401      | 10401   | 401           | blue  | 239.190.100.41          |
+| 501  | DAG-iot-green-501     | 10501   | 501           | green | 239.190.100.51          |
+| 901  | L3-VRF-CORE-901       | 50901   | —             | red   | —                       |
+| 902  | L3-VRF-CORE-902       | 50902   | —             | blue  | —                       |
+| 903  | L3-VRF-CORE-903       | 50903   | —             | green | —                       |
+---
+#### Multicast Group Ranges
+
+| Scope           | RP Address       | Group Range           |
+|-----------------|------------------|-----------------------|
+| Fabric Scope    | 172.16.255.254   | 239.190.0.0/16        |
+| Enterprise Scope| 172.17.254.100   | 238.190.0.0/16        |
+---
+
 ### Cisco IOS-XE BGP EVPN CLI dependency map
 Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
 ![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
