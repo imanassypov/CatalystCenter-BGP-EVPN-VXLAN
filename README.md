@@ -121,6 +121,25 @@ We are effectively extending segmentation domains from each individual Campus VX
 | green | Loopback903      | 10.1.93.3/32       |
 ---
 
+#### Node → Hostname → Loopback0 (Underlay) Mapping
+
+| Node Type     | Device Role        | Hostname                    | Loopback0 IP     | BGP Router-ID    | Description                          |
+|---------------|--------------------|-----------------------------|------------------|------------------|--------------------------------------|
+| SPINE1        | Route Reflector    | kinstone-spine1             | 172.16.255.1/32  | 172.16.255.1     | Primary spine and RR                 |
+| SPINE2        | Route Reflector    | halifax-spine2              | 172.16.255.2/32  | 172.16.255.2     | Secondary spine and RR               |
+| LEAF1         | EVPN Client        | apex-leaf1                  | 172.16.255.3/32  | 172.16.255.3     | Access leaf switch                   |
+| LEAF2         | EVPN Client        | cary-leaf2                  | 172.16.255.4/32  | 172.16.255.4     | Access leaf switch                   |
+| LEAF3         | EVPN Client        | lagrange-leaf3              | 172.16.255.5/32  | 172.16.255.5     | Access leaf switch                   |
+| BORDER1       | Border Leaf        | carolinas37-border1         | 172.16.255.6/32  | 172.16.255.6     | Campus-to-WAN/DMZ gateway            |
+| BORDER2       | Border Leaf        | carolinas50-border2         | 172.16.255.7/32  | 172.16.255.7     | Campus-to-WAN/DMZ gateway            |
+| DMZ1          | DMZ Gateway        | capitals27-dmz              | —                | —                | DMZ services node                    |
+| CORE01        | Core Router        | prague-core1                | —                | —                | Enterprise core router               |
+| CORE02        | Core Router        | dublin-core2                | —                | —                | Enterprise core router               |
+
+**Note:** Spines also configure anycast RP loopback (Loopback250) with IP 172.16.255.254/32 for multicast services.
+
+---
+
 ### Cisco IOS-XE BGP EVPN CLI dependency map
 Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
 ![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
