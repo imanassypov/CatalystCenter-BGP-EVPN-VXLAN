@@ -93,11 +93,11 @@ We are effectively extending segmentation domains from each individual Campus VX
 
 #### VRF Definitions
 
-| VRF   | Description         | RD                   | IPv4 RT Import           | IPv4 RT Export           | IPv6 RT Import           | IPv6 RT Export           | L3VNI  | Overlay SVI | Multicast Default | Multicast Data Range       | Overlay BGP AFs Enabled |
-|-------|---------------------|----------------------|--------------------------|--------------------------|--------------------------|--------------------------|--------|-------------|-------------------|----------------------------|-------------------------|
-| red   | VRF red definition  | 172.16.255.3:901     | 65001:901<br>65001:901 stitching | 65001:901<br>65001:901 stitching | —                        | —                        | 50901  | Vlan901     | 239.190.0.1       | 239.190.1.0/24             | IPv4 EVPN               |
-| blue  | VRF blue definition | 172.16.255.3:902     | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 50902  | Vlan902     | 239.190.0.2       | 239.190.2.0/24             | IPv4 EVPN + IPv6 EVPN   |
-| green | VRF green definition| 172.16.255.3:903     | 65001:903<br>65001:903 stitching | 65001:903<br>65001:903 stitching | —                        | —                        | 50903  | Vlan903     | 239.190.0.3       | 239.190.3.0/24             | IPv4 EVPN               |
+| VRF   | Description         | RD                   | L3VNI  | Overlay SVI | Multicast Default | Multicast Data Range       |
+|-------|---------------------|----------------------|--------|-------------|-------------------|----------------------------|
+| red   | VRF red definition  | 172.16.255.3:901     | 50901  | Vlan901     | 239.190.0.1       | 239.190.1.0/24             |
+| blue  | VRF blue definition | 172.16.255.3:902     | 50902  | Vlan902     | 239.190.0.2       | 239.190.2.0/24             |
+| green | VRF green definition| 172.16.255.3:903     | 50903  | Vlan903     | 239.190.0.3       | 239.190.3.0/24             |
 ---
 
 #### VRF Multicast RP Mapping
@@ -129,8 +129,7 @@ We are effectively extending segmentation domains from each individual Campus VX
 |-----------------|------------------|-----------------------|
 | Fabric Scope    | 172.16.255.254   | 239.190.0.0/16        |
 | Enterprise Scope| 172.17.254.100   | 238.190.0.0/16        |
-**Note:** Fabric Scope Group Range is limited to each Campus Fabric only, and thus can be reused at multiple locations for the same purpose. 
-Tenant Routable Multicast is configured to leverage centralized Anycast-RP services that are common for all the Fabric Locations.
+**Note:** Fabric Scope Group Range is limited to each Campus Fabric only, and thus can be reused at multiple locations for the same purpose. Tenant Routable Multicast is configured to leverage centralized Anycast-RP services that are common for all the Fabric Locations.
 ---
 
 #### VRF Services Loopback (Overlay) Mapping
