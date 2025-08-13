@@ -71,6 +71,15 @@ We are effectively extending segmentation domains from each individual Campus VX
 ![EVPN Over IPSEC Topology](images/cisco_evpn_IPSEC.png)
 
 ### Lab Reference Tables
+#### VRF → RD → Route-Targets → L3VNI → Multicast / Overlay Details
+
+| VRF   | Description         | RD                   | IPv4 RT Import           | IPv4 RT Export           | IPv6 RT Import           | IPv6 RT Export           | L3VNI  | Overlay SVI | Multicast Default | Multicast Data Range       | Overlay BGP AFs Enabled |
+|-------|---------------------|----------------------|--------------------------|--------------------------|--------------------------|--------------------------|--------|-------------|-------------------|----------------------------|-------------------------|
+| red   | VRF red definition  | 172.16.255.3:901     | 65001:901<br>65001:901 stitching | 65001:901<br>65001:901 stitching | —                        | —                        | 50901  | Vlan901     | 239.190.0.1       | 239.190.1.0/24             | IPv4 EVPN               |
+| blue  | VRF blue definition | 172.16.255.3:902     | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 65001:902<br>65001:902 stitching | 50902  | Vlan902     | 239.190.0.2       | 239.190.2.0/24             | IPv4 EVPN + IPv6 EVPN   |
+| green | VRF green definition| 172.16.255.3:903     | 65001:903<br>65001:903 stitching | 65001:903<br>65001:903 stitching | —                        | —                        | 50903  | Vlan903     | 239.190.0.3       | 239.190.3.0/24             | IPv4 EVPN               |
+
+
 #### VLAN → VNI → EVPN Instance → Multicast Group
 
 | VLAN | Name                  | VNI     | EVPN Instance | VRF   | Multicast Group         |
@@ -85,12 +94,22 @@ We are effectively extending segmentation domains from each individual Campus VX
 | 902  | L3-VRF-CORE-902       | 50902   | —             | blue  | —                       |
 | 903  | L3-VRF-CORE-903       | 50903   | —             | green | —                       |
 ---
+
 #### Multicast Group Ranges
 
 | Scope           | RP Address       | Group Range           |
 |-----------------|------------------|-----------------------|
 | Fabric Scope    | 172.16.255.254   | 239.190.0.0/16        |
 | Enterprise Scope| 172.17.254.100   | 238.190.0.0/16        |
+---
+
+#### VRF Multicast RP Mapping
+
+| VRF   | PIM RP Address   | Scope Name           |
+|-------|------------------|----------------------|
+| red   | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
+| blue  | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
+| green | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
 ---
 
 ### Cisco IOS-XE BGP EVPN CLI dependency map
