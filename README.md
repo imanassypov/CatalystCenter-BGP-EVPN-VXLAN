@@ -61,9 +61,10 @@ The templates are fully extensible, but for the purposes of this lab excercise w
 The above logical topology is emulated leveraging Cisco Modeling Labs (CML). Refer to corresponding CML topolgoy diagram below
 ![Alt text](images/cisco_evpn_cml.png)
 
-High Level IGP / BGP Topology Diagram:
-
+### High Level IGP / BGP / IPSEC Topology Diagram:
+Relationship between BGP ASN and Fabric services:
 ![Alt text](images/cisco_evpn_ASN.png)
+![Alt text](images/cisco_evpn_IPSEC.png)
 
 ## Template Structure
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
@@ -90,6 +91,11 @@ License Usage:
   dna-advantage           (CAT9K_VIRTUAL DNA Adva...)       1 IN USE
 
 ```
+
+## Cisco IOS-XE VXLAN EVPN FABRICS BUILDING BLOCKS
+Initial glance at the complete CLI configuration may prove daunting. 
+To help better vizualize the constructs, lets review each of the Fabric Node's configuration vizually.
+
 
 
 Before attempting to deploy the collection, the following DEFN Input Variables must be adjusted to suite your environment:
