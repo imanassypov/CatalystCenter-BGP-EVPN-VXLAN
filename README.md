@@ -112,6 +112,15 @@ We are effectively extending segmentation domains from each individual Campus VX
 | green | 172.17.254.100   | ENTERPRISE-RP-SCOPE  |
 ---
 
+#### VRF → Loopback (Overlay) Mapping
+
+| VRF   | Overlay Loopback | IP Address         |
+|-------|------------------|--------------------|
+| red   | Loopback901      | 10.1.91.3/32       |
+| blue  | Loopback902      | 10.1.92.3/32       |
+| green | Loopback903      | 10.1.93.3/32       |
+---
+
 ### Cisco IOS-XE BGP EVPN CLI dependency map
 Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
 ![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
