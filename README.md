@@ -62,7 +62,11 @@ The above logical topology is emulated leveraging Cisco Modeling Labs (CML). Ref
 ![Alt text](images/cisco_evpn_cml.png)
 
 ### High Level IGP / BGP / IPSEC Topology Diagram:
-Relationship between BGP ASN and Fabric services:
+At a high level, we have three discrete BGP routing blocks in this topology:
+- BGP control plane for the Campus Fabric
+- BGP control plane for routing services in the Enterprise Core
+- BGP control plane for DMZ Fabric 
+We are effectively extending segmentation domains from each individual Campus VXLAN Fabric to the centralized DMZ VXLAN Fabric over secure IPSEC transport, which is terminated on individual Border Leaf Nodes in each Campus Fabric, and the DMZ VXLAN Node.
 ![Alt text](images/cisco_evpn_ASN.png)
 ![Alt text](images/cisco_evpn_IPSEC.png)
 
