@@ -193,17 +193,41 @@ ip msdp originator-id Loopback0
 
 ### Overlay Routing - Control Plane
 Control plane is built out leveraging Spine nodes as BGP Route Reflectors, and Leafs (including Border Leafs) as Route Reflector Clients. Each BGP instance utilizies the following MP-BGP Address Families:
-- AF l2vpn evpn. This address family is one of the critical components that enables the overlay control plane functionality. The L2VPN EVPN address family allows BGP to carry MAC address and IP address reachability information across the VXLAN fabric, essentially advertising both Layer 2 and Layer 3 information between fabric nodes. When configured on spine switches (acting as BGP route reflectors) and leaf switches (acting as route reflector clients), this address family enables the distribution of:
 
--- MAC address tables across the fabric
--- ARP/ND information for optimized forwarding
--- Ethernet segment information for multi-homing scenarios
--- Route type 2 (MAC/IP) and route type 3 (Inclusive Multicast Ethernet Tag) advertisements
+#### AF l2vpn evpn
 
-- AF mpvn. The MPVN address family enables BGP to carry multicast routing information across the VXLAN fabric, allowing for efficient distribution of multicast traffic in overlay networks. This address family is particularly important in VXLAN environments because it provides the control plane mechanisms needed to handle multicast replication and forwarding decisions across the fabric. In the context of this campus fabric design, the MPVN address family works in conjunction with the underlay multicast infrastructure (which uses PIM and MSDP as described earlier in the document) to provide end-to-end multicast services. While the underlay handles the basic multicast replication for BUM (Broadcast, Unknown unicast, and Multicast) traffic within the fabric infrastructure, the MPVN address family enables more sophisticated multicast VPN services that can span across different VRFs and provide tenant-aware multicast forwarding.
+```
+ address-family l2vpn evpn
+  bgp additional-paths receive
+  bgp nexthop trigger delay 0
+  neighbor ...
+ exit-address-family
+ ```
+
+This address family is one of the critical components that enables the overlay control plane functionality. The L2VPN EVPN address family allows BGP to carry MAC address and IP address reachability information across the VXLAN fabric, essentially advertising both Layer 2 and Layer 3 information between fabric nodes. When configured on spine switches (acting as BGP route reflectors) and leaf switches (acting as route reflector clients), this address family enables the distribution of:
+
+- MAC address tables across the fabric
+- ARP/ND information for optimized forwarding
+- Ethernet segment information for multi-homing scenarios
+- Route type 2 (MAC/IP) and route type 3 (Inclusive Multicast Ethernet Tag) advertisements
+
+Notes:
+**bgp additional-paths receive**
+
+The command "bgp additional-paths receive" is a BGP enhancement feature that allows a BGP speaker to receive multiple paths for the same destination prefix from its neighbors, rather than just the single best path that traditional BGP would advertise.
+
+In standard BGP operation, each router selects only one best path for each destination and advertises only that path to its neighbors. However, with the additional-paths feature enabled, a BGP speaker can receive and store multiple paths for the same prefix, providing several key benefits in a BGP EVPN VXLAN campus fabric environment.
+
+In the context of this L2VPN EVPN address family configuration, this feature is particularly valuable because it enables better load balancing and faster convergence. When multiple leaf switches have connectivity to the same endpoint (such as in a multi-homing scenario), the spine switches acting as route reflectors can receive and maintain multiple paths to reach that endpoint. This allows for more efficient traffic distribution across the fabric and provides backup paths that can be quickly activated if the primary path fails.
+
+The "receive" keyword specifically indicates that this router is configured to accept additional paths from its neighbors. This is typically configured on route reflectors (the spine switches in this design) to allow them to maintain path diversity information that can be used for optimal forwarding decisions and rapid failover scenarios. This feature enhances the overall resilience and performance of the VXLAN overlay network by providing multiple forwarding options for the same destination.
+
+#### AF mpvn
+The MPVN address family enables BGP to carry multicast routing information across the VXLAN fabric, allowing for efficient distribution of multicast traffic in overlay networks. This address family is particularly important in VXLAN environments because it provides the control plane mechanisms needed to handle multicast replication and forwarding decisions across the fabric. In the context of this campus fabric design, the MPVN address family works in conjunction with the underlay multicast infrastructure (which uses PIM and MSDP as described earlier in the document) to provide end-to-end multicast services. While the underlay handles the basic multicast replication for BUM (Broadcast, Unknown unicast, and Multicast) traffic within the fabric infrastructure, the MPVN address family enables more sophisticated multicast VPN services that can span across different VRFs and provide tenant-aware multicast forwarding.
 This address family is configured alongside the L2VPN EVPN and IPv4 per-VRF address families as part of the comprehensive BGP control plane that enables both Layer 2 and Layer 3 services, including multicast services, across the VXLAN campus fabric. Together, these address families create a robust overlay control plane that can handle unicast, multicast, and Layer 2 forwarding requirements in a scalable campus network design.
 
-- AF ipv4 per vrf. The IPv4 per VRF address family enables BGP to carry Layer 3 routing information on a per-tenant or per-VRF basis across the VXLAN fabric. This address family is essential for providing Layer 3 VPN services in the overlay network, allowing different virtual networks or tenants to maintain separate routing tables while sharing the same physical infrastructure. Each VRF represents an isolated routing domain with its own forwarding table, enabling network segmentation and multi-tenancy. In the context of this campus fabric, the IPv4 per VRF address family works alongside the L2VPN EVPN and MPVN address families to provide comprehensive overlay services. While L2VPN EVPN handles Layer 2 connectivity and MAC/IP advertisement, and MPVN manages multicast services, the IPv4 per VRF address family specifically manages the distribution of IPv4 unicast routes between different VRFs across the fabric nodes. This configuration allows the campus fabric to support multiple isolated networks or tenants, each with their own IPv4 routing domain, while leveraging the shared VXLAN underlay infrastructure. The spine switches acting as BGP route reflectors can efficiently distribute VRF-specific routing information to the appropriate leaf switches, enabling scalable Layer 3 services across the campus network.
+#### AF ipv4 (per vrf)
+The IPv4 per VRF address family enables BGP to carry Layer 3 routing information on a per-tenant or per-VRF basis across the VXLAN fabric. This address family is essential for providing Layer 3 VPN services in the overlay network, allowing different virtual networks or tenants to maintain separate routing tables while sharing the same physical infrastructure. Each VRF represents an isolated routing domain with its own forwarding table, enabling network segmentation and multi-tenancy. In the context of this campus fabric, the IPv4 per VRF address family works alongside the L2VPN EVPN and MPVN address families to provide comprehensive overlay services. While L2VPN EVPN handles Layer 2 connectivity and MAC/IP advertisement, and MPVN manages multicast services, the IPv4 per VRF address family specifically manages the distribution of IPv4 unicast routes between different VRFs across the fabric nodes. This configuration allows the campus fabric to support multiple isolated networks or tenants, each with their own IPv4 routing domain, while leveraging the shared VXLAN underlay infrastructure. The spine switches acting as BGP route reflectors can efficiently distribute VRF-specific routing information to the appropriate leaf switches, enabling scalable Layer 3 services across the campus network.
 
 ## Template Structure
 The project contains two main categories of templates located in the `BGP EVPN/` folder:
