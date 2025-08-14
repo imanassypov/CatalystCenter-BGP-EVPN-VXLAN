@@ -70,6 +70,10 @@ We are effectively extending segmentation domains from each individual Campus VX
 ![EVPN ASN Relationship](images/cisco_evpn_ASN.png)
 ![EVPN Over IPSEC Topology](images/cisco_evpn_IPSEC.png)
 
+Spine Nodes interface to both IP Core routers in a redundant fashion. 
+For underlay reachability, there is an eBGP peering established in the Global Routing Table (default vrf). For each of the Tenant VRF's that require access to Enterprise Services, we will be leveraging dot1q tagged interfaces per Tenant VRF, with VRF VPNv4 peerings established for each. Refer do diagram below.
+![Spine-to-Core Interface](images/cisco_evpn_core_interface.png)
+
 ### Lab Reference Tables
 
 #### Node Loopback (Underlay) Mapping
