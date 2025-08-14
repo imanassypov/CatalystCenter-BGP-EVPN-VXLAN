@@ -156,8 +156,8 @@ For underlay reachability, there is an eBGP peering established in the Global Ro
 Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
 ![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
 
-##Building Blocks of the solution:
-###Underlay Routing - Unicast
+## Building Blocks of the solution:
+### Underlay Routing - Unicast
 The purpose of the underlay routing (in this case OSPF as an IGP) is to provide Loopback reachability between Leafs, Spines, and Border Leafs within the Fabric. Note the 'X' placeholder, which represents the index of the node on which this configuration block is present (subject to your numbering convention). 'Loopback0' interface is pivotal to the operations of all of the fabric services, as it provides for IGP/BGP router ID, NVE reachability etc.
 Fabric interfaces are also enabled with the same IGP for achieving end to end reachability.
 ```
