@@ -215,6 +215,26 @@ This address family is one of the critical components that enables the overlay c
 - Ethernet segment information for multi-homing scenarios
 - Route type 2 (MAC/IP) and route type 3 (Inclusive Multicast Ethernet Tag) advertisements
 
+**Note**Leafs in the fabric are only configured with 'bgp additional-paths receive' CLI, whereas Spine nodes are configured with both 'send' and 'recieve' per below. Without the "send" capability, the route reflector on Spine Nodes would only advertise its single best path, potentially hiding valuable path diversity from other fabric nodes.
+
+```
+ address-family l2vpn evpn
+  bgp additional-paths select all
+  bgp additional-paths send receive
+  bgp nexthop trigger delay 0
+```
+
+The command "bgp additional-paths send receive" extends the BGP additional-paths functionality beyond just receiving multiple paths to also include the ability to send multiple paths to BGP neighbors. This represents a significant enhancement over the receive-only configuration.
+When configured with only "bgp additional-paths receive," a BGP speaker can accept and store multiple paths for the same destination prefix from its neighbors, but it still follows traditional BGP behavior of advertising only its single best path to each neighbor. This provides benefits for local path diversity and faster convergence, but limits the propagation of path diversity throughout the network.
+
+BGP Additional-Paths Send Receive: With "bgp additional-paths send receive," the BGP speaker can both receive multiple paths from neighbors AND advertise multiple paths to its neighbors. This bidirectional capability is particularly powerful in route reflector scenarios, such as the spine switches in this VXLAN fabric design.
+
+Route Reflector Benefits: In the context of spine switches acting as BGP route reflectors for EVPN, the "send receive" configuration enables the spines to:
+
+- Receive multiple EVPN routes from different leaf switches for the same MAC/IP destinations
+- Reflect multiple paths to all route reflector clients, rather than just the single best path
+- Preserve path diversity throughout the fabric, allowing leaf switches to maintain multiple forwarding options
+- Enable optimal load balancing across multiple equal-cost paths in the overlay network
 
 ##### bgp additional-paths receive
 The command "bgp additional-paths receive" is a BGP enhancement feature that allows a BGP speaker to receive multiple paths for the same destination prefix from its neighbors, rather than just the single best path that traditional BGP would advertise.
@@ -233,6 +253,8 @@ In standard BGP operation, there is typically a built-in delay (often several se
 In the context of this L2VPN EVPN address family configuration within a campus VXLAN fabric, fast convergence is particularly critical. When leaf switches or spine switches experience connectivity issues, or when links fail, the overlay network needs to quickly adapt to maintain service continuity. The immediate triggering of BGP route recalculation ensures that MAC/IP reachability information is updated as quickly as possible across the fabric.
 
 This configuration is especially important in data center and campus environments where sub-second convergence is often required for applications to maintain acceptable performance levels. Combined with the additional-paths feature, this setting helps create a highly responsive and resilient BGP EVPN control plane that can rapidly adapt to network topology changes while maintaining optimal forwarding paths for both Layer 2 and Layer 3 traffic across the VXLAN overlay.
+
+**Reference:** For detailed BGP configuration options and additional-paths feature documentation, see the [Cisco IOS XE BGP Configuration Guide](https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/ip-routing/b-ip-routing/m_irg-additional-paths.html).
 
 #### AF mpvn
 The MPVN address family enables BGP to carry multicast routing information across the VXLAN fabric, allowing for efficient distribution of multicast traffic in overlay networks. This address family is particularly important in VXLAN environments because it provides the control plane mechanisms needed to handle multicast replication and forwarding decisions across the fabric. In the context of this campus fabric design, the MPVN address family works in conjunction with the underlay multicast infrastructure (which uses PIM and MSDP as described earlier in the document) to provide end-to-end multicast services. While the underlay handles the basic multicast replication for BUM (Broadcast, Unknown unicast, and Multicast) traffic within the fabric infrastructure, the MPVN address family enables more sophisticated multicast VPN services that can span across different VRFs and provide tenant-aware multicast forwarding.
