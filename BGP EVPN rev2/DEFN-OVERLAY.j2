@@ -1,0 +1,25 @@
+{% set FABRIC_BGP_ASN = '65001' %}
+{% set FABRIC_UNDERLAY = {'proto':'ospf', 'instance_id':'1', 'area':'0'} %}
+{% set FABRIC_IPSEC_UNDERLAY = {'proto':'ospf', 'instance_id':'100', 'area':'0'} %}
+
+{% set DEFN_OVERLAY = [
+  {
+    'vrf': 'red',
+    'vlans': {
+      '101': {'name':'corp-101', 'ipaddr':'10.1.11.1 255.255.255.0', 'mac':'0000.0901.0101', 'dhcp_helper':'198.18.5.253', 'bum_addr':'239.190.100.101'},
+      '201': {'name':'corp-201', 'ipaddr':'10.2.22.1 255.255.255.0', 'mac':'0000.0901.0201', 'dhcp_helper':'198.18.5.253', 'bum_addr':'239.190.100.201'}
+    }
+  },
+  {
+    'vrf': 'blue',
+    'vlans': {
+      '401': {'name':'iot-blue-401', 'ipaddr': '198.18.10.1 255.255.255.0', 'mac':'0000.0902.0401', 'dhcp_helper':'198.18.7.253', 'bum_addr':'239.190.100.41'}
+    }
+  },
+  {
+    'vrf': 'green',
+    'vlans': {
+      '501': {'name':'iot-green-501', 'ipaddr': '198.18.11.1 255.255.255.0', 'mac':'0000.0903.0501', 'dhcp_helper':'198.18.8.253', 'bum_addr':'239.190.100.51'}
+    }
+  }
+] %}

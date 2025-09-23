@@ -1,0 +1,39 @@
+{#
+{% include "EVPN/DEFN-VRF" %}
+{% include "EVPN/FUNC-OBJECT-MACROS-KB-IM-REV" %}
+{% include "EVPN/DEFN-ROLES" %}
+{% include "EVPN/DEFN-LOOPBACKS" %}
+{% include "EVPN/DEFN-OVERLAY" %}
+{% include "EVPN/DEFN-L3OUT" %}
+{% include "EVPN/DEFN-MCAST" %}
+#}
+
+{% macro multicastRoutingBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NODE_ROLES, DEFN_LOOP_NAME, DEFN_LOOP_UNDERLAY, FABRIC_RP_ADDR, FABRIC_UNDERLAY, FABRIC_BGP_ASN, FABRIC_RP_SCOPES, ENTERPRISE_RP_SCOPES, ENTERPRISE_RP_ADDR, DEFN_L3OUT ) %}
+
+{# Resolve the VRF objects upfront #}
+{% set vrf_objs = [] %}
+{{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+
+ip multicast-routing
+!
+{% for vrf in vrf_objs %}
+ip multicast-routing vrf {{vrf.name}}
+{% endfor %}
+!
+ip pim spt-threshold 0
+!
+{# CONFIGURE ANYCAST RP INTERFACE ON SPINES ONLY #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
+interface {{DEFN_LOOP_NAME['ANYCAST']}}
+ description AnycastRP Fabric Loopback
+ ip address {{FABRIC_RP_ADDR}} 255.255.255.255
+ ip pim sparse-mode
+ ip {{FABRIC_UNDERLAY.proto}} {{FABRIC_UNDERLAY.instance_id}} area {{FABRIC_UNDERLAY.area}}
+!
+ ip msdp cache-sa-state
+{% for spine in DEFN_NODE_ROLES['SPINE'] %}
+{% if spine != DEVICE_HOSTNAME %}
+ip msdp peer {{DEFN_LOOP_UNDERLAY[spine]}} connect-source {{DEFN_LOOP_NAME['UNDERLAY']}} remote-as {{FABRIC_BGP_ASN}}
+{% endif %}
+{% endfor %}
+{% endif %}

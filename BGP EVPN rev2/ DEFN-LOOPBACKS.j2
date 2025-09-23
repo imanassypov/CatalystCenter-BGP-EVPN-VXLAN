@@ -1,0 +1,44 @@
+{% set DEFN_LOOP_UNDERLAY =
+    {
+      'spine01.dcloud.cisco.com':   '172.16.255.1',
+      'spine02.dcloud.cisco.com':   '172.16.255.2',
+      'leaf01.dcloud.cisco.com':    '172.16.255.3',
+      'leaf02.dcloud.cisco.com':    '172.16.255.4',
+      'leaf03.dcloud.cisco.com':    '172.16.255.5',
+      'border01.dcloud.cisco.com':  '172.16.255.6',
+      'border02.dcloud.cisco.com':  '172.16.255.7'
+    }
+%}
+
+{% set DEFN_LOOP_IPSEC =
+    {
+      'border01.dcloud.cisco.com':  '172.16.255.60',
+      'border02.dcloud.cisco.com':  '172.16.255.70',
+      'dmz01.dcloud.cisco.com':     '172.16.255.201'
+    }
+%}
+
+{% set DEFN_LOOP_MCLUSTER =
+    {
+      'border01.dcloud.cisco.com':  '172.16.255.66',
+      'border02.dcloud.cisco.com':  '172.16.255.70',
+      'dmz01.dcloud.cisco.com':     '172.16.255.210'
+    }
+%}
+
+{% set DEFN_LOOP_OVERLAY =
+    {
+      'red':                                    '10.1.91.',
+      'blue':                                   '10.1.92.',
+      'green':                                  '10.1.93.'
+    }
+%}
+
+{% set DEFN_LOOP_NAME =
+    {
+        'UNDERLAY': 'Loopback0',
+        'ANYCAST':  'Loopback2',
+        'IPSEC':    'Loopback1',
+        'MCLUSTER': 'Loopback2'
+    }
+%}
