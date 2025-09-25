@@ -1,21 +1,21 @@
-{% include "BGP EVPN rev2/DEFN-VRF" %}
-{% include "BGP EVPN rev2/DEFN-ROLES" %}
-{% include "BGP EVPN rev2/DEFN-LOOPBACKS" %}
-{% include "BGP EVPN rev2/DEFN-OVERLAY" %}
-{% include "BGP EVPN rev2/DEFN-IPSEC" %}
-{% include "BGP EVPN rev2/DEFN-VNIOFFSETS" %}
-{% include "BGP EVPN rev2/DEFN-L3OUT" %}
-{% include "BGP EVPN rev2/DEFN-MCAST" %}
-{% include "BGP EVPN rev2/DEFN-NAC-IOT" %}
-{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS" %}
-{% include "BGP EVPN rev2/1. FABRIC-VRF" %}
-{% include "BGP EVPN rev2/2. FABRIC-LOOPBACKS" %}
-{% include "BGP EVPN rev2/2.5 FABRIC-IPSEC" %}
-{% include "BGP EVPN rev2/3. FABRIC-NVE" %}
-{% include "BGP EVPN rev2/4. FABRIC-MCAST" %}
-{% include "BGP EVPN rev2/5. FABRIC-EVPN" %}
-{% include "BGP EVPN rev2/6. FABRIC-OVERLAY" %}
-{% include "BGP EVPN rev2/7. FABRIC-NAC-IOT" %}
+{% include "BGP EVPN rev2/DEFN-VRF.j2" %}
+{% include "BGP EVPN rev2/DEFN-ROLES.j2" %}
+{% include "BGP EVPN rev2/DEFN-LOOPBACKS.j2" %}
+{% include "BGP EVPN rev2/DEFN-OVERLAY.j2" %}
+{% include "BGP EVPN rev2/DEFN-IPSEC.j2" %}
+{% include "BGP EVPN rev2/DEFN-VNIOFFSETS.j2" %}
+{% include "BGP EVPN rev2/DEFN-L3OUT.j2" %}
+{% include "BGP EVPN rev2/DEFN-MCAST.j2" %}
+{% include "BGP EVPN rev2/DEFN-NAC-IOT.j2" %}
+{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS.j2" %}
+{% include "BGP EVPN rev2/1. FABRIC-VRF.j2" %}
+{% include "BGP EVPN rev2/2. FABRIC-LOOPBACKS.j2" %}
+{% include "BGP EVPN rev2/2.5 FABRIC-IPSEC.j2" %}
+{% include "BGP EVPN rev2/3. FABRIC-NVE.j2" %}
+{% include "BGP EVPN rev2/4. FABRIC-MCAST.j2" %}
+{% include "BGP EVPN rev2/5. FABRIC-EVPN.j2" %}
+{% include "BGP EVPN rev2/6. FABRIC-OVERLAY.j2" %}
+{% include "BGP EVPN rev2/7. FABRIC-NAC-IOT.j2" %}
 
 {# DEREFERENCE THE DEVICE HOSTNAME ONCE AND PASS TO EACH BUILD FUNCTION #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
