@@ -1,9 +1,9 @@
 {#
-{% include "BGP EVPN rev2/DEFN-VRF" %}
-{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS-KB-IM-REV" %}
-{% include "BGP EVPN rev2/DEFN-ROLES" %}
-{% include "BGP EVPN rev2/DEFN-LOOPBACKS" %}
-{% include "BGP EVPN rev2/DEFN-OVERLAY" %}
+{% include "BGP EVPN rev2/DEFN-VRF.j2" %}
+{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS.j2" %}
+{% include "BGP EVPN rev2/DEFN-ROLES.j2" %}
+{% include "BGP EVPN rev2/DEFN-LOOPBACKS.j2" %}
+{% include "BGP EVPN rev2/DEFN-OVERLAY.j2" %}
 #}
 {% macro interfaceLoopbackBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_LOOP_NAME, DEFN_LOOP_UNDERLAY, DEFN_NODE_ROLES, DEFN_LOOP_IPSEC, FABRIC_UNDERLAY, DEFN_LOOP_MCLUSTER) %}
 {# Resolve the VRF objects upfront #}
