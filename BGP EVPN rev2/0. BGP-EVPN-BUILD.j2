@@ -1,21 +1,21 @@
-{% include "EVPN/DEFN-VRF" %}
-{% include "EVPN/DEFN-ROLES" %}
-{% include "EVPN/DEFN-LOOPBACKS" %}
-{% include "EVPN/DEFN-OVERLAY" %}
-{% include "EVPN/DEFN-IPSEC" %}
-{% include "EVPN/DEFN-VNIOFFSETS" %}
-{% include "EVPN/DEFN-L3OUT" %}
-{% include "EVPN/DEFN-MCAST" %}
-{% include "EVPN/DEFN-NAC-IOT" %}
-{% include "EVPN/FUNC-OBJECT-MACROS" %}
-{% include "EVPN/1. FABRIC-VRF" %}
-{% include "EVPN/2. FABRIC-LOOPBACKS" %}
-{% include "EVPN/2.5 FABRIC-IPSEC" %}
-{% include "EVPN/3. FABRIC-NVE" %}
-{% include "EVPN/4. FABRIC-MCAST" %}
-{% include "EVPN/5. FABRIC-EVPN" %}
-{% include "EVPN/6. FABRIC-OVERLAY" %}
-{% include "EVPN/7. FABRIC-NAC-IOT" %}
+{% include "BGP EVPN rev2/DEFN-VRF" %}
+{% include "BGP EVPN rev2/DEFN-ROLES" %}
+{% include "BGP EVPN rev2/DEFN-LOOPBACKS" %}
+{% include "BGP EVPN rev2/DEFN-OVERLAY" %}
+{% include "BGP EVPN rev2/DEFN-IPSEC" %}
+{% include "BGP EVPN rev2/DEFN-VNIOFFSETS" %}
+{% include "BGP EVPN rev2/DEFN-L3OUT" %}
+{% include "BGP EVPN rev2/DEFN-MCAST" %}
+{% include "BGP EVPN rev2/DEFN-NAC-IOT" %}
+{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS" %}
+{% include "BGP EVPN rev2/1. FABRIC-VRF" %}
+{% include "BGP EVPN rev2/2. FABRIC-LOOPBACKS" %}
+{% include "BGP EVPN rev2/2.5 FABRIC-IPSEC" %}
+{% include "BGP EVPN rev2/3. FABRIC-NVE" %}
+{% include "BGP EVPN rev2/4. FABRIC-MCAST" %}
+{% include "BGP EVPN rev2/5. FABRIC-EVPN" %}
+{% include "BGP EVPN rev2/6. FABRIC-OVERLAY" %}
+{% include "BGP EVPN rev2/7. FABRIC-NAC-IOT" %}
 
 {# DEREFERENCE THE DEVICE HOSTNAME ONCE AND PASS TO EACH BUILD FUNCTION #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
