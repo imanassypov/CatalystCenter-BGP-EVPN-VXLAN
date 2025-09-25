@@ -1,9 +1,9 @@
 {#
-{% include "BGP EVPN rev2/DEFN-VRF" %}
-{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS-KB-IM-REV" %}
-{% include "BGP EVPN rev2/DEFN-ROLES" %}
-{% include "BGP EVPN rev2/DEFN-LOOPBACKS" %}
-{% include "BGP EVPN rev2/DEFN-VNIOFFSETS" %}
+{% include "BGP EVPN rev2/DEFN-VRF.j2" %}
+{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS-KB-IM-REV.j2" %}
+{% include "BGP EVPN rev2/DEFN-ROLES.j2" %}
+{% include "BGP EVPN rev2/DEFN-LOOPBACKS.j2" %}
+{% include "BGP EVPN rev2/DEFN-VNIOFFSETS.j2" %}
 #}
 
 {% macro nveVlanBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, L3VNIOFFSET, DEFN_LOOP_NAME) %}
