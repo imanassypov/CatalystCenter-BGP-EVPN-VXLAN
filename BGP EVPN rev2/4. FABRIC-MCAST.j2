@@ -1,11 +1,11 @@
 {#
-{% include "EVPN/DEFN-VRF" %}
-{% include "EVPN/FUNC-OBJECT-MACROS-KB-IM-REV" %}
-{% include "EVPN/DEFN-ROLES" %}
-{% include "EVPN/DEFN-LOOPBACKS" %}
-{% include "EVPN/DEFN-OVERLAY" %}
-{% include "EVPN/DEFN-L3OUT" %}
-{% include "EVPN/DEFN-MCAST" %}
+{% include "BGP EVPN rev2/DEFN-VRF" %}
+{% include "BGP EVPN rev2/FUNC-OBJECT-MACROS-KB-IM-REV" %}
+{% include "BGP EVPN rev2/DEFN-ROLES" %}
+{% include "BGP EVPN rev2/DEFN-LOOPBACKS" %}
+{% include "BGP EVPN rev2/DEFN-OVERLAY" %}
+{% include "BGP EVPN rev2/DEFN-L3OUT" %}
+{% include "BGP EVPN rev2/DEFN-MCAST" %}
 #}
 
 {% macro multicastRoutingBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NODE_ROLES, DEFN_LOOP_NAME, DEFN_LOOP_UNDERLAY, FABRIC_RP_ADDR, FABRIC_UNDERLAY, FABRIC_BGP_ASN, FABRIC_RP_SCOPES, ENTERPRISE_RP_SCOPES, ENTERPRISE_RP_ADDR, DEFN_L3OUT ) %}
