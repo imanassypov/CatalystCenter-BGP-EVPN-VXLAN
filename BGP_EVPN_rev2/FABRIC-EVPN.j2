@@ -1,12 +1,12 @@
 {#
-{% include "EVPN/DEFN-VRF" %}
-{% include "EVPN/FUNC-OBJECT-MACROS-KB-IM-REV" %}
-{% include "EVPN/DEFN-ROLES" %}
-{% include "EVPN/DEFN-LOOPBACKS" %}
-{% include "EVPN/DEFN-VNIOFFSETS" %}
-{% include "EVPN/DEFN-L3OUT" %}
-{% include "EVPN/DEFN-OVERLAY" %}
-{% include "EVPN/DEFN-IPSEC" %}
+{% include "EVPN/DEFN-VRF.j2" %}
+{% include "EVPN/FUNC-OBJECT-MACROS.j2" %}
+{% include "EVPN/DEFN-ROLES.j2" %}
+{% include "EVPN/DEFN-LOOPBACKS.j2" %}
+{% include "EVPN/DEFN-VNIOFFSETS.j2" %}
+{% include "EVPN/DEFN-L3OUT.j2" %}
+{% include "EVPN/DEFN-OVERLAY.j2" %}
+{% include "EVPN/DEFN-IPSEC.j2" %}
 #}
 
 {% macro evpnBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NODE_ROLES, DEFN_LOOP_UNDERLAY, DEFN_L3OUT, FABRIC_BGP_ASN, DEFN_LOOP_NAME, DEFN_IPSEC, DEFN_LOOP_MCLUSTER, DEFN_L3OUT_AGGREGATES ) %}
