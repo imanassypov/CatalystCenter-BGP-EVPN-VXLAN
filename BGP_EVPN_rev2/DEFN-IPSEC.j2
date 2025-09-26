@@ -1,0 +1,34 @@
+{% set DEFN_IPSEC =
+  {
+    'dmz01.dcloud.cisco.com': [
+    {
+      'tun_ip'      :   '10.100.100.1 255.255.255.252',
+      'peer_ip'     :   '10.100.100.2',
+      'tun_dst'     :   '172.16.255.60',
+      'tun_mode'    :   'gre ip',
+      'peer_bgp_asn':   '65001'
+    },
+    {
+      'tun_ip'      :   '10.100.101.1 255.255.255.252',
+      'peer_ip'     :   '10.100.101.2',
+      'tun_dst'     :   '172.16.255.70',
+      'tun_mode'    :   'gre ip',
+      'peer_bgp_asn':   '65001'
+    }],
+    'border01.dcloud.cisco.com': [
+    {
+      'tun_ip'      :   '10.100.100.2 255.255.255.252',
+      'peer_ip'     :   '10.100.100.1',
+      'tun_dst'     :   '172.16.255.201',
+      'tun_mode'    :   'gre ip',
+      'peer_bgp_asn':   '65003'
+    }],
+    'border02.dcloud.cisco.com': [
+    {
+      'tun_ip'      :   '10.100.101.2 255.255.255.252',
+      'peer_ip'     :   '10.100.101.1',
+      'tun_dst'     :   '172.16.255.201',
+      'tun_mode'    :   'gre ip',
+      'peer_bgp_asn':   '65003'
+    }]
+} %}

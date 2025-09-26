@@ -1,0 +1,28 @@
+{# Expect these to define DEFN_VRF, vrf_definition(), DEFN_LOOP_UNDERLAY, etc. #}
+{#{% include "EVPN/DEFN-VRF" %}#}
+{#{% include "EVPN/FUNC-OBJECT-MACROS-KB-IM-REV" %}#}
+{#{% include "EVPN/DEFN-LOOPBACKS" %}#}
+
+{# Build VRF CLI for the current device #}
+{% macro vrfDefinitionBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_LOOP_UNDERLAY, FABRIC_BGP_ASN) %}
+{# Resolve the VRF objects upfront #}
+{% set vrf_objs = [] %}
+{{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+{% for vrf in vrf_objs %}
+vrf definition {{ vrf.name }}
+description VRF {{ vrf.name }} definition
+rd {{ DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] }}:{{ vrf.id }}
+!
+address-family ipv4
+route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }}
+route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }}
+route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching
+route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching
+exit-address-family
+!
+{% endfor %}
+{% endmacro %}
+
+{# Call for current device #}
+{#{% set HOST = __device.hostname | default('', true) %}#}
+{#{{ vrfDefinitionBuild(DEFN_VRF, DEFN_VRF_TO_NODE, HOST, DEFN_LOOP_UNDERLAY, FABRIC_BGP_ASN) }}#}

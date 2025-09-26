@@ -1,0 +1,46 @@
+{#
+{% include "EVPN/DEFN-VRF" %}
+{% include "EVPN/FUNC-OBJECT-MACROS-KB-IM-REV" %}
+{% include "EVPN/DEFN-ROLES" %}
+{% include "EVPN/DEFN-LOOPBACKS" %}
+{% include "EVPN/DEFN-OVERLAY" %}
+#}
+{% macro interfaceLoopbackBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_LOOP_NAME, DEFN_LOOP_UNDERLAY, DEFN_NODE_ROLES, DEFN_LOOP_IPSEC, FABRIC_UNDERLAY, DEFN_LOOP_MCLUSTER) %}
+{# Resolve the VRF objects upfront #}
+{% set vrf_objs = [] %}
+{{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+
+! *** FABRIC-LOOPBACKS FOR {{DEVICE_HOSTNAME}}
+{# UNDERLAY LOOPBACKS #}
+interface {{DEFN_LOOP_NAME['UNDERLAY']}}
+ description UNDERLAY-NVE-INTERFACE
+ ip address {{DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME]}} 255.255.255.255
+ ip pim sparse-mode
+!
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE']  %}
+{# SKIP SPINE #}
+{% elif DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+interface {{DEFN_LOOP_NAME['IPSEC']}}
+ description IPSEC TUNNEL SOURCE INTERFACE
+ ip address {{DEFN_LOOP_IPSEC[DEVICE_HOSTNAME]}} 255.255.255.255
+ ip ospf {{FABRIC_UNDERLAY['instance_id']}} area {{FABRIC_UNDERLAY['area']}}
+!
+interface {{DEFN_LOOP_NAME['MCLUSTER']}}
+ description NVE MULTICLUSTER INTERFACE
+ ip address {{DEFN_LOOP_MCLUSTER[DEVICE_HOSTNAME]}} 255.255.255.255
+!
+{% else %}
+{% for input_vrf in vrf_objs %}
+{% set ip = DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] %}
+{% set split_ip = ip.split('\\.') %}
+{% set last_octet = split_ip[3] %}
+interface Loopback{{input_vrf.id}}
+ description OVERLAY-VRF-{{input_vrf.name}}
+ vrf forwarding {{input_vrf.name}}
+ ip address {{DEFN_LOOP_OVERLAY[input_vrf.name]}}{{last_octet}} 255.255.255.255
+ ip pim sparse-mode
+!
+{% endfor %}
+{% endif %}
+
+{% endmacro %}
