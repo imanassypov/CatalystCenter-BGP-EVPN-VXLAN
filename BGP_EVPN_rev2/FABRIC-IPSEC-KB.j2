@@ -1,0 +1,27 @@
+{#
+{% include "EVPN/DEFN-ROLES" %}
+{% include "EVPN/DEFN-LOOPBACKS" %}
+{% include "EVPN/DEFN-OVERLAY" %}
+{% include "EVPN/DEFN-IPSEC" %}
+#}
+{% macro interfaceTunnelBuild(DEFN_NODE_ROLES, FABRIC_IPSEC_UNDERLAY, DEFN_LOOP_IPSEC, DEFN_LOOP_NAME) %}
+
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER']  %}
+router ospf {{FABRIC_IPSEC_UNDERLAY['instance_id']}}
+ router-id {{DEFN_LOOP_IPSEC[DEVICE_HOSTNAME]}}
+!
+{% set tun_index = (DEFN_LOOP_IPSEC[DEVICE_HOSTNAME]).split('\\.')[3] | int %}
+{% set tun_list = DEFN_IPSEC[DEVICE_HOSTNAME] %}
+{% for tun in tun_list %}
+interface Tunnel{{tun_index + loop.index0}}
+ description TUNNEL TO DMZ HUB
+ ip address {{tun['tun_ip']}}
+ ip ospf {{FABRIC_IPSEC_UNDERLAY['instance_id']}} area {{FABRIC_IPSEC_UNDERLAY['area']}}
+ carrier-delay msec 0
+ tunnel source {{DEFN_LOOP_NAME['IPSEC']}}
+ tunnel mode {{tun['tun_mode']}}
+ tunnel destination {{tun['tun_dst']}}
+{% endfor %}
+{% endif %}
+    
+{% endmacro %}
