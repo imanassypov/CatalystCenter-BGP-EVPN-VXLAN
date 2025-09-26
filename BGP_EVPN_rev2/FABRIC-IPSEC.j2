@@ -1,8 +1,8 @@
 {#
-{% include "EVPN/DEFN-ROLES" %}
-{% include "EVPN/DEFN-LOOPBACKS" %}
-{% include "EVPN/DEFN-OVERLAY" %}
-{% include "EVPN/DEFN-IPSEC" %}
+{% include "EVPN/DEFN-ROLES.j2" %}
+{% include "EVPN/DEFN-LOOPBACKS.j2" %}
+{% include "EVPN/DEFN-OVERLAY.j2" %}
+{% include "EVPN/DEFN-IPSEC.j2" %}
 #}
 {% macro interfaceTunnelBuild(DEFN_NODE_ROLES, FABRIC_IPSEC_UNDERLAY, DEFN_LOOP_IPSEC, DEFN_LOOP_NAME) %}
 
