@@ -1,8 +1,8 @@
 {#BOOTSTRAP FOR SIMULATION#}
 {# Expect these to define DEFN_VRF, vrf_definition(), DEFN_LOOP_UNDERLAY, etc. #}
-{# {% include "BGP_EVPN_rev2/DEFN-VRF.j2" %} #}
-{# {% include "BGP_EVPN_rev2/FUNC-OBJECT-MACROS.j2" %} #}
-{# {% include "BGP_EVPN_rev2/DEFN-LOOPBACKS.j2" %} #}
+{% include "BGP_EVPN_rev2/DEFN-VRF.j2" %} {# #}
+{% include "BGP_EVPN_rev2/FUNC-OBJECT-MACROS.j2" %} {# #}
+{% include "BGP_EVPN_rev2/DEFN-LOOPBACKS.j2" %} {# #}
 
 {# Build VRF CLI for the current device #}
 {% macro vrfDefinitionBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_LOOP_UNDERLAY, FABRIC_BGP_ASN) %}
