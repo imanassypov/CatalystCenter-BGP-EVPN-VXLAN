@@ -6,7 +6,7 @@
 {% include "BGP_EVPN_rev2/DEFN-VNIOFFSETS.j2" %} {# #}
 {% include "BGP_EVPN_rev2/DEFN-L3OUT.j2" %} {# #}
 {% include "BGP_EVPN_rev2/DEFN-OVERLAY.j2" %} {# #}
-{{% include "BGP_EVPN_rev2/DEFN-IPSEC.j2" %} {# #}
+{% include "BGP_EVPN_rev2/DEFN-IPSEC.j2" %} {# #}
 
 {% macro evpnBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NODE_ROLES, DEFN_LOOP_UNDERLAY, DEFN_L3OUT, FABRIC_BGP_ASN, DEFN_LOOP_NAME, DEFN_IPSEC, DEFN_LOOP_MCLUSTER, DEFN_L3OUT_AGGREGATES ) %}
 
