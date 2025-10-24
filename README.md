@@ -560,4 +560,3 @@ This template collection supports modern campus network requirements including:
 - Scalable growth through standardized overlay deployment patterns
 
 For optimal results, ensure all fabric devices are running compatible IOS-XE versions with full BGP EVPN and VXLAN feature support.
-Keith was here!
