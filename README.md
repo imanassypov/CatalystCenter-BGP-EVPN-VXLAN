@@ -202,6 +202,71 @@ For underlay reachability, there is an eBGP peering established in the Global Ro
 Attached is a visual representation describing components that go into a functioning BGP EVPN VXLAN Fabric
 ![Cisco EVPN CLI Hieararchy](images/cisco_evpn_CLI_hierarchy.png)
 
+#### CLI Hierarchy Naming Convention and Color Scheme
+
+The diagram above uses a consistent color-coded naming convention to identify configuration components across the fabric. Understanding this scheme is critical when navigating templates and troubleshooting configurations:
+
+| Color | Component Category | Naming Pattern | Description |
+|-------|-------------------|----------------|-------------|
+| **🟦 BLUE** | **VRF Definitions** | `vrf definition <name>` | Tenant isolation containers (red, blue, green). Each VRF defines RD/RT values and address-family configurations for routing isolation. |
+| **🟩 GREEN** | **Loopback Interfaces** | `interface Loopback<N>` | Underlay (Loopback0) and overlay (Loopback901-903) addressing. Loopback0 serves as BGP router-ID, NVE source, and OSPF router-ID. |
+| **🟨 YELLOW** | **VLAN/SVI Definitions** | `vlan <id>` / `interface Vlan<id>` | L2VNI VLANs (101, 201, 401, 501) for tenant segments and L3VNI VLANs (901-903) for inter-subnet routing. |
+| **🟧 ORANGE** | **NVE Interface** | `interface nve1` | VXLAN Network Virtualization Endpoint. Maps VNIs to VLANs/VRFs and defines multicast groups for BUM replication. |
+| **🟥 RED** | **BGP EVPN Peerings** | `router bgp <ASN>` | Control plane configuration including neighbor relationships, address-families (l2vpn evpn, ipv4 mvpn), and route policies. |
+| **🟪 PURPLE** | **L2VPN EVPN Instances** | `l2vpn evpn instance <id>` | Per-VLAN EVPN service instances that bind VLANs to EVPN route-targets for MAC/IP advertisement. |
+
+#### Configuration Dependency Chain
+
+The CLI components have strict dependencies that must be provisioned in order:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  1. VRF DEFINITION (Blue)                                               │
+│     └── Defines tenant isolation, RD, RT import/export                  │
+│         └── Required before: Loopbacks, SVIs, BGP VRF AF                │
+├─────────────────────────────────────────────────────────────────────────┤
+│  2. LOOPBACK INTERFACES (Green)                                         │
+│     └── Loopback0: Underlay (OSPF, BGP router-id, NVE source)          │
+│     └── Loopback901-903: Overlay per-VRF service addresses             │
+│         └── Required before: NVE, BGP neighbors                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│  3. VLAN + L3VNI SVI (Yellow)                                           │
+│     └── L3VNI VLANs (901-903): Transit VLANs for inter-subnet routing  │
+│     └── L2VNI VLANs (101, 201, 401, 501): Tenant access segments       │
+│         └── Required before: NVE VNI mappings, EVPN instances          │
+├─────────────────────────────────────────────────────────────────────────┤
+│  4. NVE INTERFACE (Orange)                                              │
+│     └── source-interface Loopback0                                      │
+│     └── member vni <L2VNI> mcast-group <group>                         │
+│     └── member vni <L3VNI> vrf <name>                                  │
+│         └── Required before: L2VPN instances, BGP EVPN activation      │
+├─────────────────────────────────────────────────────────────────────────┤
+│  5. BGP EVPN CONTROL PLANE (Red)                                        │
+│     └── iBGP peerings to Spine RRs via Loopback0                       │
+│     └── address-family l2vpn evpn: MAC/IP route distribution           │
+│     └── address-family ipv4 vrf: Per-tenant routing                    │
+│         └── Required before: Overlay traffic forwarding                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│  6. L2VPN EVPN INSTANCES (Purple)                                       │
+│     └── Binds VLAN to EVPN instance with encapsulation vxlan           │
+│     └── Defines replication-type (static for multicast)                │
+│         └── Final step: Enables L2 extension across fabric             │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Template-to-Color Mapping
+
+Each FABRIC-*.j2 template provisions specific color-coded components:
+
+| Template | Primary Color | Components Provisioned |
+|----------|--------------|------------------------|
+| `FABRIC-VRF.j2` | 🟦 **BLUE** | VRF definitions with RD/RT |
+| `FABRIC-LOOPBACKS.j2` | 🟩 **GREEN** | Loopback0 and overlay loopbacks |
+| `FABRIC-NVE.j2` | 🟨 **YELLOW** + 🟧 **ORANGE** | L3VNI VLANs, SVIs, NVE interface |
+| `FABRIC-MCAST.j2` | — | Multicast RP and MSDP (underlay) |
+| `FABRIC-EVPN.j2` | 🟥 **RED** | BGP router, neighbors, address-families |
+| `FABRIC-OVERLAY.j2` | 🟨 **YELLOW** + 🟪 **PURPLE** | L2VNI VLANs, tenant SVIs, L2VPN instances |
+
 ## Building Blocks of the solution:
 ### Underlay Routing - Unicast
 The purpose of the underlay routing (in this case OSPF as an IGP) is to provide Loopback reachability between Leafs, Spines, and Border Leafs within the Fabric. Note the 'X' placeholder, which represents the index of the node on which this configuration block is present (subject to your numbering convention). 'Loopback0' interface is pivotal to the operations of all of the fabric services, as it provides for IGP/BGP router ID, NVE reachability etc.
