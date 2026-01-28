@@ -214,6 +214,27 @@ The diagram above uses a consistent color-coded naming convention to identify co
 | **🟧 ORANGE** | **NVE Interface** | `interface nve1` | VXLAN Network Virtualization Endpoint. Maps VNIs to VLANs/VRFs and defines multicast groups for BUM replication. |
 | **🟥 RED** | **BGP EVPN Peerings** | `router bgp <ASN>` | Control plane configuration including neighbor relationships, address-families (l2vpn evpn, ipv4 mvpn), and route policies. |
 | **🟪 PURPLE** | **L2VPN EVPN Instances** | `l2vpn evpn instance <id>` | Per-VLAN EVPN service instances that bind VLANs to EVPN route-targets for MAC/IP advertisement. |
+| **⬜ WHITE** | **Global L2VPN EVPN** | `l2vpn evpn` | Global EVPN activation block that enables Layer 2 overlay services fabric-wide. |
+
+#### Global L2VPN EVPN Configuration (Required for Layer 2 Overlay)
+
+The global `l2vpn evpn` configuration block is **required** to activate Layer 2 overlay services on leaf switches. This is separate from the per-instance `l2vpn evpn instance <id>` configurations and must be present for EVPN to function:
+
+```
+l2vpn evpn
+ replication-type static
+ router-id Loopback0
+ default-gateway advertise
+```
+
+| Command | Purpose |
+|---------|---------|
+| `l2vpn evpn` | Enters global L2VPN EVPN configuration mode and activates the EVPN subsystem |
+| `replication-type static` | Sets default BUM replication to multicast (static) for all EVPN instances; alternative is `ingress` for headend replication |
+| `router-id Loopback0` | Specifies the EVPN router-ID source interface for EVPN route origination |
+| `default-gateway advertise` | Enables advertisement of the anycast gateway MAC address in EVPN Type-2 routes, allowing distributed default gateway functionality across all leaf switches |
+
+> **Note:** This global configuration applies to **leaf switches only**. Spine switches operating as BGP Route Reflectors do not require this block as they do not participate in L2 forwarding.
 
 #### Configuration Dependency Chain
 
