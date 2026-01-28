@@ -133,6 +133,50 @@ For underlay reachability, there is an eBGP peering established in the Global Ro
 |-----------------|------------------|-----------------------|
 | Fabric Scope    | 172.16.255.254   | 239.190.0.0/16        |
 | Enterprise Scope| 172.17.254.100   | 238.190.0.0/16        |
+
+**Detailed Multicast Scope Explanation:**
+
+**FABRIC-RP-SCOPE (239.190.0.0/16)**
+- **Purpose**: VXLAN BUM (Broadcast, Unknown Unicast, Multicast) traffic replication within the campus fabric
+- **RP Location**: Anycast RP on Spine nodes (Loopback250: 172.16.255.254)
+- **Scope Boundary**: Local to each campus fabric; does not traverse Core or IPSEC tunnels
+- **Usage**: Each L2VNI maps to a unique group in this range (e.g., VLAN 101 → 239.190.100.101)
+- **Configuration**:
+  ```
+  ip access-list standard FABRIC-RP-SCOPE
+   10 permit 239.190.0.0 0.0.255.255
+  ip pim rp-address 172.16.255.254 FABRIC-RP-SCOPE
+  ```
+
+**ENTERPRISE-RP-SCOPE (238.190.0.0/16)**
+- **Purpose**: Tenant Routable Multicast (TRM) for application-level multicast crossing fabric boundaries
+- **RP Location**: Centralized Anycast-RP in Enterprise Core (172.17.254.100)
+- **Scope Boundary**: Enterprise-wide; routable through IP Core to all campus locations
+- **Usage**: Corporate tenant (`red` VRF) multicast applications; not used by IOT tenants
+- **VRF Integration**: Each VRF has MDT (Multicast Distribution Tree) auto-discovery via BGP:
+  ```
+  vrf definition red
+   address-family ipv4
+    mdt auto-discovery vxlan
+    mdt default vxlan 239.190.0.1
+    mdt data vxlan 239.190.1.0 0.0.0.255
+    mdt overlay use-bgp
+  ```
+- **Configuration**:
+  ```
+  ip access-list standard ENTERPRISE-RP-SCOPE
+   10 permit 238.190.0.0 0.0.255.255
+  ip pim rp-address 172.17.254.100 ENTERPRISE-RP-SCOPE
+  ```
+
+**Anycast RP on Spines (MSDP Peering)**
+- Both Spine nodes share the same RP address (172.16.255.254) on Loopback250
+- MSDP peering between Spines synchronizes multicast source information:
+  ```
+  ip msdp peer 172.16.255.2 connect-source Loopback0 remote-as 65001
+  ip msdp originator-id Loopback0
+  ```
+
 **Note:** Fabric Scope Group Range is limited to each Campus Fabric only, and thus can be reused at multiple locations for the same purpose. Tenant Routable Multicast is configured to leverage centralized Anycast-RP services that are common for all the Fabric Locations.
 ---
 
