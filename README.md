@@ -267,6 +267,63 @@ Each FABRIC-*.j2 template provisions specific color-coded components:
 | `FABRIC-EVPN.j2` | 🟥 **RED** | BGP router, neighbors, address-families |
 | `FABRIC-OVERLAY.j2` | 🟨 **YELLOW** + 🟪 **PURPLE** | L2VNI VLANs, tenant SVIs, L2VPN instances |
 
+#### VNI, VLAN, and Instance Numbering Convention
+
+A consistent numbering scheme is applied across all tenants (red, blue, green) to ensure predictable configuration and simplified troubleshooting:
+
+| Component | Pattern | Prefix Meaning | Variable | Example (red VRF, VLAN 101) |
+|-----------|---------|----------------|----------|----------------------------|
+| **L3VNI (Transit VNI)** | `50xxx` | `50` = Transit/L3VNI | `xxx` = VRF ID | `50901` (VRF red, ID 901) |
+| **L2VNI (Segment VNI)** | `10yyy` | `10` = L2VNI Segment | `yyy` = Segment ID | `10101` (VLAN 101) |
+| **L2VPN EVPN Instance** | `yyy` | — | Matches Segment ID | `101` |
+| **VLAN Configuration** | `yyy` | — | Matches Segment ID | `vlan 101` |
+| **L3VNI SVI (Transit)** | `Vlanxxx` | — | `xxx` = VRF ID | `interface Vlan901` |
+| **L2VNI SVI (Anycast GW)** | `Vlanyyy` | — | `yyy` = Segment ID | `interface Vlan101` |
+
+**Numbering Examples by Tenant:**
+
+| Tenant | VRF ID (xxx) | L3VNI | L3VNI SVI | Segments (yyy) | L2VNI | L2VPN Instance | L2 SVI |
+|--------|-------------|-------|-----------|----------------|-------|----------------|--------|
+| **red** | 901 | 50901 | Vlan901 | 101, 201 | 10101, 10201 | 101, 201 | Vlan101, Vlan201 |
+| **blue** | 902 | 50902 | Vlan902 | 401 | 10401 | 401 | Vlan401 |
+| **green** | 903 | 50903 | Vlan903 | 501 | 10501 | 501 | Vlan501 |
+
+**CLI Examples Showing the Pattern:**
+
+```
+! L3VNI Configuration (Transit VNI = 50xxx)
+vlan 901
+ name L3-VRF-CORE-901
+!
+interface Vlan901
+ vrf forwarding red
+ ip unnumbered Loopback0
+!
+interface nve1
+ member vni 50901 vrf red    ← L3VNI = 50 + VRF ID (901)
+
+! L2VNI Configuration (Segment VNI = 10yyy)
+vlan 101
+ name DAG-corp-101
+!
+l2vpn evpn instance 101 vlan-based   ← Instance ID = Segment ID (101)
+ encapsulation vxlan
+!
+interface nve1
+ member vni 10101 mcast-group 239.190.100.101   ← L2VNI = 10 + Segment ID (101)
+!
+interface Vlan101
+ vrf forwarding red
+ ip address 10.1.11.1 255.255.255.0   ← Anycast Gateway SVI
+```
+
+**Template Variables for Offsets:**
+The numbering offsets are defined in `DEFN-VNIOFFSETS.j2`:
+```jinja
+{% set L3VNIOFFSET = 50000 %}   {# L3VNI = 50000 + VRF ID #}
+{% set L2VNIOFFSET = 10000 %}   {# L2VNI = 10000 + Segment ID #}
+```
+
 ## Building Blocks of the solution:
 ### Underlay Routing - Unicast
 The purpose of the underlay routing (in this case OSPF as an IGP) is to provide Loopback reachability between Leafs, Spines, and Border Leafs within the Fabric. Note the 'X' placeholder, which represents the index of the node on which this configuration block is present (subject to your numbering convention). 'Loopback0' interface is pivotal to the operations of all of the fabric services, as it provides for IGP/BGP router ID, NVE reachability etc.
