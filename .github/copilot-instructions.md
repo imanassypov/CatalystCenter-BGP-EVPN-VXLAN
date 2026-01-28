@@ -41,6 +41,12 @@ Roles are defined in `DEFN_NODE_ROLES` dict and drive conditional logic througho
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}   {# Spine-only (Anycast RP, MSDP) #}
 ```
 
+### Optional Components: Border Leaf, IPSEC, and Multi-Cluster BGP
+> **Note:** The **BORDER** role, IPSEC transport tunnels, and Multi-Cluster BGP configurations are **optional components** that may not be applicable to all deployments. These features extend segmentation semantics over secure IPSEC transports to locations outside the local BGP EVPN domain (e.g., DMZ fabrics, remote sites). If your deployment does not require cross-fabric segment extension, you can:
+> - Remove border nodes from `DEFN_NODE_ROLES['BORDER']`
+> - Skip `DEFN-IPSEC.j2` and `FABRIC-IPSEC.j2` templates
+> - Omit Multi-Cluster BGP neighbor configurations in `FABRIC-EVPN.j2`
+
 ## Tenant Semantics (VRF Classification)
 
 ### Corporate Tenant: `red` (VRF ID 901)
