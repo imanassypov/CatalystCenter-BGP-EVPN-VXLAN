@@ -150,12 +150,14 @@ template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
 {# ============================= #}
 {# Address-Family: ipv4          #}
 {# ============================= #}
+{% if DEFN_NODE_ROLES['BORDER'] | length > 0 %}
   address-family ipv4
    maximum-paths ibgp {{ DEFN_NODE_ROLES['BORDER'] | length }}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
    network {{DEFN_LOOP_MCLUSTER[DEVICE_HOSTNAME]}} mask 255.255.255.255
 {% endif %}
    exit-address-family
+{% endif %}
 !
 {# ============================= #}
 {# Address-Family: ipv4 vrf      #}
