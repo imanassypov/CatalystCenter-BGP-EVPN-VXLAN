@@ -28,7 +28,7 @@ Catalyst Center injects runtime context into templates. The primary magic variab
    - Use macros from `FUNC-OBJECT-MACROS.j2` for VRF resolution
 
 ### Build Orchestration
-[BGP-EVPN-BUILD.j2](BGP_EVPN_rev2/BGP-EVPN-BUILD.j2) is the master template that:
+[BGP-EVPN-BUILD.j2](BGP EVPN/BGP-EVPN-BUILD.j2) is the master template that:
 - Includes all DEFN-*.j2 and FUNC-*.j2 files
 - Calls build macros in sequence: VRF → Loopbacks → IPSEC → NVE → Multicast → EVPN → Overlay → NAC
 
@@ -112,8 +112,7 @@ All FABRIC templates export a single macro that accepts consistent parameters:
 ## Reference Files
 - [README.md](README.md) - Complete architecture docs with IP tables and CLI examples
 - [Node Configs/](Node%20Configs/) - Expected output configurations for validation
-- [BGP_EVPN_rev2/](BGP_EVPN_rev2/) - Current production templates (use this folder)
-- [BGP EVPN/](BGP%20EVPN/) - Legacy templates with numbered prefixes
+- [BGP EVPN/](BGP%20EVPN/) - Production templates
 
 ## Validation Checklist
 When making changes, verify:
