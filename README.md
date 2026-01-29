@@ -121,6 +121,8 @@ This template collection provisions a Campus Environment comprising:
 - A pair of Border Leaf Catalyst 9K switches, functioning as VXLAN-IPSEC-VXLAN gateways (optional). Border Gateways encapsulate IOT segments and transport them over hardware-accelerated IPSEC tunnels to a designated DMZ, ensuring segment isolation with line-rate 100G encryption.
 
 > **⚠️ Optional Components:** The **Border Leaf** role, **IPSEC transport tunnels**, and **Multi-Cluster BGP** configurations are **optional components** that may not be applicable to all customer deployments. The purpose of these components is to extend segmentation semantics over secure IPSEC transports to locations outside of the local BGP EVPN domain (e.g., centralized DMZ fabrics, remote campus sites, or multi-site interconnects). Deployments that only require a single-site BGP EVPN VXLAN fabric can omit these components entirely.
+>
+> **Enabling/Disabling Border Role:** The Border role is controlled via the `DEFN_NODE_ROLES['BORDER']` list in `DEFN-ROLES.j2`. To enable Border functionality, add the device FQDNs to the BORDER list (e.g., `'border01.dcloud.cisco.com', 'border02.dcloud.cisco.com'`), similar to how CLIENT and RR roles are populated. To disable Border functionality, leave the BORDER list empty (`[]`). When the BORDER list is empty, all border-specific configurations (IPSEC tunnels, Multi-Cluster BGP peers) are automatically skipped during template rendering.
 
 The templates are fully extensible. For this lab exercise, we provision three tenants:
 
