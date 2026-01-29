@@ -105,22 +105,23 @@ Before deployment, review and customize the following definition templates to ma
 > **Important:** Device hostnames in the templates must exactly match the FQDN as discovered by Catalyst Center (e.g., `leaf01.dcloud.cisco.com`). Use `show run | include hostname` and `show run | include domain` on each device to verify.
 
 **Intended Outcome Topology**
-This collection of Catalyst Center Templates is inteded to provision a simulated Campus Environment comprised of:
-- pair of 'Spines' Catalyst 9K
-- three individual 'Leaf' Catalyst 9K switches, emulating wiring LAN closet switches
-- pair of 'Border Leafs' Catalyst 9K switches, which function as VXLAN-IPSEC-VXLAN Gateways. Border Gateways take VXLAN encapsulated 'IOT' segments and transport those over hardware-accelerated IPSEC tunnels to the designated 'DMZ' place-in-the-network ensuring segmentation of the segments as well as line-rate native 100G IPSEC encryption in transit
+
+This template collection provisions a Campus Environment comprising:
+- A pair of Spine Catalyst 9K switches
+- Three individual Leaf Catalyst 9K switches, representing wiring closet access switches
+- A pair of Border Leaf Catalyst 9K switches, functioning as VXLAN-IPSEC-VXLAN gateways (optional). Border Gateways encapsulate IOT segments and transport them over hardware-accelerated IPSEC tunnels to a designated DMZ, ensuring segment isolation with line-rate 100G encryption.
 
 > **⚠️ Optional Components:** The **Border Leaf** role, **IPSEC transport tunnels**, and **Multi-Cluster BGP** configurations are **optional components** that may not be applicable to all customer deployments. The purpose of these components is to extend segmentation semantics over secure IPSEC transports to locations outside of the local BGP EVPN domain (e.g., centralized DMZ fabrics, remote campus sites, or multi-site interconnects). Deployments that only require a single-site BGP EVPN VXLAN fabric can omit these components entirely.
 
-The templates are fully extensible, but for the purposes of this lab excercise we will be provisioning three individual Tenants in our emulated topology
+The templates are fully extensible. For this lab exercise, we provision three tenants:
 
-- 'RED' Tenant (ie vrf 'red'), which will be emulating User Subnets. 'RED' Tenant will provide native support for Tenant Routable Multicast in the Overlay. TRM will be assuming existence of Anycast-RP routable through the IP Core Block. For the purposes of the demonstration, we will assume Anycast RP Address: 172.17.254.100, which we will scope to the following Enterprise Multicast Range: 238.190.0.0 0.0.255.255. 'RED' Tenant is offering centralized DHCP/DNS services which are accessible to the enterprise via L3 in IP Core Segment
+- **RED Tenant** (`vrf red`): Enterprise user subnets with Tenant Routable Multicast (TRM) support. Assumes an Anycast-RP address of 172.17.254.100 scoped to Enterprise Multicast Range 238.190.0.0/16. Centralized DHCP/DNS services are accessible via L3 through the IP Core.
 
-- 'BLUE' Tenant (ie vrf 'blue'), and similarly, 'GREEN' Tenant (ie vrf 'green'). These Tenants will encapsulate any traffic coming through the Wiring Lan Closet host-facing-ports labelled with IOT Vlans, and securely transport that traffic to the DMZ, which is is an isolated segment of the network for security purposes. 'IOT' Tenants are assumed to have separate, segretated DHCP/DNS etc services available only in DMZ section of the network (ie 'Shared Services')
+- **BLUE Tenant** (`vrf blue`) and **GREEN Tenant** (`vrf green`): IOT segments that encapsulate traffic from host-facing ports and securely transport it to the DMZ for firewall inspection. IOT tenants have segregated DHCP/DNS services available only within the DMZ.
 
 ![Alt text](images/cisco_evpn_topology.png)
 
-The above logical topology is emulated leveraging Cisco Modeling Labs (CML). Refer to corresponding CML topolgoy diagram below
+The above logical topology is emulated using Cisco Modeling Labs (CML). Refer to the corresponding CML topology diagram below:
 ![Alt text](images/cisco_evpn_cml.png)
 
 ### High Level IGP / BGP / IPSEC Topology Diagram
@@ -421,8 +422,11 @@ router ospf 1
  router-id 172.16.255.X
 ```
 ### Underlay Routing - Multicast
-BGP EVPN VXLAN Fabrics require underlay multicast services for BUM replication purposes (unless you decide to implement headend replication, which is sub-optimal). 
-In our configuraiton we are breaking up our underlay multicast services into Fabric-only (ie FABRIC-RP-SCOPE) for BUM replication, as well as generic Enterprise Multicast (ie ENTERPRISE-RP-SCOPE) - used in case you decide to leave some of your client traffic in the underlay. 
+BGP EVPN VXLAN fabrics require underlay multicast services for BUM replication (unless implementing headend replication, which is sub-optimal).
+
+This configuration separates underlay multicast into two scopes:
+- **FABRIC-RP-SCOPE**: For VXLAN BUM replication within the fabric
+- **ENTERPRISE-RP-SCOPE**: For client multicast traffic routed through the underlay 
 ```
 ip pim rp-address 172.16.255.254 FABRIC-RP-SCOPE
 ip pim rp-address 172.17.254.100 ENTERPRISE-RP-SCOPE
@@ -512,53 +516,13 @@ This address family is configured alongside the L2VPN EVPN and IPv4 per-VRF addr
 #### AF ipv4 (per vrf)
 The IPv4 per VRF address family enables BGP to carry Layer 3 routing information on a per-tenant or per-VRF basis across the VXLAN fabric. This address family is essential for providing Layer 3 VPN services in the overlay network, allowing different virtual networks or tenants to maintain separate routing tables while sharing the same physical infrastructure. Each VRF represents an isolated routing domain with its own forwarding table, enabling network segmentation and multi-tenancy. In the context of this campus fabric, the IPv4 per VRF address family works alongside the L2VPN EVPN and MPVN address families to provide comprehensive overlay services. While L2VPN EVPN handles Layer 2 connectivity and MAC/IP advertisement, and MPVN manages multicast services, the IPv4 per VRF address family specifically manages the distribution of IPv4 unicast routes between different VRFs across the fabric nodes. This configuration allows the campus fabric to support multiple isolated networks or tenants, each with their own IPv4 routing domain, while leveraging the shared VXLAN underlay infrastructure. The spine switches acting as BGP route reflectors can efficiently distribute VRF-specific routing information to the appropriate leaf switches, enabling scalable Layer 3 services across the campus network.
 
-## Template Structure
-The project contains two main categories of templates located in the `BGP EVPN/` folder:
-1. 'Provisioning' Templates, which are named with a preceeding index indicating the order in which the template should be applied to the device. These templates contain the logic to differentiate between the fabric node roles, and source 'intent' (ie input variables) from the corresponding 'Input' variables located in the same folder
-2. 'Input' Templates, which contain the intended outcome, expressed in human-readable json-like structure compatible with Catalyst Center jinja2 template engine.
+## Verification Commands
 
-## Initial Preparation
-Ensure that your IOS-XE Catalyst switches have the correct license level applied:
+After deploying the templates, use the following commands to verify successful configuration:
+
+**OSPF Neighbor Verification:**
 ```
-license boot level network-advantage addon dna-advantage
-```
-
-Confirm that Network Advantage license is applied:
-```
-leaf01#sh license summary 
-Account Information:
-  Smart Account: <none>
-  Virtual Account: <none>
-
-License Usage:
-  License                 Entitlement Tag               Count Status
-  -----------------------------------------------------------------------------
-  network-advantage       (CAT9K_VIRTUAL Network ...)       1 IN USE
-  dna-advantage           (CAT9K_VIRTUAL DNA Adva...)       1 IN USE
-
-```
-
-## Cisco IOS-XE VXLAN EVPN FABRICS BUILDING BLOCKS
-Initial glance at the complete CLI configuration may prove daunting. 
-To help better vizualize the constructs, lets review each of the Fabric Node's configuration vizually.
-
-
-
-Before attempting to deploy the collection, the following DEFN Input Variables must be adjusted to suite your environment:
-1. DEFN_LOOPBACKS: device hostnames must match those configured on the target devices, ie 'spine01.dcloud.cisco.com' must match
-```
-spine01#sh run | i hostname | domain
-hostname spine01
-ip domain lookup source-interface Loopback0
-ip domain name dcloud.cisco.com
-```
-2. DEFN_ROLES: device hostanmes to match, same as (1) above
-3. DEFN_L3OUT: Interface names, vlan id, and neighbor parameters must match your core-facing interface configuration, as well as core BGP ASN.
-
-Ensure that basic underlay routing is configured and operational (ie OSPF neighbours are established, spines have BGP established towards the cores)
-
-```
-spine01#sh ip ospf neighbor 
+spine01#show ip ospf neighbor 
 
 Neighbor ID     Pri   State           Dead Time   Address         Interface
 172.16.255.7      0   FULL/  -        00:00:39    172.16.16.6     GigabitEthernet1/0/5
@@ -569,7 +533,7 @@ Neighbor ID     Pri   State           Dead Time   Address         Interface
 ```
 
 ```
-spine02#sh ip ospf neighbor 
+spine02#show ip ospf neighbor 
 
 Neighbor ID     Pri   State           Dead Time   Address         Interface
 172.16.255.7      0   FULL/  -        00:00:38    172.16.26.6     GigabitEthernet1/0/5
@@ -809,4 +773,3 @@ This template collection supports modern campus network requirements including:
 - Scalable growth through standardized overlay deployment patterns
 
 For optimal results, ensure all fabric devices are running compatible IOS-XE versions with full BGP EVPN and VXLAN feature support.
-Keith was here!
