@@ -44,6 +44,66 @@ The template collection provides a complete solution for:
 - Cisco Catalyst Center 2.3.7.9
 - Cisco Modeling Labs 2.9
 
+## Catalyst Center Deployment Guide
+
+This section describes how to deploy the BGP EVPN VXLAN templates using Cisco Catalyst Center.
+
+### Prerequisites
+
+Before deploying the template collection, ensure the following requirements are met:
+
+1. **Site Hierarchy Configured**: The target site must already exist in the Catalyst Center Site Hierarchy (e.g., `Global/Campus/Building1`)
+
+2. **Devices Discovered and Managed**: All Spine, Leaf, and Border (if applicable) Catalyst 9000 switches must be:
+   - Discovered and managed by Catalyst Center
+   - Assigned to the appropriate site in the hierarchy
+   - Running compatible IOS-XE software version
+
+3. **Underlay Network Operational**: Basic underlay connectivity must be established:
+   - Loopback0 interfaces configured on all fabric nodes
+   - IGP (OSPF) adjacencies formed between nodes
+   - Full loopback reachability between all Spine and Leaf switches
+
+### Deployment Steps
+
+1. **Create a Template Project**
+   - Navigate to **Tools > Template Editor** in Catalyst Center
+   - Create a new **Template Project** corresponding to the site where the VXLAN EVPN fabric will be deployed
+   - Import all template files from the `BGP EVPN/` folder into this project
+
+2. **Configure the Master Template**
+   - The master template `BGP-EVPN-BUILD.j2` automatically includes all required DEFN-* and FABRIC-* dependencies
+   - No manual template chaining is required—the master template orchestrates the complete build sequence
+
+3. **Create a Network Profile**
+   - Navigate to **Design > Network Profiles**
+   - Create a new **CLI Network Profile** for your fabric deployment
+   - Link the `BGP-EVPN-BUILD.j2` master template to the profile
+
+4. **Associate Profile to Site**
+   - Assign the Network Profile to the target site in the Site Hierarchy
+   - This enables the template to be provisioned to devices at that site
+
+5. **Provision Devices**
+   - Navigate to **Provision > Inventory**
+   - Select the fabric devices (Spines, Leafs, Borders)
+   - Deploy the template through the provisioning workflow
+   - Catalyst Center will render device-specific configurations based on `__device.hostname`
+
+### Template Customization
+
+Before deployment, review and customize the following definition templates to match your environment:
+
+| Template | Required Customization |
+|----------|----------------------|
+| `DEFN-ROLES.j2` | Device hostnames must match FQDNs in Catalyst Center inventory |
+| `DEFN-LOOPBACKS.j2` | Underlay loopback IPs per device |
+| `DEFN-VRF.j2` | VRF names, IDs, and RD/RT assignments |
+| `DEFN-OVERLAY.j2` | VLAN IDs, SVI addresses, DHCP helpers per tenant |
+| `DEFN-L3OUT.j2` | Core-facing interface parameters (if L3 handoff required) |
+
+> **Important:** Device hostnames in the templates must exactly match the FQDN as discovered by Catalyst Center (e.g., `leaf01.dcloud.cisco.com`). Use `show run | include hostname` and `show run | include domain` on each device to verify.
+
 **Intended Outcome Topology**
 This collection of Catalyst Center Templates is inteded to provision a simulated Campus Environment comprised of:
 - pair of 'Spines' Catalyst 9K
