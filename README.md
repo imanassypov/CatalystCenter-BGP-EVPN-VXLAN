@@ -1,5 +1,14 @@
 # Cisco Catalyst Center BGP EVPN VXLAN Campus Fabric Templates
 
+## Authors
+
+| Name | Role | Contact |
+|------|------|---------|
+| Igor Manassypov | Systems Engineer | imanassy@cisco.com |
+| Keith Baldwin | Technical Solutions Architect | kebaldwi@cisco.com |
+
+**Copyright © 2024-2026 Cisco Systems, Inc. All rights reserved.**
+
 ## Project Overview
 
 This repository contains a comprehensive collection of Cisco Catalyst Center CLI templates designed to provision and manage Campus BGP EVPN VXLAN fabric infrastructure using Cisco Catalyst 9000 series switches running IOS-XE. The templates are organized into a structured deployment sequence that enables automated configuration of modern campus network fabrics with advanced overlay capabilities.
