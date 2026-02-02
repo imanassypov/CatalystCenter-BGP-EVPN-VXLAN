@@ -1,12 +1,28 @@
 {% set DEFN_LOOP_UNDERLAY =
     {
-      'kinstone-spine1.dcloud.cisco.com':       '172.16.255.1',
-      'halifax-spine2.dcloud.cisco.com':        '172.16.255.2',
-      'apex-leaf1.dcloud.cisco.com':            '172.16.255.3',
-      'cary-leaf2.dcloud.cisco.com':            '172.16.255.4',
-      'lagrange-leaf3.dcloud.cisco.com':        '172.16.255.5',
-      'carolinas37-border1.dcloud.cisco.com':   '172.16.255.6',
-      'carolinas50-border2.dcloud.cisco.com':   '172.16.255.7'
+      'spine01.dcloud.cisco.com':   '172.16.255.1',
+      'spine02.dcloud.cisco.com':   '172.16.255.2',
+      'leaf01.dcloud.cisco.com':    '172.16.255.3',
+      'leaf02.dcloud.cisco.com':    '172.16.255.4',
+      'leaf03.dcloud.cisco.com':    '172.16.255.5',
+      'border01.dcloud.cisco.com':  '172.16.255.6',
+      'border02.dcloud.cisco.com':  '172.16.255.7'
+    }
+%}
+
+{% set DEFN_LOOP_IPSEC =
+    {
+      'border01.dcloud.cisco.com':  '172.16.255.60',
+      'border02.dcloud.cisco.com':  '172.16.255.70',
+      'dmz01.dcloud.cisco.com':     '172.16.255.201'
+    }
+%}
+
+{% set DEFN_LOOP_MCLUSTER =
+    {
+      'border01.dcloud.cisco.com':  '172.16.255.66',
+      'border02.dcloud.cisco.com':  '172.16.255.77',
+      'dmz01.dcloud.cisco.com':     '172.16.255.210'
     }
 %}
 
@@ -21,6 +37,10 @@
 {% set DEFN_LOOP_NAME =
     {
         'UNDERLAY': 'Loopback0',
-        'ANYCAST':  'Loopback2'
+        'ANYCAST':  'Loopback2',
+        'IPSEC':    'Loopback1',
+        'MCLUSTER': 'Loopback2'
     }
 %}
+
+{# End of File #}

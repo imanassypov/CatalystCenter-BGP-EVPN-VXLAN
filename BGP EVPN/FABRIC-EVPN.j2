@@ -1,12 +1,12 @@
 {#BOOTSTRAP FOR SIMULATION#}
-{# {% include "BGP_EVPN_rev2/DEFN-VRF.j2" %} #}
-{# {% include "BGP_EVPN_rev2/FUNC-OBJECT-MACROS.j2" %} #}
-{# {% include "BGP_EVPN_rev2/DEFN-ROLES.j2" %} #}
-{# {% include "BGP_EVPN_rev2/DEFN-LOOPBACKS.j2" %} #}
-{# {% include "BGP_EVPN_rev2/DEFN-VNIOFFSETS.j2" %} #}
-{# {% include "BGP_EVPN_rev2/DEFN-L3OUT.j2" %} #}
-{# {% include "BGP_EVPN_rev2/DEFN-OVERLAY.j2" %} #}
-{# {% include "BGP_EVPN_rev2/DEFN-IPSEC.j2" %} #}
+{# {% include "BGP EVPN/DEFN-VRF.j2" %} #}
+{# {% include "BGP EVPN/FUNC-OBJECT-MACROS.j2" %} #}
+{# {% include "BGP EVPN/DEFN-ROLES.j2" %} #}
+{# {% include "BGP EVPN/DEFN-LOOPBACKS.j2" %} #}
+{# {% include "BGP EVPN/DEFN-VNIOFFSETS.j2" %} #}
+{# {% include "BGP EVPN/DEFN-L3OUT.j2" %} #}
+{# {% include "BGP EVPN/DEFN-OVERLAY.j2" %} #}
+{# {% include "BGP EVPN/DEFN-IPSEC.j2" %} #}
 
 {% macro evpnBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NODE_ROLES, DEFN_LOOP_UNDERLAY, DEFN_L3OUT, FABRIC_BGP_ASN, DEFN_LOOP_NAME, DEFN_IPSEC, DEFN_LOOP_MCLUSTER, DEFN_L3OUT_AGGREGATES ) %}
 
@@ -150,12 +150,14 @@ template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
 {# ============================= #}
 {# Address-Family: ipv4          #}
 {# ============================= #}
+{% if DEFN_NODE_ROLES['BORDER'] | length > 0 %}
   address-family ipv4
    maximum-paths ibgp {{ DEFN_NODE_ROLES['BORDER'] | length }}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
    network {{DEFN_LOOP_MCLUSTER[DEVICE_HOSTNAME]}} mask 255.255.255.255
 {% endif %}
    exit-address-family
+{% endif %}
 !
 {# ============================= #}
 {# Address-Family: ipv4 vrf      #}
