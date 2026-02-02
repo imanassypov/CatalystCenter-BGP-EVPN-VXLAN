@@ -1,128 +1,85 @@
 # Copilot Instructions for Cisco Catalyst Center BGP EVPN VXLAN Templates
 
 ## Project Overview
-Jinja2 template collection for Cisco Catalyst Center (DNAC) to provision Campus BGP EVPN VXLAN fabrics on IOS-XE Catalyst 9000 switches. Templates render role-aware configurations for spine-leaf topologies with multi-tenancy, IPSEC transport, and Tenant Routable Multicast (TRM).
+Jinja2 templates for Cisco Catalyst Center provisioning Campus BGP EVPN VXLAN fabrics on IOS-XE Catalyst 9000 switches. Renders role-aware configurations for spine-leaf topologies with multi-tenancy, optional IPSEC transport, and Tenant Routable Multicast (TRM).
 
-## Catalyst Center Magic Variables
-Catalyst Center injects runtime context into templates. The primary magic variable is:
+## Catalyst Center Magic Variable
+Catalyst Center injects runtime context. Dereference once in master template and pass to all macros:
 ```jinja
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 ```
-- `__device.hostname` - FQDN of the target device (e.g., `leaf01.dcloud.cisco.com`)
-- Always dereference once at template start and pass to macros as `DEVICE_HOSTNAME`
-- Must match hostnames in `DEFN_NODE_ROLES` and `DEFN_LOOP_UNDERLAY` exactly
-- Other available: `__device.managementIpAddress`, `__device.platformId`, `__device.serialNumber`
+Hostnames must match FQDNs exactly across all DEFN-* dictionaries (e.g., `leaf01.dcloud.cisco.com`).
 
-## Architecture
+## Template Architecture
 
-### Template Structure (Two Categories)
-1. **DEFN-*.j2 (Definition Templates)** - Declare fabric intent as JSON-like data structures:
-   - `DEFN-ROLES.j2` - Node role assignments (SPINE, RR, CLIENT, BORDER)
-   - `DEFN-LOOPBACKS.j2` - Per-device underlay/overlay IP mappings
-   - `DEFN-VRF.j2` - VRF definitions with RD/RT assignments
-   - `DEFN-OVERLAY.j2` - VLAN/VNI/SVI/DHCP definitions per VRF
+### Two Template Categories
+| Category | Purpose | Example |
+|----------|---------|---------|
+| `DEFN-*.j2` | Data definitions (dicts/lists) | `DEFN_NODE_ROLES`, `DEFN_VRF`, `DEFN_OVERLAY` |
+| `FABRIC-*.j2` | CLI generators (macros) | `vrfDefinitionBuild()`, `evpnBuild()` |
 
-2. **FABRIC-*.j2 (Provisioning Templates)** - Generate CLI using role-based logic:
-   - Numbered 1-7 indicating deployment order
-   - Reference definitions via `{% include %}` directives
-   - Use macros from `FUNC-OBJECT-MACROS.j2` for VRF resolution
+### Build Sequence (BGP-EVPN-BUILD.j2)
+Master template orchestrates includes and macro calls in dependency order:
+1. VRF definitions → 2. Loopbacks → 3. IPSEC tunnels → 4. NVE/VNI → 5. Multicast → 6. EVPN BGP → 7. Overlay SVIs → 8. NAC
 
-### Build Orchestration
-[BGP-EVPN-BUILD.j2](BGP EVPN/BGP-EVPN-BUILD.j2) is the master template that:
-- Includes all DEFN-*.j2 and FUNC-*.j2 files
-- Calls build macros in sequence: VRF → Loopbacks → IPSEC → NVE → Multicast → EVPN → Overlay → NAC
-
-### Node Role Conventions
-Roles are defined in `DEFN_NODE_ROLES` dict and drive conditional logic throughout:
+### Node Role Conditionals
+All FABRIC templates use role checks from `DEFN_NODE_ROLES`:
 ```jinja
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['RR'] %}      {# Spine/Route Reflector logic #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}  {# Leaf/Border client logic #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}  {# Border-specific (IPSEC, L3OUT) #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}   {# Spine-only (Anycast RP, MSDP) #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['RR'] %}      {# Spine route-reflector #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}  {# Leaf/Border as RR client #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}  {# IPSEC tunnels, Multi-Cluster #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}   {# Anycast RP, L3OUT to Core #}
 ```
+**Note:** BORDER role is optional—leave `DEFN_NODE_ROLES['BORDER']` empty (`[]`) to skip IPSEC/Multi-Cluster.
 
-### Optional Components: Border Leaf, IPSEC, and Multi-Cluster BGP
-> **Note:** The **BORDER** role, IPSEC transport tunnels, and Multi-Cluster BGP configurations are **optional components** that may not be applicable to all deployments. These features extend segmentation semantics over secure IPSEC transports to locations outside the local BGP EVPN domain (e.g., DMZ fabrics, remote sites). If your deployment does not require cross-fabric segment extension, you can:
-> - Remove border nodes from `DEFN_NODE_ROLES['BORDER']`
-> - Skip `DEFN-IPSEC.j2` and `FABRIC-IPSEC.j2` templates
-> - Omit Multi-Cluster BGP neighbor configurations in `FABRIC-EVPN.j2`
-
-## Tenant Semantics (VRF Classification)
-
-### Corporate Tenant: `red` (VRF ID 901)
-- **Purpose**: Enterprise user subnets with full routing to IP Core
-- **Services**: Centralized DHCP/DNS via IP Core (helper: `198.18.5.253`)
-- **Multicast**: Tenant Routable Multicast (TRM) enabled with Anycast-RP at `172.17.254.100`
-- **VLANs**: 101, 102, 201 (corporate workstation segments)
-- **Routing**: Advertised to Core via L3OUT on Spine nodes
-
-### IOT Tenants: `blue` (902), `green` (903)
-- **Purpose**: Isolated IOT device segments requiring DMZ handoff
-- **Services**: Segregated DHCP/DNS in DMZ only (helpers: `198.18.7.253`, `198.18.8.253`)
-- **Transport**: VXLAN-over-IPSEC tunnels from Border nodes to DMZ fabric
-- **VLANs**: 401 (blue), 501 (green)
-- **Routing**: No direct Core access; traffic hairpins through DMZ firewalls
-
-### VRF-to-Node Assignment
-Not all VRFs deploy to all nodes. `DEFN_VRF_TO_NODE` maps which VRF IDs apply per device:
-```jinja
-{% set DEFN_VRF_TO_NODE = {
-  'leaf01.dcloud.cisco.com': [901, 902, 903],
-  'border01.dcloud.cisco.com': [902, 903],  {# IOT only on borders #}
-  ...
-} %}
-```
-
-## Key Patterns
-
-### VRF Object Resolution
-Every FABRIC template resolves VRF objects before generating config:
+## VRF Resolution Pattern
+Every FABRIC macro resolves device-specific VRFs before generating CLI:
 ```jinja
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 {% for vrf in vrf_objs %}
-  {# Generate VRF-specific config #}
+  {# vrf.id, vrf.name, vrf.mdt_default, vrf.mdt_data available #}
 {% endfor %}
 ```
 
-### VNI Offset Calculations
-L2VNI and L3VNI values are computed from VLAN IDs using offsets:
-- **L3VNI**: `L3VNIOFFSET + vrf.id` (e.g., 50000 + 901 = 50901)
-- **L2VNI**: `L2VNIOFFSET + vlan_id` (e.g., 10000 + 101 = 10101)
+## VNI Offset Conventions (DEFN-VNIOFFSETS.j2)
+```jinja
+{% set L2VNIOFFSET = 10000 %}  {# L2VNI = 10000 + vlan_id (e.g., VLAN 101 → VNI 10101) #}
+{% set L3VNIOFFSET = 50 %}     {# L3VNI = 50000 + vrf.id (e.g., VRF 901 → VNI 50901) #}
+```
 
-### Loopback IP Derivation
-Device-specific addressing uses underlay loopback as anchor:
-- `DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME]` for Loopback0 IP
-- Overlay loopback IPs derived by adding last octet to VRF base
+## Tenant Model
+| Tenant | VRF ID | Purpose | Routing |
+|--------|--------|---------|---------|
+| `red` | 901 | Corporate with TRM multicast | L3OUT via Spines to Core |
+| `blue` | 902 | IOT (isolated) | IPSEC tunnel to DMZ only |
+| `green` | 903 | IOT (isolated) | IPSEC tunnel to DMZ only |
+
+VRFs are assigned per-node in `DEFN_VRF_TO_NODE`—Borders only get IOT VRFs; Spines only get corporate.
 
 ## Editing Guidelines
 
-### When Modifying DEFN-* Templates
-- Hostnames must match device FQDN exactly (e.g., `leaf01.dcloud.cisco.com`)
-- VRF IDs must be unique and consistent across all DEFN files
-- L3OUT interface/neighbor params must match physical topology
+### Modifying DEFN-* (add devices, VRFs, VLANs)
+- Add hostnames to ALL relevant dicts: `DEFN_NODE_ROLES`, `DEFN_LOOP_UNDERLAY`, `DEFN_VRF_TO_NODE`
+- VRF IDs must be unique integers and consistent across `DEFN_VRF`, `DEFN_OVERLAY`, `DEFN_VRF_TO_NODE`
+- VLANs defined in `DEFN_OVERLAY[].vlans{}` with ipaddr, mac, dhcp_helper, bum_addr
 
-### When Modifying FABRIC-* Templates
+### Modifying FABRIC-* (add CLI features)
 - Wrap role-specific config in `{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['...'] %}`
-- Use `{{FABRIC_BGP_ASN}}` not hardcoded ASN values
-- Maintain the build sequence dependencies (VRF before NVE before EVPN)
+- Reference variables via macro parameters, never hardcode ASN/IPs
+- Maintain build order—VRF must exist before NVE references it
 
-### Template Macro Signatures
-All FABRIC templates export a single macro that accepts consistent parameters:
+### Macro Signature Pattern
+All FABRIC macros accept common parameters:
 ```jinja
-{% macro vrfDefinitionBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_LOOP_UNDERLAY, FABRIC_BGP_ASN) %}
-{% macro interfaceLoopbackBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_LOOP_NAME, ...) %}
-{% macro evpnBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NODE_ROLES, ...) %}
+{% macro someBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NODE_ROLES, ...) %}
 ```
 
-## Reference Files
-- [README.md](README.md) - Complete architecture docs with IP tables and CLI examples
-- [Node Configs/](Node%20Configs/) - Expected output configurations for validation
-- [BGP EVPN/](BGP%20EVPN/) - Production templates
+## Validation
+Compare rendered output against reference configs in `Node Configs/` (e.g., `LEAF1.cfg`, `SPINE1.cfg`).
 
-## Validation Checklist
-When making changes, verify:
-1. Template renders valid IOS-XE CLI syntax
-2. Role conditions prevent config from applying to wrong node types
-3. VRF/VLAN/VNI mappings remain consistent across templates
-4. BGP neighbor relationships use correct loopback IPs from DEFN-LOOPBACKS
+Key checks:
+1. IOS-XE CLI syntax validity (no Jinja artifacts in output)
+2. Role conditions prevent misapplied config (e.g., no RR config on leafs)
+3. RD/RT use correct loopback IP from `DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME]`
+4. BGP neighbors reference correct peer loopbacks
