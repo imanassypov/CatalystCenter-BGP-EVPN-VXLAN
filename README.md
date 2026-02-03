@@ -88,6 +88,25 @@ templates:
 
 > **Note:** Only include top-level `FABRIC-*.j2` templates. `DEFN-*.j2` and `FUNC-*.j2` files are resolved via Jinja2 `{% include %}` at render time.
 
+### Catalyst Center Jinja2 Limitations
+
+Catalyst Center uses a restricted Jinja2 engine. The following constructs are **not supported**:
+
+| Unsupported | Workaround |
+|-------------|------------|
+| `not in` operator | Use `is not defined`: `{% if dict[key] is not defined %}` |
+| Intermediate variables in conditionals | May cause false-positive "undefined variable" detection; inline expressions where possible |
+| Complex nested expressions | Restructure into simpler steps |
+
+**Example - Checking if key exists in dictionary:**
+```jinja
+{# WRONG - 'not in' not supported #}
+{% if DEVICE_HOSTNAME not in DEFN_LOOP_UNDERLAY %}
+
+{# CORRECT - use 'is not defined' #}
+{% if DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] is not defined %}
+```
+
 ## Catalyst Center Deployment Guide
 
 This section describes how to deploy the BGP EVPN VXLAN templates using Cisco Catalyst Center.
