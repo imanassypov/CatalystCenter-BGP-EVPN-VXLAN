@@ -12,6 +12,10 @@
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 ! *** FABRIC-LOOPBACKS FOR {{DEVICE_HOSTNAME}}
+{% if DEVICE_HOSTNAME not in DEFN_LOOP_UNDERLAY %}
+! ERROR: Hostname '{{DEVICE_HOSTNAME}}' not found in DEFN_LOOP_UNDERLAY
+! Available hostnames: {{ DEFN_LOOP_UNDERLAY.keys() | list }}
+{% else %}
 {# UNDERLAY LOOPBACKS #}
 interface {{DEFN_LOOP_NAME['UNDERLAY']}}
  description UNDERLAY-NVE-INTERFACE
@@ -42,4 +46,5 @@ interface Loopback{{input_vrf.id}}
  ip pim sparse-mode
 !
 {% endfor %}
+{% endif %}
 {% endif %}
