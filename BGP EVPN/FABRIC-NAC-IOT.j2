@@ -10,7 +10,7 @@
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 {% for vrf in vrf_objs %}
     {% for nac in DEFN_NAC_IOT %}
-        {% if vrf.name == input_vrf and vrf.name == nac.vrf %}
+        {% if vrf.name == nac.vrf %}
         {% set nac_servername = 'NAC_' + vrf.id + '_' + nac.nac_ip %}
 !
 #INTERACTIVE
