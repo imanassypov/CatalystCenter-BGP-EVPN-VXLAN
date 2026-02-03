@@ -4,6 +4,7 @@
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-IPSEC.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-OVERLAY.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER']  %}

@@ -5,8 +5,10 @@
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-NAC-IOT.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
-{% for input_vrf in vrf_list %}
-    {% for vrf in DEFN_VRF %}
+{# Resolve the VRF objects for this device #}
+{% set vrf_objs = [] %}
+{{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+{% for vrf in vrf_objs %}
     {% for nac in DEFN_NAC_IOT %}
         {% if vrf.name == input_vrf and vrf.name == nac.vrf %}
         {% set nac_servername = 'NAC_' + vrf.id + '_' + nac.nac_ip %}
