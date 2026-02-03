@@ -12,8 +12,7 @@ router ospf {{FABRIC_IPSEC_UNDERLAY['instance_id']}}
  router-id {{DEFN_LOOP_IPSEC[DEVICE_HOSTNAME]}}
 !
 {% set tun_index = (DEFN_LOOP_IPSEC[DEVICE_HOSTNAME]).split('\\.')[3] | int %}
-{% set tun_list = DEFN_IPSEC[DEVICE_HOSTNAME] %}
-{% for tun in tun_list %}
+{% for tun in DEFN_IPSEC[DEVICE_HOSTNAME] %}
 interface Tunnel{{tun_index + loop.index0}}
  description TUNNEL TO DMZ HUB
  ip address {{tun['tun_ip']}}
