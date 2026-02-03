@@ -1,15 +1,16 @@
-{#BOOTSTRAP FOR SIMULATION#}
-{# {% include "BGP EVPN/DEFN-VRF.j2" %} #}
-{# {% include "BGP EVPN/FUNC-OBJECT-MACROS.j2" %} #}
-{# {% include "BGP EVPN/DEFN-ROLES.j2" %} #}
-{# {% include "BGP EVPN/DEFN-LOOPBACKS.j2" %} #}
-{# {% include "BGP EVPN/DEFN-OVERLAY.j2" %} #}
-
-{% macro interfaceLoopbackBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_LOOP_NAME, DEFN_LOOP_UNDERLAY, DEFN_NODE_ROLES, DEFN_LOOP_IPSEC, FABRIC_UNDERLAY, DEFN_LOOP_MCLUSTER) %}
-{# Resolve the VRF objects upfront #}
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, deviceType=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# FABRIC-LOOPBACKS.j2 - Standalone Loopback Interface Template #}
+{# Generates loopback interfaces for the current device #}
+{% include "BGP EVPN/DEFN-VRF.j2" %}
+{% include "BGP EVPN/FUNC-OBJECT-MACROS.j2" %}
+{% include "BGP EVPN/DEFN-ROLES.j2" %}
+{% include "BGP EVPN/DEFN-LOOPBACKS.j2" %}
+{% include "BGP EVPN/DEFN-OVERLAY.j2" %}
+{# Dereference Catalyst Center magic variable #}
+{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
+{# Resolve the VRF objects for this device #}
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
-
 ! *** FABRIC-LOOPBACKS FOR {{DEVICE_HOSTNAME}}
 {# UNDERLAY LOOPBACKS #}
 interface {{DEFN_LOOP_NAME['UNDERLAY']}}
@@ -42,7 +43,3 @@ interface Loopback{{input_vrf.id}}
 !
 {% endfor %}
 {% endif %}
-
-{% endmacro %}
-
-{# End of File #}

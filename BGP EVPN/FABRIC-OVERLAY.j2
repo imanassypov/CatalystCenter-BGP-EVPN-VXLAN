@@ -1,13 +1,16 @@
-{#BOOTSTRAP FOR SIMULATION#}
-{#{% include "BGP EVPN/DEFN-VRF.j2" %}#}
-{#{% include "BGP EVPN/DEFN-ROLES.j2" %}#}
-{#{% include "BGP EVPN/DEFN-OVERLAY.j2" %}#}
-{#{% include "BGP EVPN/DEFN-VNIOFFSETS.j2" %}#}
-{#{% include "BGP EVPN/FUNC-OBJECT-MACROS.j2" %}#}
+{# FABRIC-OVERLAY.j2 - Standalone Overlay L2VNI/SVI Template #}
+{# Generates L2VPN EVPN instances, VLANs, NVE members and SVIs for overlay networks #}
 
-{% macro overlayBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, FABRIC_BGP_ASN, DEFN_OVERLAY, DEFN_NODE_ROLES, L2VNIOFFSET) %}
+{% include "BGP EVPN/DEFN-VRF.j2" %}
+{% include "BGP EVPN/DEFN-ROLES.j2" %}
+{% include "BGP EVPN/DEFN-OVERLAY.j2" %}
+{% include "BGP EVPN/DEFN-VNIOFFSETS.j2" %}
+{% include "BGP EVPN/FUNC-OBJECT-MACROS.j2" %}
 
-{# Resolve the VRF objects upfront #}
+{# Dereference Catalyst Center magic variable #}
+{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
+
+{# Resolve the VRF objects for this device #}
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 
@@ -138,12 +141,5 @@ interface Vlan{{ vlan }}
 {% endfor %}
 
 {% endif %}
-    
-{% endmacro %}
-
-{#BOOTSTRAP FOR SIMULATION#}
-{#UNCOMMENT CORRESPONDING INCLUDE STATEMENTS IN TOP SECTION#}
-{#{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}#}
-{#{{ overlayBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, FABRIC_BGP_ASN, DEFN_OVERLAY, DEFN_NODE_ROLES, L2VNIOFFSET) }}#}
 
 {# End of File #}
