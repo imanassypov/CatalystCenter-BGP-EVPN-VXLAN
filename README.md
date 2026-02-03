@@ -95,6 +95,7 @@ Catalyst Center uses a restricted Jinja2 engine. The following constructs are **
 | Unsupported | Workaround |
 |-------------|------------|
 | `not in` operator | Use `is not defined`: `{% if dict[key] is not defined %}` |
+| `.keys()` method | Not supported on dictionaries |
 | Intermediate variables in conditionals | May cause false-positive "undefined variable" detection; inline expressions where possible |
 | Complex nested expressions | Restructure into simpler steps |
 

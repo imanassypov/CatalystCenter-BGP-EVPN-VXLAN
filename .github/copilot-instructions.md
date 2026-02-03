@@ -29,6 +29,7 @@ Every `.j2` file must start with Catalyst Center targeting:
 ### Catalyst Center Jinja2 Limitations
 Catalyst Center uses a restricted Jinja2 engine. **Avoid these unsupported constructs:**
 - `not in` operator → Use `is not defined` instead: `{% if dict[key] is not defined %}`
+- `.keys()` method → Not supported on dictionaries
 - Intermediate variables in conditionals may cause false-positive "undefined variable" detection
 - Complex expressions may need restructuring
 
