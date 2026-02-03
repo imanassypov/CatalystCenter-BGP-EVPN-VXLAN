@@ -1,8 +1,8 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {# FABRIC-NAC-IOT.j2 - Standalone NAC/802.1X IOT Template #}
 {# Generates IBNS 2.0 policy and RADIUS configuration for IOT VRFs #}
-{% include "BGP EVPN/DEFN-VRF.j2" %}
-{% include "BGP EVPN/DEFN-NAC-IOT.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-NAC-IOT.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {% for input_vrf in vrf_list %}

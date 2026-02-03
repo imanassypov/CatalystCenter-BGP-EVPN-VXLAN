@@ -53,6 +53,41 @@ The template collection provides a complete solution for:
 - Cisco Catalyst Center 2.3.7.9
 - Cisco Modeling Labs 2.9
 
+## Ansible Automation Integration
+
+This project supports GitOps-style automation using Red Hat Ansible for automated synchronization between Git-hosted templates and Cisco Catalyst Center Template Projects.
+
+**Companion Repository:** [Cisco-Catalyst-Center-Templates-Github-integration](https://github.com/imanassypov/Cisco-Catalyst-Center-Templates-Github-integration)
+
+### Features
+- Automated Git-to-Catalyst Center template synchronization
+- Leverages official [Cisco DNA Center Ansible Collection](https://galaxy.ansible.com/cisco/dnac) (`cisco.dnac`)
+- Composite template support via `BGP-EVPN-BUILD.yml` definition files
+- Git commit messages automatically added to template version descriptions
+- Git diff information embedded as Jinja comments for traceability
+
+### Device Targeting Hints
+Each `.j2` template includes a hint comment on line 1 for Catalyst Center device targeting:
+```jinja
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+```
+
+### Composite Template Definition
+The `BGP-EVPN-BUILD.yml` file defines the ordered sequence of FABRIC-* templates for composite template creation:
+```yaml
+templates:
+  - name: "FABRIC-VRF.j2"
+  - name: "FABRIC-LOOPBACKS.j2"
+  - name: "FABRIC-NVE.j2"
+  - name: "FABRIC-MCAST.j2"
+  - name: "FABRIC-EVPN.j2"
+  - name: "FABRIC-OVERLAY.j2"
+  - name: "FABRIC-IPSEC.j2"
+  - name: "FABRIC-NAC-IOT.j2"
+```
+
+> **Note:** Only include top-level `FABRIC-*.j2` templates. `DEFN-*.j2` and `FUNC-*.j2` files are resolved via Jinja2 `{% include %}` at render time.
+
 ## Catalyst Center Deployment Guide
 
 This section describes how to deploy the BGP EVPN VXLAN templates using Cisco Catalyst Center.
