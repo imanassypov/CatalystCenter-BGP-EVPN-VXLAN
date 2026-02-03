@@ -1,11 +1,11 @@
-{#BOOTSTRAP FOR SIMULATION#}
-{# {% include "BGP EVPN/DEFN-ROLES.j2" %} #}
-{# {% include "BGP EVPN/DEFN-LOOPBACKS.j2" %} #}
-{# {% include "BGP EVPN/DEFN-OVERLAY.j2" %} #}
-{# {% include "BGP EVPN/DEFN-IPSEC.j2" %} #}
-
-{% macro interfaceTunnelBuild(DEFN_NODE_ROLES, FABRIC_IPSEC_UNDERLAY, DEFN_LOOP_IPSEC, DEFN_LOOP_NAME) %}
-
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, deviceType=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# FABRIC-IPSEC.j2 - Standalone IPSEC Tunnel Interface Template #}
+{# Generates IPSEC tunnel interfaces for Border nodes #}
+{% include "BGP EVPN/DEFN-ROLES.j2" %}
+{% include "BGP EVPN/DEFN-LOOPBACKS.j2" %}
+{% include "BGP EVPN/DEFN-IPSEC.j2" %}
+{# Dereference Catalyst Center magic variable #}
+{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER']  %}
 router ospf {{FABRIC_IPSEC_UNDERLAY['instance_id']}}
  router-id {{DEFN_LOOP_IPSEC[DEVICE_HOSTNAME]}}
@@ -23,7 +23,3 @@ interface Tunnel{{tun_index + loop.index0}}
  tunnel destination {{tun['tun_dst']}}
 {% endfor %}
 {% endif %}
-    
-{% endmacro %}
-
-{# End of File #}

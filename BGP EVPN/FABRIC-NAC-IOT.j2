@@ -1,9 +1,9 @@
-{#BOOTSTRAP FOR SIMULATION#}
-{# {% include "BGP EVPN/DEFN-VRF.j2" %} #}
-{# {% include "BGP EVPN/DEFN-NAC-IOT.j2" %} #}
-
-{% macro ibnsBuild(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME, DEFN_NAC_IOT) %}
-
+{# FABRIC-NAC-IOT.j2 - Standalone NAC/802.1X IOT Template #}
+{# Generates IBNS 2.0 policy and RADIUS configuration for IOT VRFs #}
+{% include "BGP EVPN/DEFN-VRF.j2" %}
+{% include "BGP EVPN/DEFN-NAC-IOT.j2" %}
+{# Dereference Catalyst Center magic variable #}
+{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {% for input_vrf in vrf_list %}
     {% for vrf in DEFN_VRF %}
     {% for nac in DEFN_NAC_IOT %}
@@ -128,7 +128,3 @@ load-interval 30
     {% endfor %}
     {% endfor %}
 {% endfor %}
-    
-{% endmacro %}
-
-{# End of File #}
