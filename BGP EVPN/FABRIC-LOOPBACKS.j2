@@ -11,10 +11,13 @@
 {# Resolve the VRF objects for this device #}
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+{# Calculate last octet from underlay loopback for overlay interfaces #}
+{% set underlay_ip = DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] %}
+{% set underlay_last_octet = underlay_ip.split('\\.')[3] %}
 {# UNDERLAY LOOPBACKS #}
 interface {{DEFN_LOOP_NAME['UNDERLAY']}}
  description UNDERLAY-NVE-INTERFACE
- ip address {{DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME]}} 255.255.255.255
+ ip address {{underlay_ip}} 255.255.255.255
  ip pim sparse-mode
 !
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE']  %}
@@ -30,14 +33,11 @@ interface {{DEFN_LOOP_NAME['MCLUSTER']}}
  ip address {{DEFN_LOOP_MCLUSTER[DEVICE_HOSTNAME]}} 255.255.255.255
 !
 {% else %}
-{% for input_vrf in vrf_objs %}
-{% set ip = DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] %}
-{% set split_ip = ip.split('\\.') %}
-{% set last_octet = split_ip[3] %}
-interface Loopback{{input_vrf.id}}
- description OVERLAY-VRF-{{input_vrf.name}}
- vrf forwarding {{input_vrf.name}}
- ip address {{DEFN_LOOP_OVERLAY[input_vrf.name]}}{{last_octet}} 255.255.255.255
+{% for vrf in vrf_objs %}
+interface Loopback{{vrf.id}}
+ description OVERLAY-VRF-{{vrf.name}}
+ vrf forwarding {{vrf.name}}
+ ip address {{DEFN_LOOP_OVERLAY[vrf.name]}}{{underlay_last_octet}} 255.255.255.255
  ip pim sparse-mode
 !
 {% endfor %}
