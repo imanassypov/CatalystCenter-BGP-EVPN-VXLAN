@@ -108,6 +108,24 @@ Compare rendered output against reference configs in `Node Configs/` (e.g., `LEA
 4. RT format: `{ASN}:{vrf_id}` using `FABRIC_BGP_ASN` from `DEFN-OVERLAY.j2`
 5. BGP neighbors reference correct peer loopbacks from `DEFN_LOOP_UNDERLAY`
 
+## Ansible Automation (GitOps)
+This project integrates with Red Hat Ansible for automated Git-to-Catalyst Center synchronization.
+
+**Companion repo:** [Cisco-Catalyst-Center-Templates-Github-integration](https://github.com/imanassypov/Cisco-Catalyst-Center-Templates-Github-integration)
+
+### Key Files for Automation
+- **Line 1 hint:** Each `.j2` file must have CATC targeting hint:
+  ```jinja
+  {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+  ```
+- **`BGP-EVPN-BUILD.yml`:** Defines composite template ordering (only `FABRIC-*.j2` files)
+
+### Template Inclusion Rules
+| Include in composite | Template type |
+|---------------------|---------------|
+| ✅ Yes | `FABRIC-*.j2` (top-level executables) |
+| ❌ No | `DEFN-*.j2`, `FUNC-*.j2` (resolved via `{% include %}`) |
+
 ## Common Pitfalls
 - **Hostname mismatch:** FQDN in templates must exactly match Catalyst Center inventory
 - **Missing VRF mapping:** Device generates empty VRF config if not in `DEFN_VRF_TO_NODE`

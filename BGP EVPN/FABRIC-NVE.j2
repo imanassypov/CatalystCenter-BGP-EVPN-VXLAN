@@ -1,11 +1,11 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {# FABRIC-NVE.j2 - Standalone NVE/VLAN L3VNI Template #}
 {# Generates NVE interface, L3VNI VLANs and SVIs for the current device #}
-{% include "BGP EVPN/DEFN-VRF.j2" %}
-{% include "BGP EVPN/FUNC-OBJECT-MACROS.j2" %}
-{% include "BGP EVPN/DEFN-ROLES.j2" %}
-{% include "BGP EVPN/DEFN-LOOPBACKS.j2" %}
-{% include "BGP EVPN/DEFN-VNIOFFSETS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-OBJECT-MACROS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VNIOFFSETS.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {# Resolve the VRF objects for this device #}

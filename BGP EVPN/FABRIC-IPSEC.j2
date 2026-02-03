@@ -1,9 +1,9 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {# FABRIC-IPSEC.j2 - Standalone IPSEC Tunnel Interface Template #}
 {# Generates IPSEC tunnel interfaces for Border nodes #}
-{% include "BGP EVPN/DEFN-ROLES.j2" %}
-{% include "BGP EVPN/DEFN-LOOPBACKS.j2" %}
-{% include "BGP EVPN/DEFN-IPSEC.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-IPSEC.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER']  %}

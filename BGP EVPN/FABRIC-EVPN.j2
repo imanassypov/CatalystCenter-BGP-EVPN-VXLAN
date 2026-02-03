@@ -1,14 +1,14 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {# FABRIC-EVPN.j2 - Standalone BGP EVPN Configuration Template #}
 {# Generates BGP EVPN peering and L3OUT for the current device #}
-{% include "BGP EVPN/DEFN-VRF.j2" %}
-{% include "BGP EVPN/FUNC-OBJECT-MACROS.j2" %}
-{% include "BGP EVPN/DEFN-ROLES.j2" %}
-{% include "BGP EVPN/DEFN-LOOPBACKS.j2" %}
-{% include "BGP EVPN/DEFN-VNIOFFSETS.j2" %}
-{% include "BGP EVPN/DEFN-L3OUT.j2" %}
-{% include "BGP EVPN/DEFN-OVERLAY.j2" %}
-{% include "BGP EVPN/DEFN-IPSEC.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-OBJECT-MACROS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VNIOFFSETS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-L3OUT.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-OVERLAY.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-IPSEC.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {# Resolve the VRF objects for this device #}
