@@ -12,7 +12,7 @@
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 ! *** FABRIC-LOOPBACKS FOR {{DEVICE_HOSTNAME}}
-{% if DEVICE_HOSTNAME not in DEFN_LOOP_UNDERLAY %}
+{% if DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] is not defined %}
 ! ERROR: Hostname '{{DEVICE_HOSTNAME}}' not found in DEFN_LOOP_UNDERLAY
 ! Available hostnames: {{ DEFN_LOOP_UNDERLAY.keys() | list }}
 {% else %}
