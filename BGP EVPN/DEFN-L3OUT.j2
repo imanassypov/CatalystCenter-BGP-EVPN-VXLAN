@@ -5,8 +5,8 @@
     'node': 'spine01.dcloud.cisco.com',
     'neighbour_asn': '65002',
     'interfaces': {
-      'GigabitEthernet1/0/7.2': {'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.1 255.255.255.252', 'neighbour': '10.255.255.2'},
-      'GigabitEthernet1/0/8.2': {'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.5 255.255.255.252', 'neighbour': '10.255.255.6'}
+      'GigabitEthernet1/0/7.2': {'parent': 'GigabitEthernet1/0/7', 'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.1 255.255.255.252', 'neighbour': '10.255.255.2'},
+      'GigabitEthernet1/0/8.2': {'parent': 'GigabitEthernet1/0/8', 'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.5 255.255.255.252', 'neighbour': '10.255.255.6'}
     }
   },
   {
@@ -14,8 +14,8 @@
     'node': 'spine02.dcloud.cisco.com',
     'neighbour_asn': '65002',
     'interfaces': {
-      'GigabitEthernet1/0/7.2': {'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.13 255.255.255.252', 'neighbour': '10.255.255.14'},
-      'GigabitEthernet1/0/8.2': {'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.9 255.255.255.252', 'neighbour': '10.255.255.10'}
+      'GigabitEthernet1/0/7.2': {'parent': 'GigabitEthernet1/0/7', 'name': 'uplink1', 'vlan': '2', 'ipaddr': '10.255.255.13 255.255.255.252', 'neighbour': '10.255.255.14'},
+      'GigabitEthernet1/0/8.2': {'parent': 'GigabitEthernet1/0/8', 'name': 'uplink2', 'vlan': '2', 'ipaddr': '10.255.255.9 255.255.255.252', 'neighbour': '10.255.255.10'}
     }
   }
 ] %}

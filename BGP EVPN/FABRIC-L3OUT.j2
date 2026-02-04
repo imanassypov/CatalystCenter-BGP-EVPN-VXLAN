@@ -14,36 +14,16 @@
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 
 {# ============================================= #}
-{# L3OUT Parent Interface Configuration Block    #}
-{# Convert switchport to routed for dot1Q       #}
-{# ============================================= #}
-{% set parent_interfaces = [] %}
-{% for vrf in vrf_objs %}
-{% for l3out in DEFN_L3OUT %}
-{% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME %}
-{% for interface in l3out.interfaces.keys() %}
-{% set parent = interface.split('.')[0] %}
-{% if parent not in parent_interfaces %}
-{% do parent_interfaces.append(parent) %}
-{% endif %}
-{% endfor %}
-{% endif %}
-{% endfor %}
-{% endfor %}
-{% for parent in parent_interfaces %}
-interface {{parent}}
- no switchport
-!
-{% endfor %}
-
-{# ============================================= #}
 {# L3OUT Interface Configuration Block           #}
-{# Dot1Q sub-interfaces for VRF-aware uplinks   #}
+{# Parent interface + Dot1Q sub-interfaces      #}
 {# ============================================= #}
 {% for vrf in vrf_objs %}
 {% for l3out in DEFN_L3OUT %}
 {% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME %}
 {% for interface, params in l3out.interfaces.items() %}
+interface {{params.parent}}
+ no switchport
+!
 interface {{interface}}
  encapsulation dot1Q {{params.vlan}}
  vrf forwarding {{vrf.name}}
@@ -65,10 +45,7 @@ interface {{interface}}
 {% for overlay in DEFN_OVERLAY %}
 {% if overlay.vrf != vrf.name %}
 {% for vlan_id, vlan_params in overlay.vlans.items() %}
-{% set ip_parts = vlan_params.ipaddr.split()[0].split('.') %}
-{% set mask = vlan_params.ipaddr.split()[1] %}
-{% set network = ip_parts[0] ~ '.' ~ ip_parts[1] ~ '.' ~ ip_parts[2] ~ '.0' %}
-ip route vrf {{vrf.name}} {{network}} {{mask}} Null0
+ip route vrf {{vrf.name}} {{vlan_params.network}} Null0
 {% endfor %}
 {% endif %}
 {% endfor %}
