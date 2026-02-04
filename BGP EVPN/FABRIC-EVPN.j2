@@ -1,6 +1,7 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
-{# FABRIC-EVPN.j2 - Standalone BGP EVPN Configuration Template #}
-{# Generates BGP EVPN peering and L3OUT for the current device #}
+{# FABRIC-EVPN.j2 - BGP EVPN Peering Configuration Template #}
+{# Generates BGP EVPN peering, address-families, and route policies #}
+{# L3OUT interface configuration in FABRIC-L3OUT.j2 #}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-OBJECT-MACROS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
@@ -36,23 +37,6 @@ ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{loop_ip}}/32
 route-map NODE-LOOPBACKS permit 10
  match ip address prefix-list NODE-LOOPBACKS
 !
-{# ============================================= #}
-{# L3OUT ON SPINES Interface Configuration Block #}
-{# ============================================= #}
-{% for vrf in vrf_objs %}
-{% for l3out in DEFN_L3OUT %}
-{% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME %}
-{% for interface, params in l3out.interfaces.items() %}
-interface {{interface}}
- encapsulation dot1Q {{params.vlan}}
- vrf forwarding {{vrf.name}}
- ip address {{params.ipaddr}}
-!
-{% endfor %}
-{% endif %}
-{% endfor %}
-{% endfor %}
-
 router bgp {{FABRIC_BGP_ASN}}
 {# ============================= #}
 {# BGP Global Settings Block     #}
@@ -169,7 +153,6 @@ template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
 {% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME and DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
   address-family ipv4 vrf {{vrf.name}}
    advertise l2vpn evpn
-
 {% for aggregate in DEFN_L3OUT_AGGREGATES %}
    aggregate-address {{aggregate}} summary-only
 {% endfor %}
