@@ -1,0 +1,78 @@
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# FABRIC-L3OUT.j2 - L3 External Connectivity Interface Template #}
+{# Generates L3OUT dot1Q sub-interfaces for spine-to-core handoff #}
+{# BGP L3OUT peering configuration is in FABRIC-EVPN.j2 #}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-OBJECT-MACROS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-OVERLAY.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-L3OUT.j2" %}
+{# Dereference Catalyst Center magic variable #}
+{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
+{# Resolve the VRF objects for this device #}
+{% set vrf_objs = [] %}
+{{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+
+{# ============================================= #}
+{# L3OUT Parent Interface Configuration Block    #}
+{# Convert switchport to routed for dot1Q       #}
+{# ============================================= #}
+{% set parent_interfaces = [] %}
+{% for vrf in vrf_objs %}
+{% for l3out in DEFN_L3OUT %}
+{% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME %}
+{% for interface in l3out.interfaces.keys() %}
+{% set parent = interface.split('.')[0] %}
+{% if parent not in parent_interfaces %}
+{% do parent_interfaces.append(parent) %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% for parent in parent_interfaces %}
+interface {{parent}}
+ no switchport
+!
+{% endfor %}
+
+{# ============================================= #}
+{# L3OUT Interface Configuration Block           #}
+{# Dot1Q sub-interfaces for VRF-aware uplinks   #}
+{# ============================================= #}
+{% for vrf in vrf_objs %}
+{% for l3out in DEFN_L3OUT %}
+{% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME %}
+{% for interface, params in l3out.interfaces.items() %}
+interface {{interface}}
+ encapsulation dot1Q {{params.vlan}}
+ vrf forwarding {{vrf.name}}
+ ip address {{params.ipaddr}}
+!
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+{# ============================================= #}
+{# VRF East-West Protection Block                #}
+{# Null routes prevent inter-tenant leakage     #}
+{# Derived dynamically from DEFN_OVERLAY        #}
+{# ============================================= #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
+{% for vrf in vrf_objs %}
+{# For this VRF, install null routes for subnets from ALL OTHER VRFs #}
+{% for overlay in DEFN_OVERLAY %}
+{% if overlay.vrf != vrf.name %}
+{% for vlan_id, vlan_params in overlay.vlans.items() %}
+{% set ip_parts = vlan_params.ipaddr.split()[0].split('.') %}
+{% set mask = vlan_params.ipaddr.split()[1] %}
+{% set network = ip_parts[0] ~ '.' ~ ip_parts[1] ~ '.' ~ ip_parts[2] ~ '.0' %}
+ip route vrf {{vrf.name}} {{network}} {{mask}} Null0
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{# End of File #}

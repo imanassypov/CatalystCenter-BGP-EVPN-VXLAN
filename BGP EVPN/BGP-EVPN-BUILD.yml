@@ -22,5 +22,6 @@ templates:
   - name: "FABRIC-NVE.j2"
   - name: "FABRIC-MCAST.j2"
   - name: "FABRIC-EVPN.j2"
+  - name: "FABRIC-L3OUT.j2"
   - name: "FABRIC-OVERLAY.j2"
   - name: "FABRIC-NAC-IOT.j2"
