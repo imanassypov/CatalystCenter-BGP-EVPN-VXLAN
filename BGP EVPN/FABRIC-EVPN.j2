@@ -30,8 +30,8 @@ route-map EVPN-PEER-BORDER-OUT permit 10
 {# FABRICS BGP PEERING MUST TRACK /32 PEER ADDRESSES ONLY             #}
 {# AND NOT FALLBACK TO AGGREGATE/DEFAULT WHEN THE PEER ADDR GOES AWAY #}
 {# ================================================================== #}
-{% for node,loop_ip in DEFN_LOOP_UNDERLAY.items() %}
-ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{loop_ip}}/32
+{% for node in DEFN_LOOP_UNDERLAY %}
+ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
 !
 route-map NODE-LOOPBACKS permit 10
