@@ -1,29 +1,28 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {% set DEFN_LOOP_UNDERLAY =
     {
-      'spine01.dcloud.cisco.com':   '172.16.255.1',
-      'spine02.dcloud.cisco.com':   '172.16.255.2',
-      'leaf01.dcloud.cisco.com':    '172.16.255.3',
-      'leaf02.dcloud.cisco.com':    '172.16.255.4',
-      'leaf03.dcloud.cisco.com':    '172.16.255.5',
-      'border01.dcloud.cisco.com':  '172.16.255.6',
-      'border02.dcloud.cisco.com':  '172.16.255.7'
+      'Spine-01.example.net':   '172.16.255.1',
+      'Spine-02.example.net':   '172.16.255.2',
+      'Leaf-01.example.net':    '172.16.255.3',
+      'Leaf-02.example.net':    '172.16.255.4',
+      'Border-01.example.net':  '172.16.255.6',
+      'Border-02.example.net':  '172.16.255.7'
     }
 %}
 
 {% set DEFN_LOOP_IPSEC =
     {
-      'border01.dcloud.cisco.com':  '172.16.255.60',
-      'border02.dcloud.cisco.com':  '172.16.255.70',
-      'dmz01.dcloud.cisco.com':     '172.16.255.201'
+      'Border-01.example.net':  '172.16.255.60',
+      'Border-02.example.net':  '172.16.255.70',
+      'dmz01.dcloud.cisco.com': '172.16.255.201'
     }
 %}
 
 {% set DEFN_LOOP_MCLUSTER =
     {
-      'border01.dcloud.cisco.com':  '172.16.255.66',
-      'border02.dcloud.cisco.com':  '172.16.255.77',
-      'dmz01.dcloud.cisco.com':     '172.16.255.210'
+      'Border-01.example.net':  '172.16.255.66',
+      'Border-02.example.net':  '172.16.255.77',
+      'dmz01.dcloud.cisco.com': '172.16.255.210'
     }
 %}
 
