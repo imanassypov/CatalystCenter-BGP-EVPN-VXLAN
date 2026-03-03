@@ -1,15 +1,14 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {% set DEFN_NODE_ROLES =
   {
-  'SPINE':  ['spine01.dcloud.cisco.com',
-             'spine02.dcloud.cisco.com'],
-  'RR':     ['spine01.dcloud.cisco.com',
-             'spine02.dcloud.cisco.com'],
-  'CLIENT': ['leaf01.dcloud.cisco.com',
-             'leaf02.dcloud.cisco.com',
-             'leaf03.dcloud.cisco.com',
-             'border01.dcloud.cisco.com',
-             'border02.dcloud.cisco.com'],
+  'SPINE':  ['Spine-01.example.net',
+             'Spine-02.example.net'],
+  'RR':     ['Spine-01.example.net',
+             'Spine-02.example.net'],
+  'CLIENT': ['Leaf-01.example.net',
+             'Leaf-02.example.net',
+             'Border-01.example.net',
+             'Border-02.example.net'],
   'BORDER': []
   }
 %}
