@@ -35,6 +35,7 @@ Every `.j2` file **must** start with:
 |-------------|-------------|
 | `not in` operator | `{% if dict[key] is not defined %}` |
 | `.keys()` method | Iterate dict directly |
+| Two-variable `for` loop: `{% for k, v in dict.items() %}` | Single-variable: `{% for k in dict %}` then access `dict[k]` |
 | Complex nested expressions | Restructure into simpler steps |
 
 ## Core Patterns
