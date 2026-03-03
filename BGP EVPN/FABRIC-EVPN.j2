@@ -9,7 +9,7 @@
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VNIOFFSETS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-L3OUT.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-OVERLAY.j2" %}
-{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-IPSEC.j2" %}
+{# DEFN-IPSEC.j2 removed - IPSEC tunnelling deprecated #}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {# Resolve the VRF objects for this device #}
@@ -32,6 +32,10 @@ route-map EVPN-PEER-BORDER-OUT permit 10
 {# ================================================================== #}
 {% for node in DEFN_LOOP_UNDERLAY %}
 ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% endfor %}
+{# Include remote MCLUSTER peer Loopback0s so fall-over route-map covers them #}
+{% for remote in DEFN_LOOP_MCLUSTER %}
+ip prefix-list NODE-LOOPBACKS seq {{DEFN_LOOP_UNDERLAY | length + loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
 {% endfor %}
 !
 route-map NODE-LOOPBACKS permit 10
@@ -93,11 +97,12 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endif %}
 
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
-  description VXLAN-GW-2-LEAF-EVPN-PEER
+ template peer-session OVERLAY-MCLUSTER-EVPN-PEER-SESSION-POLICY
+  description VXLAN-MULTICLUSTER-REMOTE-SITE-EVPN-PEER
   log-neighbor-changes
-  ebgp-multihop 255
-  update-source Loopback2
+  ebgp-multihop 4
+  update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
+  fall-over route-map NODE-LOOPBACKS
  exit-peer-session
 {% endif %}
 
@@ -120,15 +125,10 @@ template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
 {% endfor %}
 {% endif %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-{# BUILD MULTI-CLUSTER NEIGHBORS #}
-{% for tun,params in DEFN_IPSEC.items() %}
-{% if tun == DEVICE_HOSTNAME %}
-{% for p in params %}
-  neighbor {{p['peer_ip']}} inherit peer-session OVERLAY-BORDER-EVPN-PEER-SESSION-POLICY
-  neighbor {{p['peer_ip']}} remote-as {{p['peer_bgp_asn']}}
-  neighbor {{p['peer_ip']}} activate
-{% endfor %}
-{% endif %}
+{# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE LOOPBACK0 PEERING (eBGP) #}
+{% for remote in DEFN_LOOP_MCLUSTER %}
+  neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} remote-as {{DEFN_LOOP_MCLUSTER[remote]['asn']}}
+  neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-session OVERLAY-MCLUSTER-EVPN-PEER-SESSION-POLICY
 {% endfor %}
 {% endif %}
 !
@@ -137,9 +137,14 @@ template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
 {# ============================= #}
 {% if DEFN_NODE_ROLES['BORDER'] | length > 0 %}
   address-family ipv4
-   maximum-paths ibgp {{ DEFN_NODE_ROLES['BORDER'] | length }}
+   maximum-paths {{ DEFN_LOOP_MCLUSTER | length }}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-   network {{DEFN_LOOP_MCLUSTER[DEVICE_HOSTNAME]}} mask 255.255.255.255
+   network {{DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME]}} mask 255.255.255.255
+{# Activate remote MCLUSTER peers in IPv4 AF for inter-site reachability #}
+{% for remote in DEFN_LOOP_MCLUSTER %}
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} soft-reconfiguration inbound
+{% endfor %}
 {% endif %}
    exit-address-family
 {% endif %}
@@ -210,17 +215,12 @@ template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
 
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-{# VXLAN MULTI-CLUSTER SUPPORT #}
+{# VXLAN MULTI-CLUSTER SUPPORT - REMOTE SITE eBGP PEERING VIA LOOPBACK0 #}
    rewrite-evpn-rt-asn
-{# BUILD MULTI-CLUSTER NEIGHBORS #}
-{% for tun,params in DEFN_IPSEC.items() %}
-{% if tun == DEVICE_HOSTNAME %}
-{% for p in params %}
-   neighbor {{p['peer_ip']}} inherit peer-session OVERLAY-BORDER-EVPN-PEER-POLICY
-   neighbor {{p['peer_ip']}} remote-as {{p['peer_bgp_asn']}}
-   neighbor {{p['peer_ip']}} activate
-{% endfor %}
-{% endif %}
+{# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE #}
+{% for remote in DEFN_LOOP_MCLUSTER %}
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-BORDER-EVPN-PEER-POLICY
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
 {% endfor %}
 
 {% else %}

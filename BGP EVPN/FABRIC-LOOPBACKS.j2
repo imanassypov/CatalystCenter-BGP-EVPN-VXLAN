@@ -15,17 +15,8 @@ interface {{DEFN_LOOP_NAME['UNDERLAY']}}
 !
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE']  %}
 {# SKIP SPINE #}
-{% elif DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-interface {{DEFN_LOOP_NAME['IPSEC']}}
- description IPSEC TUNNEL SOURCE INTERFACE
- ip address {{DEFN_LOOP_IPSEC[DEVICE_HOSTNAME]}} 255.255.255.255
- ip ospf {{FABRIC_UNDERLAY['instance_id']}} area {{FABRIC_UNDERLAY['area']}}
-!
-interface {{DEFN_LOOP_NAME['MCLUSTER']}}
- description NVE MULTICLUSTER INTERFACE
- ip address {{DEFN_LOOP_MCLUSTER[DEVICE_HOSTNAME]}} 255.255.255.255
-!
 {% else %}
+{# LEAF AND BORDER: generate per-VRF overlay loopbacks #}
 {% for vrf_id in DEFN_VRF_TO_NODE[DEVICE_HOSTNAME] %}
 {% for vrf_entry in DEFN_VRF %}
 {% if vrf_entry.id == vrf_id %}
