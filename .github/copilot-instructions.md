@@ -37,7 +37,8 @@ Every `.j2` file **must** start with:
 | `.keys()` method | Iterate dict directly |
 | Two-variable `for` loop: `{% for k, v in dict.items() %}` | Single-variable: `{% for k in dict %}` then access `dict[k]` |
 | Complex nested expressions | Restructure into simpler steps |
-| `.split('.')` to split on literal dot | `.split('\\.')` — CatC Jinja engine requires escaped dot for literal split |
+
+> **Note — `.split()` escaping**: CatC's Jinja engine treats `.` as a regex wildcard. Always use `split('\\.')` (escaped dot) to split on a literal dot. This works correctly for IP addresses: `DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME].split('\\.')[3]` extracts the last octet as expected.
 
 ## Core Patterns
 

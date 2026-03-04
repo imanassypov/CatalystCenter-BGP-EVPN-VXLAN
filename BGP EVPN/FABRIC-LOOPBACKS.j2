@@ -23,7 +23,7 @@ interface {{DEFN_LOOP_NAME['UNDERLAY']}}
 interface Loopback{{vrf_entry.id}}
  description OVERLAY-VRF-{{vrf_entry.name}}
  vrf forwarding {{vrf_entry.name}}
- ip address {{DEFN_LOOP_OVERLAY[vrf_entry.name]}}{{DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME].split('.')[3]}} 255.255.255.255
+ ip address {{DEFN_LOOP_OVERLAY[vrf_entry.name]}}{{DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME].split('\\.')[3]}} 255.255.255.255
  ip pim sparse-mode
 !
 {% endif %}
