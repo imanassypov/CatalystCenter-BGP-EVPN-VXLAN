@@ -61,6 +61,11 @@ router bgp {{FABRIC_BGP_ASN}}
   send-community both
   exit-peer-policy
 !
+ template peer-policy OVERLAY-BORDER-MVPN-PEER-POLICY
+  soft-reconfiguration inbound
+  send-community both
+  exit-peer-policy
+!
  template peer-policy OVERLAY-BORDER-EVPN-PEER-POLICY
   route-map EVPN-PEER-BORDER-OUT out
   route-reflector-client
@@ -242,7 +247,11 @@ router bgp {{FABRIC_BGP_ASN}}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['RR'] %}
 {% for client in DEFN_NODE_ROLES['CLIENT'] %}
    neighbor {{DEFN_LOOP_UNDERLAY[client]}} activate
+{% if client in DEFN_NODE_ROLES['BORDER'] %}
+   neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-BORDER-MVPN-PEER-POLICY
+{% else %}
    neighbor {{DEFN_LOOP_UNDERLAY[client]}} inherit peer-policy OVERLAY-LEAF-MVPN-PEER-POLICY
+{% endif %}
 {% endfor %}
 {% endif %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
