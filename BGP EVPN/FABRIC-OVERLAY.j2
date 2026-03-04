@@ -87,22 +87,22 @@ vlan configuration {{ vlan }}
   {% endfor %}
 {% endfor %}
 {# === INTERFACE NVE1 SECTION === #}
+{# SKIP SPINE AND BORDER - no L2 NVE members; NVE1 for L3VNI is handled by FABRIC-NVE.j2 #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
+{# SKIP NVE1 L2 SECTION FOR SPINE AND BORDER #}
+{% else %}
 interface nve1
 {% for vrf in vrf_objs %}
   {% for overlay in DEFN_OVERLAY %}
   {% if overlay.vrf == vrf.name %}
-  {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE']%}
-  {# SKIP SPINE AND BORDER L2 DEFN #}
-  {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
-  {% else %}
   {% for vlan, params in overlay.vlans.items() %}
   {% set l2vni_id = (L2VNIOFFSET | int) + (vlan | int) %}
  member vni {{l2vni_id}} mcast-group {{params.bum_addr}}
   {% endfor %}
   {% endif %}
-  {% endif %}
   {% endfor %}
 {% endfor %}
+{% endif %}
 {# === INTERFACE VLANX SECTION === #}
 {% for vrf in vrf_objs %}
 {% for overlay in DEFN_OVERLAY %}
