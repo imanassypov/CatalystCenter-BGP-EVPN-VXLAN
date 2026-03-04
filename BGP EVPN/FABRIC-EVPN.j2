@@ -135,21 +135,6 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endif %}
 !
 {# ============================= #}
-{# Address-Family: ipv4          #}
-{# ============================= #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-  address-family ipv4
-   maximum-paths {{ DEFN_LOOP_MCLUSTER | length }}
-   network {{DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME]}} mask 255.255.255.255
-{# Activate remote MCLUSTER peers in IPv4 AF for inter-site reachability #}
-{% for remote in DEFN_LOOP_MCLUSTER %}
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} soft-reconfiguration inbound
-{% endfor %}
-   exit-address-family
-{% endif %}
-!
-{# ============================= #}
 {# Address-Family: ipv4 vrf      #}
 {# L3OUT CONFIGURATION ON SPINES #}
 {# ============================= #}
