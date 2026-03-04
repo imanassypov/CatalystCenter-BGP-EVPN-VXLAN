@@ -15,6 +15,8 @@
 {% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
 {% if FABRIC_BGP_ASN is not none and vrf_objs is not none and DEVICE_HOSTNAME is not none %}
 {# === ROUTER BGP SECTION === #}
+{# Spine excluded: its ipv4 vrf AF is fully covered by FABRIC-EVPN L3OUT block #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
 router bgp {{FABRIC_BGP_ASN}}
 {% for vrf in vrf_objs %}
   {% for overlay in DEFN_OVERLAY %}
@@ -29,6 +31,7 @@ router bgp {{FABRIC_BGP_ASN}}
     {% endif %}
   {% endfor %}
 {% endfor %}
+{% endif %}{# end CLIENT guard for router bgp #}
 {# === L2VPN EVPN INSTANCE SECTION === #}
 {% for vrf in vrf_objs %}
   {% for overlay in DEFN_OVERLAY %}
@@ -49,24 +52,23 @@ l2vpn evpn instance {{l2evpn_id}} vlan-based
   {% endfor %}
 {% endfor %}
 {# === VLAN SECTION === #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
+{# SKIP SPINE AND BORDER L2 VLAN DEFN #}
+{% else %}
 ! @start-ignore-compliance
 {% for vrf in vrf_objs %}
   {% for overlay in DEFN_OVERLAY %}
   {% if overlay.vrf == vrf.name %}
-  {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE']%}
-  {# SKIP SPINE AND BORDER L2 DEFN #}
-  {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
-  {% else %}
     {% for vlan, params in overlay.vlans.items() %}
 vlan {{ vlan }}
  name DAG-{{params.name}}
 !
     {% endfor %}
   {% endif %}
-  {% endif %}
   {% endfor %}
 {% endfor %}
 ! @end-ignore-compliance
+{% endif %}
 {# === VLAN CONFIGURATION SECTION === #}
 {% for vrf in vrf_objs %}
   {% for overlay in DEFN_OVERLAY %}

@@ -55,11 +55,6 @@ router bgp {{FABRIC_BGP_ASN}}
   advertise additional-paths all
   exit-peer-policy
 !
- template peer-policy OVERLAY-BORDER-EVPN-PEER-POLICY
-  soft-reconfiguration inbound
-  send-community both
-  exit-peer-policy
-!
  template peer-policy OVERLAY-LEAF-MVPN-PEER-POLICY
   route-reflector-client
   soft-reconfiguration inbound
