@@ -166,7 +166,15 @@ router bgp {{FABRIC_BGP_ASN}}
 {% for vrf in vrf_objs %}
   address-family ipv4 vrf {{vrf.name}}
    advertise l2vpn evpn
+   redistribute connected
    import path selection all
+{% for remote in DEFN_LOOP_MCLUSTER %}
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} remote-as {{DEFN_LOOP_MCLUSTER[remote]['asn']}}
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} send-community both
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} next-hop-self
+{% endfor %}
+   maximum-paths {{ DEFN_LOOP_MCLUSTER | length }}
    maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}
    exit-address-family
 !
