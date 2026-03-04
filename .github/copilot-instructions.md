@@ -37,6 +37,7 @@ Every `.j2` file **must** start with:
 | `.keys()` method | Iterate dict directly |
 | Two-variable `for` loop: `{% for k, v in dict.items() %}` | Single-variable: `{% for k in dict %}` then access `dict[k]` |
 | Complex nested expressions | Restructure into simpler steps |
+| `.split('.')` to split on literal dot | `.split('\\.')` — CatC Jinja engine requires escaped dot for literal split |
 
 ## Core Patterns
 
