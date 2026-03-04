@@ -1,12 +1,12 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {% set DEFN_LOOP_UNDERLAY =
     {
-      'Spine-01.example.net':   '172.16.255.1',
-      'Spine-02.example.net':   '172.16.255.2',
-      'Leaf-01.example.net':    '172.16.255.3',
-      'Leaf-02.example.net':    '172.16.255.4',
-      'Border-01.example.net':  '172.16.255.6',
-      'Border-02.example.net':  '172.16.255.7'
+      'Spine-01.dcloud.cisco.com':   '172.16.255.1',
+      'Spine-02.dcloud.cisco.com':   '172.16.255.2',
+      'Leaf-01.dcloud.cisco.com':    '172.16.255.3',
+      'Leaf-02.dcloud.cisco.com':    '172.16.255.4',
+      'Border-01.dcloud.cisco.com':  '172.16.255.6',
+      'Border-02.dcloud.cisco.com':  '172.16.255.7'
     }
 %}
 
@@ -14,7 +14,7 @@
 {# Keys = remote border hostnames; values = their Loopback0 IP and remote site ASN  #}
 {% set DEFN_LOOP_MCLUSTER =
     {
-      'DMZ-01.example.net': {'ip': '172.18.200.1', 'asn': '65002'}
+      'DMZ-01.dcloud.cisco.com': {'ip': '172.18.200.1', 'asn': '65002'}
     }
 %}
 
