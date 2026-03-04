@@ -111,6 +111,12 @@ interface nve1
 {% endfor %}
 {% endif %}
 {# === INTERFACE VLANX SECTION === #}
+{# Enable VRF-aware DHCP relay so Option 82 sub-opt 151 (VPN-ID) carries the VRF name to the DHCP server #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
+{# SKIP ip dhcp relay information option vpn for BORDER and SPINE #}
+{% else %}
+ip dhcp relay information option vpn
+{% endif %}
 {% for vrf in vrf_objs %}
 {% for overlay in DEFN_OVERLAY %}
   {% if overlay.vrf == vrf.name %}
