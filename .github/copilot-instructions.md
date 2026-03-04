@@ -60,10 +60,12 @@ Hostnames = **FQDNs matching Catalyst Center inventory exactly** (e.g., `leaf01.
 ### Role-Based Conditionals
 ```jinja
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['RR'] %}     {# Spines as Route Reflectors #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %} {# Border switches for IPSEC #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %} {# Border switches for multi-cluster eBGP #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %} {# Leaf/Border as BGP clients #}
 ```
 **Empty `BORDER` list = IPSEC disabled** (intentional for non-border deployments).
+
+> **Note — Spine NVE/L3VNI is intentional**: Spines participate in the EVPN overlay as L3VNI termination points for VRF route leaking to the core. FABRIC-NVE.j2 generates `vlan`, `vlan configuration`, `interface VlanXXX`, and `interface nve1` config on Spines because Spines are listed in `DEFN_VRF_TO_NODE`. This is by design — Spines peer their VRF (e.g., `red`) via BGP L3OUT sub-interfaces to the upstream core for route leaking. Do not treat Spine NVE/L3VNI config as a bug.
 
 ## Key Data Structures
 
