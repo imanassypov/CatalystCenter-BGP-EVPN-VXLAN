@@ -23,6 +23,13 @@ ip multicast-routing vrf {{vrf.name}}
 !
 ip pim spt-threshold 0
 !
+{# Fabric-wide anycast RP address (global routing table) #}
+ip pim rp-address {{FABRIC_RP_ADDR}}
+{# Per-VRF enterprise RP address #}
+{% for vrf in vrf_objs %}
+ip pim vrf {{vrf.name}} rp-address {{ENTERPRISE_RP_ADDR}}
+{% endfor %}
+!
 {# CONFIGURE ANYCAST RP INTERFACE ON SPINES ONLY #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
 interface {{DEFN_LOOP_NAME['ANYCAST']}}
