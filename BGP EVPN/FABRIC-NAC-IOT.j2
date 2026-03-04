@@ -2,6 +2,7 @@
 {# FABRIC-NAC-IOT.j2 - Standalone NAC/802.1X IOT Template #}
 {# Generates IBNS 2.0 policy and RADIUS configuration for IOT VRFs #}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-OBJECT-MACROS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-NAC-IOT.j2" %}
 {# Dereference Catalyst Center magic variable #}
@@ -11,6 +12,11 @@
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 {# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
 {% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
+{# NAC/dot1x only applies to Leaf nodes — skip Spine and Border #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
+{# SKIP NAC ON SPINE AND BORDER NODES #}
+{# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
+{% else %}
 {% for vrf in vrf_objs %}
     {% for nac in DEFN_NAC_IOT %}
         {% if vrf.name == nac.vrf %}
@@ -133,3 +139,4 @@ load-interval 30
         {% endif %}
     {% endfor %}
 {% endfor %}
+{% endif %}{# end Leaf-only NAC guard #}
