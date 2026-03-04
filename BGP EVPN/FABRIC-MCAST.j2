@@ -38,7 +38,6 @@ interface {{DEFN_LOOP_NAME['ANYCAST']}}
  ip pim sparse-mode
  ip {{FABRIC_UNDERLAY.proto}} {{FABRIC_UNDERLAY.instance_id}} area {{FABRIC_UNDERLAY.area}}
 !
- ip msdp cache-sa-state
 {% for spine in DEFN_NODE_ROLES['SPINE'] %}
 {% if spine != DEVICE_HOSTNAME %}
 ip msdp peer {{DEFN_LOOP_UNDERLAY[spine]}} connect-source {{DEFN_LOOP_NAME['UNDERLAY']}} remote-as {{FABRIC_BGP_ASN}}
