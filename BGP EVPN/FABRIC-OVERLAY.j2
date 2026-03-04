@@ -11,6 +11,8 @@
 {# Resolve the VRF objects for this device #}
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+{# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
+{% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
 {% if FABRIC_BGP_ASN is not none and vrf_objs is not none and DEVICE_HOSTNAME is not none %}
 {# === ROUTER BGP SECTION === #}
 router bgp {{FABRIC_BGP_ASN}}

@@ -12,6 +12,8 @@
 {# Resolve the VRF objects for this device #}
 {% set vrf_objs = [] %}
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
+{# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
+{% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
 
 {# ============================================= #}
 {# L3OUT Interface Configuration Block           #}
