@@ -172,7 +172,7 @@ router bgp {{FABRIC_BGP_ASN}}
    neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}
    neighbor {{params.neighbour}} activate
 {% endfor %}
-   maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}
+   maximum-paths ibgp {{ DEFN_NODE_ROLES['BORDER'] | length }}
 ! @start-ignore-compliance
    exit-address-family
 ! @end-ignore-compliance
