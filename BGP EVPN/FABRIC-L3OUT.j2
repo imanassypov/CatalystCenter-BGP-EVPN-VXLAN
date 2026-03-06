@@ -14,7 +14,6 @@
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 {# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
 {% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
-
 {# ============================================= #}
 {# L3OUT Interface Configuration Block           #}
 {# Parent interface + Dot1Q sub-interfaces      #}
@@ -35,7 +34,6 @@ interface {{interface}}
 {% endif %}
 {% endfor %}
 {% endfor %}
-
 {# ============================================= #}
 {# VRF East-West Protection Block                #}
 {# Null routes prevent inter-tenant leakage     #}
@@ -53,5 +51,4 @@ ip route vrf {{vrf.name}} {{vlan_params.network}} Null0
 {% endfor %}
 {% endfor %}
 {% endif %}
-
 {# End of File #}

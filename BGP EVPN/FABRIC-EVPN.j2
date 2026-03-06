@@ -17,7 +17,6 @@
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 {# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
 {% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
-
 {# =========================================== #}
 {# BGP Border Prefix-List to prevent loops     #}
 {# =========================================== #}
@@ -81,7 +80,6 @@ router bgp {{FABRIC_BGP_ASN}}
   exit-peer-session
 !
 {% endif %}
-
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
  template peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY
   soft-reconfiguration inbound
@@ -97,7 +95,6 @@ router bgp {{FABRIC_BGP_ASN}}
   exit-peer-session
 !
 {% endif %}
-
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
  template peer-session OVERLAY-MCLUSTER-EVPN-PEER-SESSION-POLICY
   description VXLAN-MULTICLUSTER-REMOTE-SITE-EVPN-PEER
@@ -112,7 +109,6 @@ router bgp {{FABRIC_BGP_ASN}}
   send-community both
   exit-peer-policy
 {% endif %}
-
  bgp router-id interface Loopback0
  bgp log-neighbor-changes
  {# bgp graceful-restart #}
@@ -212,10 +208,8 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endif %}
 {% endfor %}
 {% endif %}
-
 {# BORDER NODES ARE SUBSET OF CLIENTS, BUT THEY HAVE ADDITIONAL LOGIC            #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
-
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
 {# VXLAN MULTI-CLUSTER SUPPORT - REMOTE SITE eBGP PEERING VIA LOOPBACK0 #}
    rewrite-evpn-rt-asn
@@ -224,11 +218,9 @@ router bgp {{FABRIC_BGP_ASN}}
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
 {% endfor %}
-
 {% else %}
    bgp additional-paths receive
 {% endif %}
-
 {% for rr in DEFN_NODE_ROLES['RR'] %}
    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate
    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY
@@ -241,8 +233,6 @@ router bgp {{FABRIC_BGP_ASN}}
    exit-address-family
 ! @end-ignore-compliance
 !
-
-
 {# ============================= #}
 {# Address-Family: ipv4 mvpn   #}
 {# ============================= #}
@@ -268,5 +258,4 @@ router bgp {{FABRIC_BGP_ASN}}
    exit-address-family
 ! @end-ignore-compliance
 !
-
 {# End of File #}
