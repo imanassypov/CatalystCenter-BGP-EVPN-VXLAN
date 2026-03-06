@@ -9,7 +9,6 @@
       'Border-02.dcloud.cisco.com':  '172.16.255.7'
     }
 %}
-
 {# DEFN_LOOP_MCLUSTER: remote Border peers for cross-site VXLAN multi-cluster BGP  #}
 {# Keys = remote border hostnames; values = their Loopback0 IP and remote site ASN  #}
 {% set DEFN_LOOP_MCLUSTER =
@@ -17,7 +16,6 @@
       'DMZ-01.dcloud.cisco.com': {'ip': '172.18.200.1', 'asn': '65003'}
     }
 %}
-
 {% set DEFN_LOOP_OVERLAY =
     {
       'red':                                    '10.1.91.',
@@ -25,12 +23,10 @@
       'green':                                  '10.1.93.'
     }
 %}
-
 {% set DEFN_LOOP_NAME =
     {
         'UNDERLAY': 'Loopback0',
         'ANYCAST':  'Loopback2'
     }
 %}
-
 {# End of File #}
