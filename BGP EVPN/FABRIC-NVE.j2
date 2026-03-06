@@ -53,7 +53,7 @@ interface nve1
  member vni {{ (L3VNIOFFSET|string) + vrf.id }} vrf {{ vrf.name }}
 {% endfor %}
 {# --- GLOBAL L2VPN EVPN SECTION (LEAF only, not SPINE or BORDER) --- #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] and DEVICE_HOSTNAME not in DEFN_NODE_ROLES['BORDER'] %}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] and not DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
 l2vpn evpn
  replication-type static
  router-id {{ DEFN_LOOP_NAME['UNDERLAY'] }}
