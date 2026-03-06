@@ -162,6 +162,7 @@ router bgp {{FABRIC_BGP_ASN}}
 {% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME and DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
   address-family ipv4 vrf {{vrf.name}}
    advertise l2vpn evpn
+   import path selection all
 {% for aggregate in DEFN_L3OUT_AGGREGATES %}
    aggregate-address {{aggregate}} summary-only
 {% endfor %}
@@ -171,6 +172,7 @@ router bgp {{FABRIC_BGP_ASN}}
    neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}
    neighbor {{params.neighbour}} activate
 {% endfor %}
+   maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}
 ! @start-ignore-compliance
    exit-address-family
 ! @end-ignore-compliance
