@@ -52,39 +52,51 @@ router bgp {{FABRIC_BGP_ASN}}
   soft-reconfiguration inbound
   send-community both
   advertise additional-paths all
+! @start-ignore-compliance
   exit-peer-policy
+! @end-ignore-compliance
 !
  template peer-policy OVERLAY-LEAF-MVPN-PEER-POLICY
   route-reflector-client
   soft-reconfiguration inbound
   send-community both
+! @start-ignore-compliance
   exit-peer-policy
+! @end-ignore-compliance
 !
  template peer-policy OVERLAY-BORDER-MVPN-PEER-POLICY
   soft-reconfiguration inbound
   send-community both
+! @start-ignore-compliance
   exit-peer-policy
+! @end-ignore-compliance
 !
  template peer-policy OVERLAY-BORDER-EVPN-PEER-POLICY
   route-map EVPN-PEER-BORDER-OUT out
   route-reflector-client
   soft-reconfiguration inbound
   send-community both
+! @start-ignore-compliance
   exit-peer-policy
+! @end-ignore-compliance
 !
  template peer-session UNDERLAY-LEAF-EVPN-PEER-SESSION-POLICY
   remote-as {{FABRIC_BGP_ASN}}
   log-neighbor-changes
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
   fall-over route-map NODE-LOOPBACKS
+! @start-ignore-compliance
   exit-peer-session
+! @end-ignore-compliance
 !
 {% endif %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
  template peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY
   soft-reconfiguration inbound
   send-community both
+! @start-ignore-compliance
   exit-peer-policy
+! @end-ignore-compliance
 !
  template peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY
   remote-as {{FABRIC_BGP_ASN}}
@@ -92,7 +104,9 @@ router bgp {{FABRIC_BGP_ASN}}
   log-neighbor-changes
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
   fall-over route-map NODE-LOOPBACKS
+! @start-ignore-compliance
   exit-peer-session
+! @end-ignore-compliance
 !
 {% endif %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
@@ -102,12 +116,16 @@ router bgp {{FABRIC_BGP_ASN}}
   ebgp-multihop 4
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
   fall-over route-map NODE-LOOPBACKS
+! @start-ignore-compliance
  exit-peer-session
+! @end-ignore-compliance
 !
  template peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
   soft-reconfiguration inbound
   send-community both
+! @start-ignore-compliance
   exit-peer-policy
+! @end-ignore-compliance
 {% endif %}
  bgp router-id interface Loopback0
  bgp log-neighbor-changes
