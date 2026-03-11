@@ -5,8 +5,8 @@
     'node': 'Spine-01.dcloud.cisco.com',
     'neighbour_asn': '65002',
     'interfaces': {
-      'GigabitEthernet1/0/5.2': {'parent': 'GigabitEthernet1/0/5', 'name': 'uplink1', 'vlan': '2', 'ipaddr': '172.17.2.1 255.255.255.252', 'neighbour': '172.17.2.2'},
-      'GigabitEthernet1/0/6.2': {'parent': 'GigabitEthernet1/0/6', 'name': 'uplink2', 'vlan': '2', 'ipaddr': '172.17.2.5 255.255.255.252', 'neighbour': '172.17.2.6'}
+      'GigabitEthernet1/0/5.2': {'parent': 'GigabitEthernet1/0/5', 'name': 'uplink1', 'vlan': '2', 'ipaddr': '198.19.2.50 255.255.255.252', 'neighbour': '198.19.2.49'},
+      'GigabitEthernet1/0/6.2': {'parent': 'GigabitEthernet1/0/6', 'name': 'uplink2', 'vlan': '2', 'ipaddr': '198.19.2.54 255.255.255.252', 'neighbour': '198.19.2.53'}
     }
   },
   {
@@ -14,12 +14,13 @@
     'node': 'Spine-02.dcloud.cisco.com',
     'neighbour_asn': '65002',
     'interfaces': {
-      'GigabitEthernet1/0/5.2': {'parent': 'GigabitEthernet1/0/5', 'name': 'uplink1', 'vlan': '2', 'ipaddr': '172.17.2.9 255.255.255.252', 'neighbour': '172.17.2.10'},
-      'GigabitEthernet1/0/6.2': {'parent': 'GigabitEthernet1/0/6', 'name': 'uplink2', 'vlan': '2', 'ipaddr': '172.17.2.13 255.255.255.252', 'neighbour': '172.17.2.14'}
+      'GigabitEthernet1/0/5.2': {'parent': 'GigabitEthernet1/0/5', 'name': 'uplink1', 'vlan': '2', 'ipaddr': '198.19.2.58 255.255.255.252', 'neighbour': '198.19.2.57'},
+      'GigabitEthernet1/0/6.2': {'parent': 'GigabitEthernet1/0/6', 'name': 'uplink2', 'vlan': '2', 'ipaddr': '198.19.2.62 255.255.255.252', 'neighbour': '198.19.2.61'}
     }
   }
 ] %}
-{% set DEFN_L3OUT_AGGREGATES = ["10.1.11.0 255.255.255.0",
-                                "10.2.22.0 255.255.255.0"]
+{% set DEFN_L3OUT_AGGREGATES = ["10.1.100.0 255.255.255.0",
+                                "10.1.101.0 255.255.255.0",
+                                "10.1.102.0 255.255.255.0"]
 %}
 {# End of File #}
