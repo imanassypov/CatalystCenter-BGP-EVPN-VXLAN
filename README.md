@@ -5,7 +5,6 @@
 | Name | Role | Contact |
 |------|------|---------|
 | Igor Manassypov | Systems Engineer | imanassy@cisco.com |
-| Keith Baldwin | Technical Solutions Architect | kebaldwi@cisco.com |
 
 **Copyright © 2024-2026 Cisco Systems, Inc. All rights reserved.**
 
