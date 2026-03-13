@@ -197,7 +197,9 @@ router bgp {{FABRIC_BGP_ASN}}
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} send-community both
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} next-hop-self
 {% endfor %}
+{% if DEFN_LOOP_MCLUSTER | length > 1 %}
    maximum-paths {{ DEFN_LOOP_MCLUSTER | length }}
+{% endif %}
    maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}
 ! @start-ignore-compliance
    exit-address-family
