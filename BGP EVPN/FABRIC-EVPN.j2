@@ -182,32 +182,6 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endfor %}
 !
 {# ============================= #}
-{# Address-Family: ipv4 vrf      #}
-{# L3OUT CONFIGURATION ON BORDERS #}
-{# ============================= #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-{% for vrf in vrf_objs %}
-  address-family ipv4 vrf {{vrf.name}}
-   advertise l2vpn evpn
-   redistribute connected
-   import path selection all
-{% for remote in DEFN_LOOP_MCLUSTER %}
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} remote-as {{DEFN_LOOP_MCLUSTER[remote]['asn']}}
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} send-community both
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} next-hop-self
-{% endfor %}
-{% if DEFN_LOOP_MCLUSTER | length > 1 %}
-   maximum-paths {{ DEFN_LOOP_MCLUSTER | length }}
-{% endif %}
-   maximum-paths ibgp {{ DEFN_NODE_ROLES['SPINE'] | length }}
-! @start-ignore-compliance
-   exit-address-family
-! @end-ignore-compliance
-!
-{% endfor %}
-{% endif %}
-{# ============================= #}
 {# Address-Family: l2vpn evpn    #}
 {# ============================= #}
   address-family l2vpn evpn
