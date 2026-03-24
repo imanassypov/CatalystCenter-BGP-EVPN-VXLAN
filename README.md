@@ -72,17 +72,18 @@ Each `.j2` template includes a hint comment on line 1 for Catalyst Center device
 ```
 
 ### Composite Template Definition
-The `BGP-EVPN-BUILD.yml` file defines the ordered sequence of FABRIC-* templates for composite template creation:
+The `BGP-EVPN-BUILD.yml` file defines the ordered sequence of FABRIC-* templates for composite template creation. The build order reflects configuration dependency — each template layer depends on the one above it:
 ```yaml
 templates:
-  - name: "FABRIC-VRF.j2"
-  - name: "FABRIC-LOOPBACKS.j2"
-  - name: "FABRIC-NVE.j2"
-  - name: "FABRIC-MCAST.j2"
-  - name: "FABRIC-EVPN.j2"
-  - name: "FABRIC-OVERLAY.j2"
-  - name: "FABRIC-IPSEC.j2"
-  - name: "FABRIC-NAC-IOT.j2"
+  - name: "FABRIC-VRF.j2"          # Step 1: VRF isolation containers
+  - name: "FABRIC-LOOPBACKS.j2"     # Step 2: Underlay + overlay addressing
+  - name: "FABRIC-L3OUT.j2"         # Step 3: External L3 connectivity (Spine-to-Core)
+# - name: "FABRIC-IPSEC.j2"        # DEPRECATED — IPSEC tunnelling removed
+  - name: "FABRIC-NVE.j2"           # Step 4: VXLAN NVE + L3VNI infrastructure
+  - name: "FABRIC-MCAST.j2"         # Step 5: Multicast RP, anycast RP, MSDP
+  - name: "FABRIC-EVPN.j2"          # Step 6: BGP EVPN control plane
+  - name: "FABRIC-OVERLAY.j2"       # Step 7: L2VNI overlay services + SVIs
+  - name: "FABRIC-NAC-IOT.j2"       # Step 8: NAC / IOT access control
 ```
 
 > **Note:** Only include top-level `FABRIC-*.j2` templates. `DEFN-*.j2` and `FUNC-*.j2` files are resolved via Jinja2 `{% include %}` at render time.
@@ -95,6 +96,8 @@ Catalyst Center uses a restricted Jinja2 engine. The following constructs are **
 |-------------|------------|
 | `not in` operator | Use `is not defined`: `{% if dict[key] is not defined %}` |
 | `.keys()` method | Not supported on dictionaries |
+| Two-variable `for` loop: `{% for k, v in dict.items() %}` | Single-variable: `{% for k in dict %}` then `{% set v = dict[k] %}` |
+| Literal dot in `.split()`: `.split('.')` | Escape the dot: `.split('\\.')` — CatC treats `.` as a regex wildcard |
 | Intermediate variables in conditionals | May cause false-positive "undefined variable" detection; inline expressions where possible |
 | Complex nested expressions | Restructure into simpler steps |
 
@@ -161,9 +164,9 @@ Before deployment, review and customize the following definition templates to ma
 |----------|----------------------|
 | `DEFN-ROLES.j2` | Device hostnames must match FQDNs in Catalyst Center inventory |
 | `DEFN-LOOPBACKS.j2` | Underlay loopback IPs per device |
-| `DEFN-VRF.j2` | VRF names, IDs, and RD/RT assignments |
+| `DEFN-VRF.j2` | VRF names, IDs, and node-to-VRF assignments (Spine entries must include L3OUT VRF IDs when L3OUT is active) |
 | `DEFN-OVERLAY.j2` | VLAN IDs, SVI addresses, DHCP helpers per tenant |
-| `DEFN-L3OUT.j2` | Core-facing interface parameters (if L3 handoff required) |
+| `DEFN-L3OUT.j2` | L3OUT sub-interface parameters; set `DEFN_L3OUT_NODES = []` to disable all L3OUT output when the L3OUT tenant VRF is not present |
 
 > **Important:** Device hostnames in the templates must exactly match the FQDN as discovered by Catalyst Center (e.g., `leaf01.dcloud.cisco.com`). Use `show run | include hostname` and `show run | include domain` on each device to verify.
 
@@ -321,7 +324,7 @@ For underlay reachability, there is an eBGP peering established in the Global Ro
 | green | leaf01   | Loopback903      | 10.1.93.3/32       |
 | green | leaf02   | Loopback903      | 10.1.93.4/32       |
 | green | leaf03   | Loopback903      | 10.1.93.5/32       |
-**Note:** Border switches (border01, border02) and spines (spine01, spine02) do not configure VRF overlay loopbacks. Border switches use unnumbered L3VNI SVIs referencing Loopback0, while spines operate as BGP EVPN Route Reflectors without VRF participation.
+**Note:** Spine switches (spine01, spine02) do not configure VRF overlay loopbacks, as they act as BGP Route Reflectors and L3OUT termination points rather than edge forwarding nodes. All other fabric nodes (Leaf and Border switches) receive per-VRF overlay loopbacks (`Loopback{vrf.id}`) for each VRF listed in their `DEFN_VRF_TO_NODE` entry.
 ---
 
 ### Cisco IOS-XE BGP EVPN CLI dependency map
@@ -408,8 +411,7 @@ Each FABRIC-*.j2 template provisions specific color-coded components:
 | Template | Primary Color | Components Provisioned |
 |----------|--------------|------------------------|
 | `FABRIC-VRF.j2` | 🟦 **BLUE** | VRF definitions with RD/RT |
-| `FABRIC-LOOPBACKS.j2` | 🟩 **GREEN** | Loopback0 and overlay loopbacks |
-| `FABRIC-NVE.j2` | 🟨 **YELLOW** + 🟧 **ORANGE** | L3VNI VLANs, SVIs, NVE interface |
+| `FABRIC-LOOPBACKS.j2` | 🟩 **GREEN** | Loopback0 and overlay loopbacks || `FABRIC-L3OUT.j2` | — | L3OUT dot1Q sub-interfaces, east-west Null0 routes (Spine only) || `FABRIC-NVE.j2` | 🟨 **YELLOW** + 🟧 **ORANGE** | L3VNI VLANs, SVIs, NVE interface |
 | `FABRIC-MCAST.j2` | — | Multicast RP and MSDP (underlay) |
 | `FABRIC-EVPN.j2` | 🟥 **RED** | BGP router, neighbors, address-families |
 | `FABRIC-OVERLAY.j2` | 🟨 **YELLOW** + 🟪 **PURPLE** | L2VNI VLANs, tenant SVIs, L2VPN instances |
@@ -650,14 +652,17 @@ Neighbor        V           AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State
 
 ## Deployment Sequence
 
-The templates should be deployed in numerical order (1-7) to ensure proper dependency resolution:
+The templates should be deployed in the order defined in `BGP-EVPN-BUILD.yml` to ensure proper dependency resolution:
 
-1. **Definition Templates**: Deploy all DEFN-* templates first to establish fabric parameters
-2. **Foundation**: Deploy template 1 (FABRIC-VRF) for VRF establishment
-3. **Infrastructure**: Deploy templates 2-4 (LOOPBACKS, NVE, MCAST) for basic fabric services
-4. **Control Plane**: Deploy template 5 (FABRIC-EVPN) for BGP EVPN peering and L3OUT
-5. **Data Plane**: Deploy template 6 (FABRIC-OVERLAY) for overlay services
-6. **Security**: Deploy template 7 (FABRIC-NAC-IOT) for access control policies
+1. **Definition Templates**: Review and customize all `DEFN-*.j2` files first to establish fabric-specific parameters
+2. **Foundation (Step 1)**: Deploy `FABRIC-VRF.j2` for VRF establishment on all fabric nodes
+3. **Addressing (Step 2)**: Deploy `FABRIC-LOOPBACKS.j2` for underlay and overlay interface addressing
+4. **External Connectivity (Step 3)**: Deploy `FABRIC-L3OUT.j2` for L3OUT sub-interfaces and east-west protection routes on Spine nodes (skipped automatically when `DEFN_L3OUT_NODES` is empty)
+5. **VXLAN Infrastructure (Step 4)**: Deploy `FABRIC-NVE.j2` for L3VNI VLANs, SVIs, and the NVE interface
+6. **Multicast (Step 5)**: Deploy `FABRIC-MCAST.j2` for anycast RP, MSDP, and VRF multicast
+7. **Control Plane (Step 6)**: Deploy `FABRIC-EVPN.j2` for BGP EVPN peering and address-family configuration
+8. **Data Plane (Step 7)**: Deploy `FABRIC-OVERLAY.j2` for L2VNI overlay services
+9. **Security (Step 8)**: Deploy `FABRIC-NAC-IOT.j2` for access control policies
 
 ## Template-to-Config Mapping
 
@@ -667,11 +672,12 @@ The following table shows how templates render into the final node configuration
 |----------|-------|------|--------|-----|----------|
 | 1. FABRIC-VRF | ✓ | ✓ | ✓ | ✓ | VRF definitions with RD/RT |
 | 2. FABRIC-LOOPBACKS | ✓ | ✓ | ✓ | ✓ | Underlay + overlay loopbacks |
-| 3. FABRIC-NVE | ✗ | ✓ | ✓ | ✓ | L3VNI VLANs (spines excluded) |
-| 4. FABRIC-MCAST | ✓ | ✓ | ✓ | ✓ | Multicast + anycast RP |
-| 5. FABRIC-EVPN | ✓ | ✓ | ✓ | ✓ | BGP EVPN + L3OUT interfaces |
-| 6. FABRIC-OVERLAY | ✗ | ✓ | ✓ | ✓ | L2VPN instances + SVIs |
-| 7. FABRIC-NAC-IOT | ✗ | ✓ | ✗ | ✗ | Access control policies |
+| 3. FABRIC-L3OUT | ✓ | ✗ | ✗ | ✗ | L3OUT sub-interfaces + east-west Null0 routes (gated by `DEFN_L3OUT_NODES`) |
+| 4. FABRIC-NVE | ✓ | ✓ | ✓ | ✓ | L3VNI VLANs, SVIs, NVE interface (Spines get L3VNI for L3OUT VRFs) |
+| 5. FABRIC-MCAST | ✓ | ✓ | ✓ | ✓ | Multicast RP, anycast RP, MSDP |
+| 6. FABRIC-EVPN | ✓ | ✓ | ✓ | ✓ | BGP EVPN peering, address-families (ipv4 vrf L3OUT block gated by `DEFN_L3OUT_NODES`) |
+| 7. FABRIC-OVERLAY | ✗ | ✓ | ✓ | ✓ | L2VPN instances + SVIs |
+| 8. FABRIC-NAC-IOT | ✗ | ✓ | ✗ | ✗ | Access control policies |
 
 ## Template Walkthrough: Building BGP EVPN Campus Fabric
 
@@ -701,16 +707,31 @@ This section provides a detailed walkthrough of how each template contributes to
 **Jinja2 Logic Flow:**
 1. Configures `DEFN_LOOP_NAME['UNDERLAY']` (Loopback0) on all devices with PIM sparse-mode
 2. Uses `DEFN_LOOP_UNDERLAY[__device.hostname]` for device-specific addressing
-3. Role check: IF NOT spine/border, THEN create overlay loopbacks per VRF
-4. Overlay loopback addressing: `DEFN_LOOP_OVERLAY[vrf.name] + last_octet_of_underlay_IP`
+3. Role check: IF **Spine**, THEN skip overlay loopbacks. All other nodes (Leaf and Border) receive per-VRF overlay loopbacks (`Loopback{vrf.id}`) for each VRF listed in `DEFN_VRF_TO_NODE`
+4. Overlay loopback addressing: `DEFN_LOOP_OVERLAY[vrf.name]` prefix + last octet of underlay IP (extracted via `split('\\.')` — escaped dot for CatC compatibility)
 5. VRF forwarding assignment for overlay loopbacks
 
-### **Template 3: FABRIC-NVE.j2 - VXLAN Infrastructure**
+### **Template 3: FABRIC-L3OUT.j2 - External L3 Connectivity**
+**Campus Fabric Building Logic:**
+- **L3OUT Sub-Interfaces**: Configures dot1Q encapsulated sub-interfaces on Spine nodes for VRF-routed handoff to the upstream IP Core
+- **East-West Null0 Protection**: Installs static null routes for all non-local VRF subnets, preventing cross-tenant traffic leakage through the L3OUT external path
+- **Conditional Rendering**: Entire template output is gated by `DEFN_L3OUT_NODES` in `DEFN-L3OUT.j2` — set it to `[]` to produce zero L3OUT output when the L3OUT tenant VRF is not deployed
+- **BGP L3OUT Separated**: This template generates only interface config; the corresponding BGP `address-family ipv4 vrf` peering block is in `FABRIC-EVPN.j2`
+
+**Jinja2 Logic Flow:**
+1. Outer guard: `{% if DEVICE_HOSTNAME in DEFN_L3OUT_NODES %}` — skips all output when device is not an L3OUT participant
+2. Iterates `vrf_objs` and `DEFN_L3OUT`; matches on `l3out.vrf == vrf.name` and `l3out.node == DEVICE_HOSTNAME`
+3. For each matched interface in `l3out.interfaces`: renders parent interface as routed (`no switchport`), then the dot1Q sub-interface with `encapsulation dot1Q`, `vrf forwarding`, and `ip address`
+4. East-west Null0 block: for each VRF on the device, installs `ip route vrf <vrf> <subnet> Null0` for all subnets belonging to **other** VRFs, derived dynamically from `DEFN_OVERLAY`
+5. All output is enclosed by the `DEFN_L3OUT_NODES` guard — no CLI is emitted when the list is empty
+
+### **Template 4: FABRIC-NVE.j2 - VXLAN Infrastructure**
 **Campus Fabric Building Logic:**
 - **L3VNI VLAN Creation**: Creates transit VLANs for inter-subnet routing within each VRF
 - **VNI Mapping**: Maps L3VNI VLANs to corresponding VXLAN VNIs for routing traffic
 - **SVI Configuration**: Creates unnumbered SVIs for L3VNI traffic processing
 - **NVE Interface**: Establishes the VXLAN tunnel endpoint for overlay transport
+- **Spine Participation**: Spines receive L3VNI VLAN + NVE config for VRFs listed in their `DEFN_VRF_TO_NODE` entry, enabling VRF route leaking to the upstream core via L3OUT sub-interfaces
 
 **Jinja2 Logic Flow:**
 1. Creates VLAN with `vrf.id` for each VRF (e.g., VLAN 901 for red VRF)
@@ -719,7 +740,7 @@ This section provides a detailed walkthrough of how each template contributes to
 4. Configures NVE1 interface with underlay loopback as source
 5. Adds VNI-to-VRF membership on NVE interface
 
-### **Template 4: FABRIC-MCAST.j2 - Multicast Foundation**
+### **Template 5: FABRIC-MCAST.j2 - Multicast Foundation**
 **Campus Fabric Building Logic:**
 - **Global Multicast**: Enables IP multicast routing for BUM traffic handling
 - **Anycast RP**: Configures redundant rendezvous points on spine switches
@@ -732,26 +753,28 @@ This section provides a detailed walkthrough of how each template contributes to
 3. Creates ACLs for fabric and enterprise RP scope definitions
 4. Configures PIM RP addresses for fabric and enterprise scopes
 5. Enables VRF-specific MDT settings for VXLAN multicast transport
-6. Applies PIM sparse-mode to L3OUT interfaces for external multicast
+6. Configures `ip pim sparse-mode` on L3OUT parent interfaces (Spine uplinks to IP Core)
 
-### **Template 5: FABRIC-EVPN.j2 - Control Plane**
+### **Template 6: FABRIC-EVPN.j2 - BGP EVPN Control Plane**
 **Campus Fabric Building Logic:**
 - **BGP EVPN Peering**: Establishes MP-BGP sessions with L2VPN EVPN and IPv4 MVPN address families
-- **Route Reflection**: Configures spines as route reflectors, leaves/borders as clients
-- **Peer Templates**: Standardizes BGP session and policy configurations
-- **L3OUT Interfaces**: Configures external connectivity interfaces on border nodes
+- **Route Reflection**: Configures spines as route reflectors, leaves/borders as route reflector clients
+- **Peer Templates**: Standardizes BGP session and policy configurations for consistent neighbor behaviour
+- **L3OUT BGP AF**: Configures the `address-family ipv4 vrf` BGP block for L3OUT VRFs (aggregate routes, redistribute, and eBGP neighbors) — conditional on `DEFN_L3OUT_NODES`; interface config is in `FABRIC-L3OUT.j2`
+- **Loop Prevention**: Installs AS-path access-lists and route-maps to prevent route loops when Spines reflect routes received from Border nodes back at them
 
 **Jinja2 Logic Flow:**
 1. Role-based peer template creation:
-   - IF RR (spine): Creates leaf peer session/policy templates with RR-client config
+   - IF RR (spine): Creates leaf peer session/policy templates with RR-client config and border-specific out route-map for loop prevention
    - IF CLIENT (leaf/border): Creates spine peer session/policy templates
-2. Configures BGP router-ID, graceful restart, and disables IPv4 unicast default
-3. Establishes BGP neighbors using loopback IP addresses from `DEFN_LOOP_UNDERLAY`
-4. Activates neighbors in L2VPN EVPN and IPv4 MVPN address families
-5. Configures L3OUT interfaces with dot1Q encapsulation and VRF forwarding
-6. Creates prefix-lists and route-maps for border leaf loop prevention
+   - IF BORDER: Creates multi-cluster eBGP peer session/policy templates for cross-site EVPN
+2. Configures BGP router-ID from Loopback0, disables default IPv4 unicast
+3. Builds prefix-lists and fallover route-maps covering all fabric loopbacks (including remote multi-cluster peers) for BGP peer stability
+4. Establishes BGP neighbors using loopback IP addresses from `DEFN_LOOP_UNDERLAY`; Border nodes additionally get multi-cluster eBGP neighbors from `DEFN_LOOP_MCLUSTER`
+5. Activates neighbors in `address-family l2vpn evpn` and `address-family ipv4 mvpn`
+6. Gated by `{% if DEVICE_HOSTNAME in DEFN_L3OUT_NODES %}`: configures `address-family ipv4 vrf` with aggregate prefixes, `advertise l2vpn evpn`, redistribute connected/static, and external eBGP neighbors toward the upstream core
 
-### **Template 6: FABRIC-OVERLAY.j2 - Data Plane Services**
+### **Template 7: FABRIC-OVERLAY.j2 - Data Plane Services**
 **Campus Fabric Building Logic:**
 - **L2VPN EVPN Instances**: Creates VLAN-based EVPN instances for L2 connectivity
 - **VLAN-to-VNI Mapping**: Maps tenant VLANs to L2VNIs for L2 extension
@@ -769,7 +792,7 @@ This section provides a detailed walkthrough of how each template contributes to
 4. Creates SVIs with VRF forwarding, MAC addresses, and DHCP relay
 5. Enables BGP route redistribution and maximum-paths for load balancing
 
-### **Template 7: FABRIC-NAC-IOT.j2 - Security Layer**
+### **Template 8: FABRIC-NAC-IOT.j2 - Security Layer**
 **Campus Fabric Building Logic:**
 - **Device Classification**: Creates class-maps for device type identification
 - **Authentication Policies**: Configures 802.1X and MAB authentication flows
@@ -790,12 +813,13 @@ This section provides a detailed walkthrough of how each template contributes to
 
 The templates work together in a layered approach to build the campus EVPN fabric:
 
-1. **Foundation (Templates 1-2)**: Establishes VRFs and addressing infrastructure
-2. **Transport (Template 3)**: Creates VXLAN tunnel infrastructure and L3VNI services  
-3. **Multicast (Template 4)**: Enables BUM traffic handling and anycast RP redundancy
-4. **Control Plane (Template 5)**: Establishes BGP EVPN peering and external connectivity
-5. **Data Plane (Template 6)**: Delivers L2/L3 overlay services to endpoints
-6. **Security (Template 7)**: Applies access control and device policies
+1. **Foundation (Steps 1–2)**: `FABRIC-VRF` + `FABRIC-LOOPBACKS` — establishes VRFs and addressing infrastructure
+2. **External Connectivity (Step 3)**: `FABRIC-L3OUT` — L3OUT sub-interfaces and east-west Null0 routes on Spine nodes (skipped when `DEFN_L3OUT_NODES` is empty)
+3. **Transport (Step 4)**: `FABRIC-NVE` — creates VXLAN NVE endpoint and L3VNI infrastructure
+4. **Multicast (Step 5)**: `FABRIC-MCAST` — enables BUM traffic handling and anycast RP redundancy
+5. **Control Plane (Step 6)**: `FABRIC-EVPN` — establishes BGP EVPN peering, address-families, and optional L3OUT BGP block
+6. **Data Plane (Step 7)**: `FABRIC-OVERLAY` — delivers L2/L3 overlay services to endpoints
+7. **Security (Step 8)**: `FABRIC-NAC-IOT` — applies access control and device classification policies
 
 Each template includes role-based conditional logic ensuring spines focus on control plane functions while leaves/borders provide edge services. The result is a fully automated, scalable campus EVPN fabric with multi-tenant capabilities.
 
