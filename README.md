@@ -83,7 +83,7 @@ templates:
   - name: "FABRIC-MCAST.j2"         # Step 5: Multicast RP, anycast RP, MSDP
   - name: "FABRIC-EVPN.j2"          # Step 6: BGP EVPN control plane
   - name: "FABRIC-OVERLAY.j2"       # Step 7: L2VNI overlay services + SVIs
-  - name: "FABRIC-NAC-IOT.j2"       # Step 8: NAC / IOT access control
+  - name: "FABRIC-NAC.j2"            # Step 8: NAC / IOT access control
 ```
 
 > **Note:** Only include top-level `FABRIC-*.j2` templates. `DEFN-*.j2` and `FUNC-*.j2` files are resolved via Jinja2 `{% include %}` at render time.
@@ -662,7 +662,7 @@ The templates should be deployed in the order defined in `BGP-EVPN-BUILD.yml` to
 6. **Multicast (Step 5)**: Deploy `FABRIC-MCAST.j2` for anycast RP, MSDP, and VRF multicast
 7. **Control Plane (Step 6)**: Deploy `FABRIC-EVPN.j2` for BGP EVPN peering and address-family configuration
 8. **Data Plane (Step 7)**: Deploy `FABRIC-OVERLAY.j2` for L2VNI overlay services
-9. **Security (Step 8)**: Deploy `FABRIC-NAC-IOT.j2` for access control policies
+9. **Security (Step 8)**: Deploy `FABRIC-NAC.j2` for access control policies
 
 ## Template-to-Config Mapping
 
@@ -677,7 +677,7 @@ The following table shows how templates render into the final node configuration
 | 5. FABRIC-MCAST | ✓ | ✓ | ✓ | ✓ | Multicast RP, anycast RP, MSDP |
 | 6. FABRIC-EVPN | ✓ | ✓ | ✓ | ✓ | BGP EVPN peering, address-families (ipv4 vrf L3OUT block gated by `DEFN_L3OUT_NODES`) |
 | 7. FABRIC-OVERLAY | ✗ | ✓ | ✓ | ✓ | L2VPN instances + SVIs |
-| 8. FABRIC-NAC-IOT | ✗ | ✓ | ✗ | ✗ | Access control policies |
+| 8. FABRIC-NAC | ✗ | ✓ | ✗ | ✗ | Access control policies |
 
 ## Template Walkthrough: Building BGP EVPN Campus Fabric
 
@@ -792,7 +792,7 @@ This section provides a detailed walkthrough of how each template contributes to
 4. Creates SVIs with VRF forwarding, MAC addresses, and DHCP relay
 5. Enables BGP route redistribution and maximum-paths for load balancing
 
-### **Template 8: FABRIC-NAC-IOT.j2 - Security Layer**
+### **Template 8: FABRIC-NAC.j2 - Security Layer**
 **Campus Fabric Building Logic:**
 - **Device Classification**: Creates class-maps for device type identification
 - **Authentication Policies**: Configures 802.1X and MAB authentication flows
@@ -819,7 +819,7 @@ The templates work together in a layered approach to build the campus EVPN fabri
 4. **Multicast (Step 5)**: `FABRIC-MCAST` — enables BUM traffic handling and anycast RP redundancy
 5. **Control Plane (Step 6)**: `FABRIC-EVPN` — establishes BGP EVPN peering, address-families, and optional L3OUT BGP block
 6. **Data Plane (Step 7)**: `FABRIC-OVERLAY` — delivers L2/L3 overlay services to endpoints
-7. **Security (Step 8)**: `FABRIC-NAC-IOT` — applies access control and device classification policies
+7. **Security (Step 8)**: `FABRIC-NAC` — applies access control and device classification policies
 
 Each template includes role-based conditional logic ensuring spines focus on control plane functions while leaves/borders provide edge services. The result is a fully automated, scalable campus EVPN fabric with multi-tenant capabilities.
 

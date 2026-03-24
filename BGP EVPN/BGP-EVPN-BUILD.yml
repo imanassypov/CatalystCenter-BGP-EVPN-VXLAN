@@ -24,4 +24,4 @@ templates:
   - name: "FABRIC-MCAST.j2"
   - name: "FABRIC-EVPN.j2"
   - name: "FABRIC-OVERLAY.j2"
-  - name: "FABRIC-NAC-IOT.j2"
+  - name: "FABRIC-NAC.j2"
