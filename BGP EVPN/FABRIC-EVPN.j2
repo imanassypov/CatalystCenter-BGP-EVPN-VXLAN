@@ -156,7 +156,10 @@ router bgp {{FABRIC_BGP_ASN}}
 {# ============================= #}
 {# Address-Family: ipv4 vrf      #}
 {# L3OUT CONFIGURATION ON SPINES #}
+{# Only rendered when device is  #}
+{# listed in DEFN_L3OUT_NODES    #}
 {# ============================= #}
+{% if DEVICE_HOSTNAME in DEFN_L3OUT_NODES %}
 {% for vrf in vrf_objs %}
 {% for l3out in DEFN_L3OUT %}
 {% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME and DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
@@ -168,7 +171,8 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endfor %}
    redistribute static
    redistribute connected
-{% for interface, params in l3out.interfaces.items() %}
+{% for interface in l3out.interfaces %}
+{% set params = l3out.interfaces[interface] %}
    neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}
    neighbor {{params.neighbour}} activate
 {% endfor %}
@@ -180,6 +184,7 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endif %}
 {% endfor %}
 {% endfor %}
+{% endif %}
 !
 {# ============================= #}
 {# Address-Family: l2vpn evpn    #}
