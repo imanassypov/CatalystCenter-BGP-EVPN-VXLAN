@@ -14,14 +14,23 @@
 {{ vrf_definition(DEFN_VRF, DEFN_VRF_TO_NODE, DEVICE_HOSTNAME) }}
 {# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
 {% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
+{# ================================================================= #}
+{# DEFN_L3OUT_NODES GUARD                                            #}
+{# All L3OUT output (interfaces + east-west Null routes) is skipped  #}
+{# when this device is not listed in DEFN_L3OUT_NODES.               #}
+{# To disable L3OUT: set DEFN_L3OUT_NODES=[] in DEFN-L3OUT.j2 and   #}
+{# remove corresponding VRF IDs from Spine entries in DEFN-VRF.j2.  #}
+{# ================================================================= #}
+{% if DEVICE_HOSTNAME in DEFN_L3OUT_NODES %}
 {# ============================================= #}
 {# L3OUT Interface Configuration Block           #}
-{# Parent interface + Dot1Q sub-interfaces      #}
+{# Parent interface + Dot1Q sub-interfaces       #}
 {# ============================================= #}
 {% for vrf in vrf_objs %}
 {% for l3out in DEFN_L3OUT %}
 {% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME %}
-{% for interface, params in l3out.interfaces.items() %}
+{% for interface in l3out.interfaces %}
+{% set params = l3out.interfaces[interface] %}
 interface {{params.parent}}
  no switchport
 !
@@ -36,16 +45,17 @@ interface {{interface}}
 {% endfor %}
 {# ============================================= #}
 {# VRF East-West Protection Block                #}
-{# Null routes prevent inter-tenant leakage     #}
-{# Derived dynamically from DEFN_OVERLAY        #}
+{# Null routes prevent inter-tenant leakage      #}
+{# via the L3OUT external path.                  #}
+{# Derived dynamically from DEFN_OVERLAY.        #}
+{# Only active when DEVICE is an L3OUT node.     #}
 {# ============================================= #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
 {% for vrf in vrf_objs %}
 {# For this VRF, install null routes for subnets from ALL OTHER VRFs #}
 {% for overlay in DEFN_OVERLAY %}
 {% if overlay.vrf != vrf.name %}
-{% for vlan_id, vlan_params in overlay.vlans.items() %}
-ip route vrf {{vrf.name}} {{vlan_params.network}} Null0
+{% for vlan_id in overlay.vlans %}
+ip route vrf {{vrf.name}} {{overlay.vlans[vlan_id].network}} Null0
 {% endfor %}
 {% endif %}
 {% endfor %}
