@@ -28,17 +28,32 @@ route-map EVPN-PEER-BORDER-OUT permit 10
 {% endif %}
 !
 {# ================================================================== #}
-{# INTRA-FABRIC iBGP PEERS ONLY - fall-over tracking /32 loopbacks   #}
-{# Remote MCLUSTER peers are eBGP (different AS) and rely on          #}
-{# ebgp-multihop + their own routing table for session tracking       #}
+{# FABRIC-LOOPBACKS: intra-fabric iBGP peer /32 fall-over tracking    #}
+{# Iterate SPINE then CLIENT roles - covers all fabric nodes           #}
 {# ================================================================== #}
-{% for node in DEFN_ALL_NODES %}
-ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% for node in DEFN_NODE_ROLES['SPINE'] %}
+ip prefix-list FABRIC-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% endfor %}
+{% for node in DEFN_NODE_ROLES['CLIENT'] %}
+ip prefix-list FABRIC-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
 !
-route-map NODE-LOOPBACKS permit 10
- match ip address prefix-list NODE-LOOPBACKS
+route-map FABRIC-LOOPBACKS permit 10
+ match ip address prefix-list FABRIC-LOOPBACKS
 !
+{# ================================================================== #}
+{# MCLUSTER-LOOPBACKS: eBGP multi-cluster peer /32 fall-over tracking #}
+{# Only rendered on BORDER nodes                                       #}
+{# ================================================================== #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+{% for remote in DEFN_LOOP_MCLUSTER %}
+ip prefix-list MCLUSTER-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
+{% endfor %}
+!
+route-map MCLUSTER-LOOPBACKS permit 10
+ match ip address prefix-list MCLUSTER-LOOPBACKS
+!
+{% endif %}
 router bgp {{FABRIC_BGP_ASN}}
 {# ============================= #}
 {# BGP Global Settings Block     #}
@@ -81,7 +96,7 @@ router bgp {{FABRIC_BGP_ASN}}
   remote-as {{FABRIC_BGP_ASN}}
   log-neighbor-changes
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
-  fall-over route-map NODE-LOOPBACKS
+  fall-over route-map FABRIC-LOOPBACKS
 ! @start-ignore-compliance
   exit-peer-session
 ! @end-ignore-compliance
@@ -100,7 +115,7 @@ router bgp {{FABRIC_BGP_ASN}}
   description SPINE-EVPN-PEER
   log-neighbor-changes
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
-  fall-over route-map NODE-LOOPBACKS
+  fall-over route-map FABRIC-LOOPBACKS
 ! @start-ignore-compliance
   exit-peer-session
 ! @end-ignore-compliance
@@ -112,7 +127,7 @@ router bgp {{FABRIC_BGP_ASN}}
   log-neighbor-changes
   ebgp-multihop 4
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
-  fall-over route-map NODE-LOOPBACKS
+  fall-over route-map MCLUSTER-LOOPBACKS
 ! @start-ignore-compliance
  exit-peer-session
 ! @end-ignore-compliance
