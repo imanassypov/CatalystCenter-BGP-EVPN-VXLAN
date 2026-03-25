@@ -13,10 +13,9 @@ interface {{DEFN_LOOP_NAME['UNDERLAY']}}
  ip address {{DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME]}} 255.255.255.255
  ip pim sparse-mode
 !
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE']  %}
-{# SKIP SPINE #}
-{% else %}
-{# LEAF AND BORDER: generate per-VRF overlay loopbacks #}
+{# Generate per-VRF overlay loopbacks for any node that has VRFs mapped #}
+{# Needed for external peering toward enterprise RP; without this source loopback, the PIM Register Tunnel remains down #}
+{% if DEFN_VRF_TO_NODE[DEVICE_HOSTNAME] is defined %}
 {% for vrf_id in DEFN_VRF_TO_NODE[DEVICE_HOSTNAME] %}
 {% for vrf_entry in DEFN_VRF %}
 {% if vrf_entry.id == vrf_id %}
