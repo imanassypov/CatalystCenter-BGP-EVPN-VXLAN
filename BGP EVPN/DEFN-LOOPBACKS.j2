@@ -1,14 +1,4 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
-{# Flat list of all fabric nodes - iterate this instead of DEFN_LOOP_UNDERLAY directly     #}
-{# to avoid CatC dict-key-iterator issue when using bracket notation inside the same dict  #}
-{% set DEFN_ALL_NODES = [
-    'Spine-01.dcloud.cisco.com',
-    'Spine-02.dcloud.cisco.com',
-    'Leaf-01.dcloud.cisco.com',
-    'Leaf-02.dcloud.cisco.com',
-    'Border-01.dcloud.cisco.com',
-    'Border-02.dcloud.cisco.com'
-] %}
 {% set DEFN_LOOP_UNDERLAY =
     {
       'Spine-01.dcloud.cisco.com':   '198.19.1.1',
