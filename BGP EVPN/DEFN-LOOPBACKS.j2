@@ -21,6 +21,10 @@
 %}
 {# DEFN_LOOP_MCLUSTER: remote Border peers for cross-site VXLAN multi-cluster BGP  #}
 {# Keys = remote border hostnames; values = their Loopback0 IP and remote site ASN  #}
+{# Flat list companion - iterate this to avoid CatC dict-key-iterator bracket lookup failure #}
+{% set DEFN_MCLUSTER_NODES = [
+    'dmz1.dcloud.cisco.com'
+] %}
 {% set DEFN_LOOP_MCLUSTER =
     {
       'dmz1.dcloud.cisco.com': {'ip': '198.19.1.200', 'asn': '65003'}
