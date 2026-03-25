@@ -46,7 +46,7 @@ route-map FABRIC-LOOPBACKS permit 10
 {# Only rendered on BORDER nodes                                       #}
 {# ================================================================== #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-{% for remote in DEFN_LOOP_MCLUSTER %}
+{% for remote in DEFN_MCLUSTER_NODES %}
 ip prefix-list MCLUSTER-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
 {% endfor %}
 !
