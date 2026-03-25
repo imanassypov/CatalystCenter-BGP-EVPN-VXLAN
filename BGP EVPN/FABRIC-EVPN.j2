@@ -28,20 +28,32 @@ route-map EVPN-PEER-BORDER-OUT permit 10
 {% endif %}
 !
 {# ================================================================== #}
-{# FABRICS BGP PEERING MUST TRACK /32 PEER ADDRESSES ONLY             #}
-{# AND NOT FALLBACK TO AGGREGATE/DEFAULT WHEN THE PEER ADDR GOES AWAY #}
+{# FABRIC-LOOPBACKS: intra-fabric iBGP peer /32 fall-over tracking    #}
+{# Iterate SPINE then CLIENT roles - covers all fabric nodes           #}
 {# ================================================================== #}
-{% for node in DEFN_LOOP_UNDERLAY %}
-ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% for node in DEFN_NODE_ROLES['SPINE'] %}
+ip prefix-list FABRIC-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
-{# Include remote MCLUSTER peer Loopback0s so fall-over route-map covers them #}
-{% for remote in DEFN_LOOP_MCLUSTER %}
-ip prefix-list NODE-LOOPBACKS seq {{DEFN_LOOP_UNDERLAY | length + loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
+{% for node in DEFN_NODE_ROLES['CLIENT'] %}
+ip prefix-list FABRIC-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
 !
-route-map NODE-LOOPBACKS permit 10
- match ip address prefix-list NODE-LOOPBACKS
+route-map FABRIC-LOOPBACKS permit 10
+ match ip address prefix-list FABRIC-LOOPBACKS
 !
+{# ================================================================== #}
+{# MCLUSTER-LOOPBACKS: eBGP multi-cluster peer /32 fall-over tracking #}
+{# Only rendered on BORDER nodes                                       #}
+{# ================================================================== #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
+ip prefix-list MCLUSTER-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
+{% endfor %}
+!
+route-map MCLUSTER-LOOPBACKS permit 10
+ match ip address prefix-list MCLUSTER-LOOPBACKS
+!
+{% endif %}
 router bgp {{FABRIC_BGP_ASN}}
 {# ============================= #}
 {# BGP Global Settings Block     #}
@@ -84,7 +96,7 @@ router bgp {{FABRIC_BGP_ASN}}
   remote-as {{FABRIC_BGP_ASN}}
   log-neighbor-changes
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
-  fall-over route-map NODE-LOOPBACKS
+  fall-over route-map FABRIC-LOOPBACKS
 ! @start-ignore-compliance
   exit-peer-session
 ! @end-ignore-compliance
@@ -103,7 +115,7 @@ router bgp {{FABRIC_BGP_ASN}}
   description SPINE-EVPN-PEER
   log-neighbor-changes
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
-  fall-over route-map NODE-LOOPBACKS
+  fall-over route-map FABRIC-LOOPBACKS
 ! @start-ignore-compliance
   exit-peer-session
 ! @end-ignore-compliance
@@ -115,7 +127,7 @@ router bgp {{FABRIC_BGP_ASN}}
   log-neighbor-changes
   ebgp-multihop 4
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
-  fall-over route-map NODE-LOOPBACKS
+  fall-over route-map MCLUSTER-LOOPBACKS
 ! @start-ignore-compliance
  exit-peer-session
 ! @end-ignore-compliance
@@ -147,7 +159,7 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endif %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
 {# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE LOOPBACK0 PEERING (eBGP) #}
-{% for remote in DEFN_LOOP_MCLUSTER %}
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} remote-as {{DEFN_LOOP_MCLUSTER[remote]['asn']}}
   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-session OVERLAY-MCLUSTER-EVPN-PEER-SESSION-POLICY
 {% endfor %}
@@ -156,7 +168,10 @@ router bgp {{FABRIC_BGP_ASN}}
 {# ============================= #}
 {# Address-Family: ipv4 vrf      #}
 {# L3OUT CONFIGURATION ON SPINES #}
+{# Only rendered when device is  #}
+{# listed in DEFN_L3OUT_NODES    #}
 {# ============================= #}
+{% if DEVICE_HOSTNAME in DEFN_L3OUT_NODES %}
 {% for vrf in vrf_objs %}
 {% for l3out in DEFN_L3OUT %}
 {% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME and DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
@@ -168,7 +183,8 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endfor %}
    redistribute static
    redistribute connected
-{% for interface, params in l3out.interfaces.items() %}
+{% for interface in l3out.interfaces %}
+{% set params = l3out.interfaces[interface] %}
    neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}
    neighbor {{params.neighbour}} activate
 {% endfor %}
@@ -180,6 +196,7 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endif %}
 {% endfor %}
 {% endfor %}
+{% endif %}
 !
 {# ============================= #}
 {# Address-Family: l2vpn evpn    #}
@@ -210,7 +227,7 @@ router bgp {{FABRIC_BGP_ASN}}
 {# VXLAN MULTI-CLUSTER SUPPORT - REMOTE SITE eBGP PEERING VIA LOOPBACK0 #}
    rewrite-evpn-rt-asn
 {# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE #}
-{% for remote in DEFN_LOOP_MCLUSTER %}
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
 {% endfor %}

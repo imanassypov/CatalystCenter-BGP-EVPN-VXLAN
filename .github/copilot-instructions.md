@@ -34,9 +34,49 @@ Every `.j2` file **must** start with:
 | Unsupported | Use Instead |
 |-------------|-------------|
 | `not in` operator | `{% if dict[key] is not defined %}` |
-| `.keys()` method | Iterate dict directly |
-| Two-variable `for` loop: `{% for k, v in dict.items() %}` | Single-variable: `{% for k in dict %}` then access `dict[k]` |
+| `.keys()` method | Iterate companion list (see below) |
+| Two-variable `for` loop: `{% for k, v in dict.items() %}` | Iterate companion list (see below) |
+| `{% for k in dict %}` → `dict[k]` on included-scope dicts | Iterate companion list (see below) |
 | Complex nested expressions | Restructure into simpler steps |
+
+### Dict Iteration in Included-Scope Files (Critical)
+
+**Any dict defined in an included `DEFN-*.j2` file must have a companion flat list for iteration.** Dict-key iteration is universally broken in CatC's included-scope Jinja engine — the loop variable resolves correctly but bracket notation `dict[key]` returns empty, regardless of which dict is used. This affects `.items()`, `.keys()`, and bare `{% for k in dict %}` patterns alike.
+
+**Pattern — always define both a dict and a companion list:**
+```jinja
+{# Companion list — iterate this in FABRIC templates #}
+{% set DEFN_ALL_NODES = [
+    'spine01.example.com',
+    'leaf01.example.com'
+] %}
+{# Dict — used only for lookups, never for iteration #}
+{% set DEFN_LOOP_UNDERLAY = {
+    'spine01.example.com': '198.19.1.1',
+    'leaf01.example.com':  '198.19.1.2'
+} %}
+```
+
+**In FABRIC templates, always iterate the companion list:**
+```jinja
+{# CORRECT — list iteration yields plain strings; bracket lookup works #}
+{% for node in DEFN_ALL_NODES %}
+ip prefix-list LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% endfor %}
+
+{# WRONG — dict iteration yields key-iterator objects; dict[key] returns empty #}
+{% for node in DEFN_LOOP_UNDERLAY %}
+ip prefix-list LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% endfor %}
+```
+
+**Existing companion lists in this project:**
+| Companion List | Dict | Usage |
+|---|---|---|
+| `DEFN_ALL_NODES` | `DEFN_LOOP_UNDERLAY` | All fabric node loopback IPs |
+| `DEFN_MCLUSTER_NODES` | `DEFN_LOOP_MCLUSTER` | Remote multi-cluster peer IPs and ASNs |
+
+> When adding a new node to `DEFN_LOOP_UNDERLAY` or a new remote to `DEFN_LOOP_MCLUSTER`, always update both the dict **and** its companion list.
 
 > **Note — `.split()` escaping**: CatC's Jinja engine treats `.` as a regex wildcard. Always use `split('\\.')` (escaped dot) to split on a literal dot. This works correctly for IP addresses: `DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME].split('\\.')[3]` extracts the last octet as expected.
 

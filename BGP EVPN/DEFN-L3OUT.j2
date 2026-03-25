@@ -23,4 +23,20 @@
                                 "10.1.101.0 255.255.255.0",
                                 "10.1.102.0 255.255.255.0"]
 %}
+{# ============================================================ #}
+{# DEFN_L3OUT_NODES — SINGLE TOGGLE FOR ALL L3OUT OUTPUT        #}
+{#                                                              #}
+{# List every node hostname that participates in L3OUT.         #}
+{# Values must match the 'node' field entries in DEFN_L3OUT.    #}
+{#                                                              #}
+{# To DISABLE all L3OUT output (e.g. when the L3OUT VRF tenant  #}
+{# is not present in this deployment):                          #}
+{#   1. Set DEFN_L3OUT_NODES to []                              #}
+{#   2. Remove the L3OUT VRF IDs from the corresponding Spine   #}
+{#      entries in DEFN_VRF_TO_NODE (DEFN-VRF.j2) to prevent   #}
+{#      orphaned VRF/NVE config on Spines with no external      #}
+{#      connectivity.                                           #}
+{# ============================================================ #}
+{% set DEFN_L3OUT_NODES = ['Spine-01.dcloud.cisco.com',
+                           'Spine-02.dcloud.cisco.com'] %}
 {# End of File #}
