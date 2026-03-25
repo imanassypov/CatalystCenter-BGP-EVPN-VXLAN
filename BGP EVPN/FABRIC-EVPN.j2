@@ -46,7 +46,7 @@ route-map FABRIC-LOOPBACKS permit 10
 {# Only rendered on BORDER nodes                                       #}
 {# ================================================================== #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-{% for remote in DEFN_MCLUSTER_NODES %}
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
 ip prefix-list MCLUSTER-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
 {% endfor %}
 !
@@ -159,7 +159,7 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endif %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
 {# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE LOOPBACK0 PEERING (eBGP) #}
-{% for remote in DEFN_LOOP_MCLUSTER %}
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} remote-as {{DEFN_LOOP_MCLUSTER[remote]['asn']}}
   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-session OVERLAY-MCLUSTER-EVPN-PEER-SESSION-POLICY
 {% endfor %}
@@ -227,7 +227,7 @@ router bgp {{FABRIC_BGP_ASN}}
 {# VXLAN MULTI-CLUSTER SUPPORT - REMOTE SITE eBGP PEERING VIA LOOPBACK0 #}
    rewrite-evpn-rt-asn
 {# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE #}
-{% for remote in DEFN_LOOP_MCLUSTER %}
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
 {% endfor %}
