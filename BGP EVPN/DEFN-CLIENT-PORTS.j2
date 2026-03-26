@@ -10,18 +10,18 @@
 
 {% set DEFN_CLIENT_PORTS = {
   'Leaf-01.dcloud.cisco.com': [
-    {'port': 'Gi1/0/3', 'vlan': '101', 'description': 'DAG-corp-101', 'portfast': true},
-    {'port': 'Gi1/0/4', 'vlan': '102', 'description': 'DAG-corp-102', 'portfast': true},
-    {'port': 'Gi1/0/5', 'vlan': '201', 'description': 'DAG-iot-blue-201', 'portfast': true},
-    {'port': 'Gi1/0/6', 'vlan': '221', 'description': 'DAG-iot-green-221', 'portfast': true},
-    {'port': 'Gi1/0/7', 'vlan': '201', 'description': 'DAG-iot-blue-201', 'portfast': true}
+    {'port': 'Gi1/0/3', 'vlan': '101', 'description': 'client-red-01', 'portfast': true},
+    {'port': 'Gi1/0/4', 'vlan': '102', 'description': 'client-red-03', 'portfast': true},
+    {'port': 'Gi1/0/5', 'vlan': '201', 'description': 'client-blue-01', 'portfast': true},
+    {'port': 'Gi1/0/6', 'vlan': '221', 'description': 'client-green-01', 'portfast': true},
+    {'port': 'Gi1/0/7', 'vlan': '201', 'description': 'client-blue-03-dhcp', 'portfast': true}
   ],
   'Leaf-02.dcloud.cisco.com': [
-    {'port': 'Gi1/0/3', 'vlan': '101', 'description': 'DAG-corp-101', 'portfast': true},
-    {'port': 'Gi1/0/4', 'vlan': '102', 'description': 'DAG-corp-102', 'portfast': true},
-    {'port': 'Gi1/0/5', 'vlan': '201', 'description': 'DAG-iot-blue-201', 'portfast': true},
-    {'port': 'Gi1/0/6', 'vlan': '221', 'description': 'DAG-iot-green-221', 'portfast': true},
-    {'port': 'Gi1/0/7', 'vlan': '221', 'description': 'DAG-iot-green-221', 'portfast': true}
+    {'port': 'Gi1/0/3', 'vlan': '101', 'description': 'client-red-02', 'portfast': true},
+    {'port': 'Gi1/0/4', 'vlan': '102', 'description': 'client-red-04', 'portfast': true},
+    {'port': 'Gi1/0/5', 'vlan': '201', 'description': 'client-blue-02', 'portfast': true},
+    {'port': 'Gi1/0/6', 'vlan': '221', 'description': 'client-green-02-dhcp', 'portfast': true},
+    {'port': 'Gi1/0/7', 'vlan': '221', 'description': 'client-green-03', 'portfast': true}
   ]
 } %}
 
