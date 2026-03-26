@@ -2,37 +2,41 @@
 {# ======================================== #}
 {# Client Port Utility Macros (Library)     #}
 {# ======================================== #}
-{# Port range expansion utility: Gi0/0/1-5  #}
-{# Note: Currently inlined in FABRIC        #}
-{# template; available here for future use  #}
+{# render_port_config: emits IOS-XE CLI     #}
+{# for a single port_entry dict, expanding  #}
+{# port ranges (e.g., Gi0/0/1-5) inline.   #}
+{# Called from FABRIC-CLIENT-PORTS.j2       #}
 
-{# Example usage (in a template that includes this file): #}
-{# {% set port_list = expand_port_range_inline('Gi0/0/1-5') %} #}
-{# {% for port in port_list %} ... {% endfor %} #}
-
-{% macro expand_port_range_inline(port_spec) %}
-{# Helper macro: manually expand a port range string into a list #}
-{# This is a reference implementation for future template updates #}
-{# Input: port_spec string (e.g., 'Gi0/0/1-5', 'Gi0/0/48', 'Gi0/0/1-3,Gi0/0/5') #}
-{# Returns: rendered list that can be captured (Jinja2 limitation requires inline logic) #}
-[
-{%- if '-' in port_spec and ',' not in port_spec %}
-  {# Single range: Gi0/0/1-5 #}
-  {%- set parts = port_spec.split('-') %}
-  {%- if parts | length == 2 %}
-    {%- set prefix_and_start = parts[0] %}
-    {%- set end_num = parts[1] | int %}
-    {%- set last_slash = prefix_and_start.rfind('/') %}
-    {%- set prefix = prefix_and_start[:last_slash + 1] %}
-    {%- set start_num = prefix_and_start[last_slash + 1:] | int %}
-    {%- for i in range(start_num, end_num + 1) %}
-      "{{ prefix }}{{ i }}"{{ "," if not loop.last else "" }}
-    {%- endfor %}
-  {%- endif %}
-{%- else %}
-  {# Single port or unsupported multi-range: return as-is #}
-  "{{ port_spec }}"
-{%- endif %}
-]
+{% macro switchport_access(port_entry) %}
+{% if '-' in port_entry.port %}
+  {# Port range: parse prefix and start/end numbers #}
+  {% set parts = port_entry.port.split('-') %}
+  {% if parts | length == 2 %}
+    {% set last_slash = parts[0].rfind('/') %}
+    {% set prefix = parts[0][:last_slash + 1] %}
+    {% set start_num = parts[0][last_slash + 1:] | int %}
+    {% set end_num = parts[1] | int %}
+    {% for i in range(start_num, end_num + 1) %}
+interface {{ prefix }}{{ i }}
+ description {{ port_entry.description }}
+ switchport mode access
+ switchport access vlan {{ port_entry.vlan }}
+      {% if port_entry.portfast is defined and port_entry.portfast %}
+ spanning-tree portfast
+      {% endif %}
+!
+    {% endfor %}
+  {% endif %}
+{% else %}
+  {# Single port #}
+interface {{ port_entry.port }}
+ description {{ port_entry.description }}
+ switchport mode access
+ switchport access vlan {{ port_entry.vlan }}
+  {% if port_entry.portfast is defined and port_entry.portfast %}
+ spanning-tree portfast
+  {% endif %}
+!
+{% endif %}
 {% endmacro %}
 
