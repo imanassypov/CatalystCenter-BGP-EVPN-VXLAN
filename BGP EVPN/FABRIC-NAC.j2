@@ -3,7 +3,7 @@
 {# Generates IBNS 2.0 policy and RADIUS configuration for IOT VRFs #}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
-{% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-OBJECT-MACROS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-VRF-LOOKUP.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-NAC.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}

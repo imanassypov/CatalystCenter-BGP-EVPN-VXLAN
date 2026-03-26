@@ -2,7 +2,7 @@
 {# FABRIC-MCAST.j2 - Standalone Multicast Routing Template #}
 {# Generates multicast routing configuration for the current device #}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2" %}
-{% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-OBJECT-MACROS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-VRF-LOOKUP.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-OVERLAY.j2" %}
