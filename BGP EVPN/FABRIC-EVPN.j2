@@ -9,7 +9,6 @@
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VNIOFFSETS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-L3OUT.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-OVERLAY.j2" %}
-{# DEFN-IPSEC.j2 removed - IPSEC tunnelling deprecated #}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
 {# Resolve the VRF objects for this device #}
