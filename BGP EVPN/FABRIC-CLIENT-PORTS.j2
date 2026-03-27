@@ -16,7 +16,7 @@
   {# This is a LEAF or CLIENT node #}
   {% if DEVICE_HOSTNAME in DEFN_CLIENT_PORTS %}
     {% for port_entry in DEFN_CLIENT_PORTS[DEVICE_HOSTNAME] %}
-{{ switchport_access(port_entry) }}
+{{ switchport_config(port_entry) }}
     {% endfor %}
   {% endif %}
 {% endif %}
