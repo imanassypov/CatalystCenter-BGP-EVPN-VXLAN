@@ -1,0 +1,64 @@
+flowchart LR
+  classDef role fill:#0B5CAB,color:#FFFFFF,stroke:#083E75,stroke-width:2px;
+  classDef fabric fill:#E0F2FE,color:#0F172A,stroke:#0284C7,stroke-width:1.5px;
+  classDef rendered fill:#DCFCE7,color:#14532D,stroke:#16A34A,stroke-width:1.5px;
+  classDef skipped fill:#FDE68A,color:#78350F,stroke:#D97706,stroke-width:1.5px,stroke-dasharray: 5 3;
+  classDef optional fill:#F3E8FF,color:#4C1D95,stroke:#7C3AED,stroke-width:1.5px;
+
+  top["BGP-EVPN-BUILD composite attached to the building-level CLI Network Profile"]:::role
+
+  subgraph spineRole["Spine and RR"]
+    direction TB
+    spine["Role source\nDEFN_NODE_ROLES['SPINE'] and ['RR']"]:::role
+    spine1["FABRIC-VRF"]:::fabric
+    spine2["FABRIC-LOOPBACKS"]:::fabric
+    spine3["FABRIC-L3OUT"]:::fabric
+    spine4["FABRIC-NVE"]:::fabric
+    spine5["FABRIC-MCAST"]:::fabric
+    spine6["FABRIC-EVPN"]:::fabric
+    spine7["FABRIC-OVERLAY"]:::skipped
+    spine8["FABRIC-CLIENT-PORTS"]:::skipped
+    spine9["FABRIC-NAC"]:::skipped
+    spineOut["Result\nRR policies, Anycast RP, Loopback0, L3VNI SVIs,\noptional L3OUT to the core"]:::rendered
+    spine3 --> spineOpt["Rendered only when DEFN_L3OUT_NODES includes the spine"]:::optional
+  end
+
+  subgraph leafRole["Leaf"]
+    direction TB
+    leaf["Role source\nDEFN_NODE_ROLES['CLIENT'] but not ['BORDER']"]:::role
+    leaf1["FABRIC-VRF"]:::fabric
+    leaf2["FABRIC-LOOPBACKS"]:::fabric
+    leaf3["FABRIC-L3OUT"]:::skipped
+    leaf4["FABRIC-NVE"]:::fabric
+    leaf5["FABRIC-MCAST"]:::fabric
+    leaf6["FABRIC-EVPN"]:::fabric
+    leaf7["FABRIC-OVERLAY"]:::fabric
+    leaf8["FABRIC-CLIENT-PORTS"]:::fabric
+    leaf9["FABRIC-NAC"]:::fabric
+    leafOut["Result\nTenant L2VNI and L3VNI services, access ports,\nDHCP relay, optional NAC enforcement"]:::rendered
+    leaf9 --> leafOpt["NAC renders only for VRFs present on the leaf and defined in DEFN-NAC"]:::optional
+  end
+
+  subgraph borderRole["Border"]
+    direction TB
+    border["Role source\nDEFN_NODE_ROLES['CLIENT'] and ['BORDER']"]:::role
+    border1["FABRIC-VRF"]:::fabric
+    border2["FABRIC-LOOPBACKS"]:::fabric
+    border3["FABRIC-L3OUT"]:::skipped
+    border4["FABRIC-NVE"]:::fabric
+    border5["FABRIC-MCAST"]:::fabric
+    border6["FABRIC-EVPN"]:::fabric
+    border7["FABRIC-OVERLAY"]:::skipped
+    border8["FABRIC-CLIENT-PORTS"]:::skipped
+    border9["FABRIC-NAC"]:::skipped
+    borderOut["Result\nVRF presence for edge tenants, border EVPN policy,\noptional remote-site multi-cluster peering"]:::rendered
+    border6 --> borderOpt["Remote-site EVPN peering renders only when BORDER and MCLUSTER data exist"]:::optional
+  end
+
+  top --> spine
+  top --> leaf
+  top --> border
+
+  spine --> spine1 --> spine2 --> spine3 --> spine4 --> spine5 --> spine6 --> spine7 --> spine8 --> spine9 --> spineOut
+  leaf --> leaf1 --> leaf2 --> leaf3 --> leaf4 --> leaf5 --> leaf6 --> leaf7 --> leaf8 --> leaf9 --> leafOut
+  border --> border1 --> border2 --> border3 --> border4 --> border5 --> border6 --> border7 --> border8 --> border9 --> borderOut

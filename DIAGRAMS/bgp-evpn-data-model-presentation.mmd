@@ -1,0 +1,42 @@
+flowchart LR
+  classDef intent fill:#FEF3C7,color:#422006,stroke:#D97706,stroke-width:1.5px;
+  classDef pipeline fill:#E0F2FE,color:#0F172A,stroke:#0284C7,stroke-width:1.5px;
+  classDef output fill:#0E7490,color:#FFFFFF,stroke:#155E75,stroke-width:2px;
+  classDef note fill:#F3E8FF,color:#4C1D95,stroke:#7C3AED,stroke-width:1.5px;
+
+  subgraph source["Fabric Intent"]
+    direction TB
+    roles["Roles\nDEFN-ROLES"]:::intent
+    addr["Addressing\nDEFN-LOOPBACKS"]:::intent
+    tenants["Tenants and placement\nDEFN-VRF"]:::intent
+    services["Overlay services\nDEFN-OVERLAY"]:::intent
+    edge["External and policy toggles\nDEFN-L3OUT, DEFN-MCAST, DEFN-NAC, DEFN-CLIENT-PORTS"]:::intent
+    vni["Numbering rules\nDEFN-VNIOFFSETS"]:::intent
+  end
+
+  subgraph render["Render Pipeline"]
+    direction TB
+    infra["Infrastructure layers\nFABRIC-VRF, LOOPBACKS, NVE, MCAST, EVPN"]:::pipeline
+    edgeRender["Edge integration layers\nFABRIC-L3OUT, CLIENT-PORTS, NAC"]:::pipeline
+    tenantRender["Tenant service layer\nFABRIC-OVERLAY"]:::pipeline
+    composite["BGP-EVPN-BUILD composite\nserializes the render order"]:::output
+  end
+
+  subgraph result["Provisioning Outcome"]
+    direction TB
+    roleAware["Role-aware IOS-XE CLI\nper Spine, Leaf, and Border"]:::output
+    siteAttach["Composite is attached to a CLI Network Profile\nand applied at the building site"]:::note
+  end
+
+  roles --> infra
+  addr --> infra
+  tenants --> infra
+  services --> tenantRender
+  edge --> edgeRender
+  vni --> infra
+
+  infra --> composite
+  tenantRender --> composite
+  edgeRender --> composite
+  composite --> roleAware
+  siteAttach --> composite
