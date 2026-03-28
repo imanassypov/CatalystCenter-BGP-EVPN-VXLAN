@@ -1,0 +1,36 @@
+%%{init: {'flowchart': {'wrappingWidth': 400}}}%%
+flowchart TB
+  classDef phase fill:#0B5CAB,color:#FFFFFF,stroke:#083E75,stroke-width:2px;
+  classDef action fill:#E0F2FE,color:#0F172A,stroke:#0284C7,stroke-width:1.5px;
+  classDef data fill:#FEF3C7,color:#422006,stroke:#D97706,stroke-width:1.5px;
+  classDef output fill:#DCFCE7,color:#14532D,stroke:#16A34A,stroke-width:1.5px;
+  classDef loop fill:#F3E8FF,color:#4C1D95,stroke:#7C3AED,stroke-width:1.5px;
+
+  subgraph prep["1. Template Preparation"]
+    userInput["Operator populates DEFN templates\nwith fabric intent: hostnames, roles,\nVRFs, VLANs, loopbacks, L3OUT, NAC"]:::action
+    userInput --> repo["Git repository\nBGP EVPN DEFN, FABRIC, FUNC templates"]:::data
+    repo --> sync["Ansible sync playbook reads Git repo,\npushes .j2 files to CatC Template Editor,\nand creates BGP-EVPN-BUILD composite\nfrom BGP-EVPN-BUILD.yml"]:::action
+    sync --> project["Template Project and BGP-EVPN-BUILD\ncomposite ready in Catalyst Center"]:::output
+  end
+
+  subgraph design["2. Template Binding"]
+    profile["Attach BGP-EVPN-BUILD composite\nto a CLI Network Profile"]:::action
+    profile --> site["Assign Network Profile to the\nbuilding-level site hierarchy"]:::action
+  end
+
+  subgraph provision["3. Template Provisioning"]
+    inventory["Provision via CatC UX\nor Ansible template provisioning playbook"]:::action
+    inventory --> render["Catalyst Center evaluates __device.hostname\nand renders FABRIC templates in build order"]:::phase
+    render --> deviceCli["Per-device IOS-XE CLI output\nfor Spine, Leaf, and Border roles"]:::output
+    deviceCli --> deploy["Provisioning pushes rendered CLI\nto the managed devices"]:::action
+  end
+
+  subgraph day2["4. Day-2 Template Change"]
+    validate["Operator validates fabric state\nand compares against expected outcomes"]:::action
+    validate --> loopback["Update DEFN/FABRIC and\nrepeat from Step 1"]:::loop
+  end
+
+  project --> profile
+  site --> inventory
+  deploy --> validate
+  deploy --> steady["Steady-state EVPN VXLAN campus fabric\nmanaged through Catalyst Center"]:::output

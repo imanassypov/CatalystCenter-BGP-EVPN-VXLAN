@@ -1,0 +1,69 @@
+flowchart TB
+  classDef orchestration fill:#0B5CAB,color:#FFFFFF,stroke:#083E75,stroke-width:2px;
+  classDef composite fill:#0E7490,color:#FFFFFF,stroke:#155E75,stroke-width:2px;
+  classDef fabric fill:#E0F2FE,color:#0F172A,stroke:#0284C7,stroke-width:1.5px;
+  classDef support fill:#FEF3C7,color:#422006,stroke:#D97706,stroke-width:1.5px;
+  classDef func fill:#DCFCE7,color:#14532D,stroke:#16A34A,stroke-width:1.5px;
+  classDef outcome fill:#F3E8FF,color:#4C1D95,stroke:#7C3AED,stroke-width:1.5px;
+  classDef optional fill:#FDE68A,color:#78350F,stroke:#D97706,stroke-width:1.5px,stroke-dasharray: 5 3;
+
+  subgraph operatorFlow["Operator Workflow In Catalyst Center"]
+    direction LR
+    op["Import the full BGP EVPN template project"]:::orchestration --> attach["Ansible sync playbook reads BGP-EVPN-BUILD.yml\nand creates the BGP-EVPN-BUILD composite in CatC"]:::orchestration
+    attach --> profile["Bind the composite to a CLI Network Profile"]:::orchestration
+    profile --> site["Attach the Network Profile to the\nbuilding-level site hierarchy"]:::orchestration
+    site --> render["Provisioning renders device-specific CLI\nfrom __device.hostname"]:::orchestration
+  end
+
+  render --> build
+
+  subgraph pipeline["Ordered Composite Execution"]
+    direction TB
+    build["BGP-EVPN-BUILD composite\nCreated in CatC from BGP-EVPN-BUILD.yml via Ansible"]:::composite
+    vrf["FABRIC-VRF\nVRF definitions, RD/RT, stitching RTs"]:::fabric
+    loopbacks["FABRIC-LOOPBACKS\nLoopback0 and per-VRF overlay loopbacks"]:::fabric
+    l3out["FABRIC-L3OUT\nSpine-to-core subinterfaces and east-west Null0 guards"]:::fabric
+    nve["FABRIC-NVE\nL3VNI VLANs, SVIs, and NVE1 base membership"]:::fabric
+    mcast["FABRIC-MCAST\nPIM, Anycast RP, MSDP, VRF multicast enablement"]:::fabric
+    evpn["FABRIC-EVPN\nBGP EVPN sessions, RR policy, border remote-site peering"]:::fabric
+    overlay["FABRIC-OVERLAY\nL2VNI VLANs, EVPN instances, tenant SVIs"]:::fabric
+    ports["FABRIC-CLIENT-PORTS\nLeaf access and trunk interface rendering"]:::fabric
+    nac["FABRIC-NAC\nIBNS 2.0, AAA, RADIUS, IoT NAC policies"]:::fabric
+
+    build --> vrf --> loopbacks --> l3out --> nve --> mcast --> evpn --> overlay --> ports --> nac
+  end
+
+  vrf -. uses .-> vrfDeps["DEFN-VRF: VRF catalog and per-node placement<br/>DEFN-LOOPBACKS: RD source loopback IPs<br/>DEFN-OVERLAY: fabric ASN and shared overlay context"]:::support
+  vrf -. macro .-> vrfMacro["FUNC-VRF-LOOKUP: resolves vrf_objs for the current device"]:::func
+
+  loopbacks -. uses .-> loopDeps["DEFN-VRF: which VRFs exist on the node<br/>DEFN-ROLES: role-aware behavior<br/>DEFN-LOOPBACKS: underlay and overlay loopback addressing"]:::support
+
+  l3out -. uses .-> l3outDeps["DEFN-L3OUT: uplinks, peers, aggregates, L3OUT enable toggle<br/>DEFN-VRF: VRF-to-node placement<br/>DEFN-OVERLAY: foreign-subnet Null0 guards"]:::support
+  l3out -. macro .-> l3outMacro["FUNC-VRF-LOOKUP: resolves which VRFs render on each spine"]:::func
+  l3out -. optional .-> l3outOpt["Rendered only when DEFN_L3OUT_NODES contains the current device"]:::optional
+
+  nve -. uses .-> nveDeps["DEFN-VRF: local VRF inventory<br/>DEFN-ROLES: leaf versus spine or border behavior<br/>DEFN-LOOPBACKS: Loopback0 and anycast names<br/>DEFN-VNIOFFSETS: L3VNI numbering rules"]:::support
+  nve -. macro .-> nveMacro["FUNC-VRF-LOOKUP: maps node placement to L3VNI membership"]:::func
+
+  mcast -. uses .-> mcastDeps["DEFN-MCAST: fabric RP and enterprise RP scopes<br/>DEFN-ROLES: Anycast RP only on spines<br/>DEFN-LOOPBACKS: RP and source loopbacks"]:::support
+  mcast -. macro .-> mcastMacro["FUNC-VRF-LOOKUP: enables multicast per local VRF"]:::func
+
+  evpn -. uses .-> evpnDeps["DEFN-ROLES: RR, CLIENT, BORDER, MCLUSTER logic<br/>DEFN-LOOPBACKS: peer and remote-site loopback IPs<br/>DEFN-VRF and DEFN-VNIOFFSETS: per-VRF control-plane context<br/>DEFN-L3OUT and DEFN-OVERLAY: external BGP and route policy inputs"]:::support
+  evpn -. macro .-> evpnMacro["FUNC-VRF-LOOKUP: resolves per-device BGP VRF address-families"]:::func
+  evpn -. optional .-> evpnOpt["Border remote-site EVPN is active only when BORDER and MCLUSTER data are populated"]:::optional
+
+  overlay -. uses .-> overlayDeps["DEFN-OVERLAY: VLAN, SVI, DHCP relay, multicast BUM data<br/>DEFN-VRF: tenant binding<br/>DEFN-ROLES: leaf-only L2 service rendering<br/>DEFN-VNIOFFSETS: L2VNI numbering rules"]:::support
+  overlay -. macro .-> overlayMacro["FUNC-VRF-LOOKUP: limits overlay services to local VRFs"]:::func
+
+  ports -. uses .-> portsDeps["DEFN-CLIENT-PORTS: port-to-VLAN intent per leaf"]:::support
+  ports -. macro .-> portsMacro["FUNC-CLIENT-PORTS: expands access, trunk, and interface-range rendering"]:::func
+  ports -. optional .-> portsOpt["Skipped on spines and borders by role guard"]:::optional
+
+  nac -. uses .-> nacDeps["DEFN-NAC: per-VRF NAC server definitions<br/>DEFN-VRF: NAC policy binding to local VRFs<br/>DEFN-ROLES: leaf-only enforcement"]:::support
+  nac -. macro .-> nacMacro["FUNC-VRF-LOOKUP: limits NAC rendering to VRFs present on the device"]:::func
+  nac -. optional .-> nacOpt["Rendered only on leaf nodes and only for VRFs with NAC data"]:::optional
+
+  nac --> final["Catalyst Center produces role-aware IOS-XE configuration blocks"]:::composite
+  final --> spineOut["Spines and RRs<br/>VRF, loopbacks, Anycast RP, EVPN RR, optional L3OUT"]:::outcome
+  final --> leafOut["Leaves<br/>L3VNI and L2VNI services, client ports, optional NAC"]:::outcome
+  final --> borderOut["Borders<br/>VRF, loopbacks, EVPN border policy, optional multi-cluster peering"]:::outcome
