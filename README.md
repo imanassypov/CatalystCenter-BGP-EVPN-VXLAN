@@ -51,9 +51,11 @@ The template collection delivers:
 This repository is organized into three sections:
 
 ```
-BGP EVPN/                           # Template source files (Jinja2)
-├── BGP-EVPN-BUILD.yml              # Ansible helper: defines composite template member list and order
-├── CATC-JINJA-DICT-ITERATION-FIX.md # Catalyst Center Jinja2 limitations workaround guide
+README.md                            # This document
+CATC-JINJA-DICT-ITERATION-FIX.md    # Catalyst Center Jinja2 limitations and workarounds
+
+BGP EVPN/                            # Template source files (Jinja2)
+├── BGP-EVPN-BUILD.yml               # Ansible helper: defines composite template member list and order
 │
 ├── DEFN-*.j2                        # Definition templates (data dictionaries only, no CLI output)
 │   ├── DEFN-ROLES.j2                # Device roles (spine, leaf, border, RR, client)
@@ -66,33 +68,41 @@ BGP EVPN/                           # Template source files (Jinja2)
 │   ├── DEFN-CLIENT-PORTS.j2         # Access port definitions
 │   └── DEFN-VNIOFFSETS.j2           # VNI numbering offsets (L2VNI, L3VNI)
 │
-├── FABRIC-*.j2                      # Fabric CLI generators (include DEFN/FUNC files)
-│   ├── FABRIC-VRF.j2                # VRF configuration with RD/RT
-│   ├── FABRIC-LOOPBACKS.j2          # Loopback interface configuration
-│   ├── FABRIC-L3OUT.j2              # L3OUT sub-interfaces + east-west Null0 routes
-│   ├── FABRIC-NVE.j2                # NVE interface + L3VNI VLANs/SVIs
-│   ├── FABRIC-MCAST.j2              # Multicast RP, MSDP, VRF multicast setup
-│   ├── FABRIC-EVPN.j2               # BGP EVPN peering, address-families, L3OUT BGP
-│   ├── FABRIC-OVERLAY.j2            # L2VNI overlay services, L2VPN instances
-│   ├── FABRIC-NAC.j2                # NAC access control policies
-│   └── FABRIC-CLIENT-PORTS.j2       # Access port configuration
-│
-├── FUNC-*.j2                        # Reusable Jinja macros (utility functions)
-│   ├── FUNC-VRF-LOOKUP.j2           # Macro: resolve VRF parameters by name
-│   └── FUNC-CLIENT-PORTS.j2         # Macro: render access port configurations
-│
+└── FABRIC-*.j2                      # Fabric CLI generators (include DEFN files)
+    ├── FABRIC-VRF.j2                # VRF configuration with RD/RT
+    ├── FABRIC-LOOPBACKS.j2          # Loopback interface configuration
+    ├── FABRIC-L3OUT.j2              # L3OUT sub-interfaces + east-west Null0 routes
+    ├── FABRIC-NVE.j2                # NVE interface + L3VNI VLANs/SVIs
+    ├── FABRIC-MCAST.j2              # Multicast RP, MSDP, VRF multicast setup
+    ├── FABRIC-EVPN.j2               # BGP EVPN peering, address-families, L3OUT BGP
+    ├── FABRIC-OVERLAY.j2            # L2VNI overlay services, L2VPN instances
+    ├── FABRIC-NAC.j2                # NAC access control policies
+    └── FABRIC-CLIENT-PORTS.j2       # Access port configuration
+
 Node Configs/                        # Reference device configurations (lab output)
-├── fabric-site1/                    # Main campus fabric
-│   ├── spine01.cfg, spine02.cfg     # Route reflector devices
-│   ├── leaf01.cfg, leaf02.cfg       # Access leaf devices
-│   ├── border01.cfg, border02.cfg   # Border gateway devices
-│   └── *_startup.cfg                # Pre-rendered device configs
-├── fabric-dmz/                      # DMZ fabric (optional, multi-cluster)
+├── Config-Backup-032626/            # Current validation baseline (March 26, 2026)
+│   ├── Spine01.cfg, Spine02.cfg     # Route reflector devices
+│   ├── Leaf01.cfg, Leaf02.cfg       # Access leaf devices
+│   ├── Border01.cfg, Border02.cfg   # Border gateway devices
+│   ├── Core-01.cfg, Core-02.cfg     # Enterprise IP Core (reference)
+│   ├── dhcp-server.cfg              # DHCP server reference
+│   └── dmz1.cfg                     # DMZ gateway reference
+├── fabric-site1/                    # Per-template rendered configs
+│   ├── spine01.cfg, spine02.cfg
+│   ├── leaf01.cfg, leaf02.cfg
+│   ├── border01.cfg, border02.cfg
+│   └── *_startup.cfg
+├── fabric-dmz/
 │   └── dmz01.cfg, dhcp.cfg
-└── cores/                           # Upstream IP Core routers (reference)
+└── cores/
     └── core01.cfg, core02.cfg
 
-images/                              # Architecture and topology diagrams
+DIAGRAMS/                            # Architecture and topology diagrams
+├── bgp-evpn-template-relationships.png/mmd   # Template dependency and data flow
+├── bgp-evpn-role-behavior.png/mmd            # Per-role render behavior
+├── bgp-evpn-data-model.png/mmd               # Data model relationships
+├── bgp-evpn-catalyst-center-lifecycle.png/mmd # Operational lifecycle
+├── bgp-evpn-data-model-presentation.png/mmd  # Simplified presentation view
 ├── cisco_evpn_topology.png          # Logical fabric topology
 ├── cisco_evpn_cml.png               # CML lab topology
 ├── cisco_evpn_ASN.png               # BGP ASN relationships
@@ -103,25 +113,23 @@ images/                              # Architecture and topology diagrams
 **Key Points:**
 - **DEFN files**: Pure data structures (sets and dicts); never generate CLI output
 - **FABRIC files**: CLI generators; included DEFN files are resolved at render time
-- **FUNC files**: Reusable macros for parameterized CLI generation
 - **BGP-EVPN-BUILD.yml**: Ansible helper that defines the composite template member list and deployment order; consumed by the sync playbook to create the `BGP-EVPN-BUILD` composite in Catalyst Center
 - **Reference Configs**: Pre-rendered device configurations in `Node Configs/` for validation and troubleshooting
 
 ## Template Architecture and Execution Model
 
-### Three Template Categories: DEFN, FABRIC, FUNC
+### Two Template Categories: DEFN and FABRIC
 
-BGP EVPN templates are organized into three complementary categories:
+BGP EVPN templates are organized into two complementary categories:
 
-| Category | Purpose | Output | Includes |
-|----------|---------|--------|----------|
+| Category | Purpose | Output | Notes |
+|----------|---------|--------|-------|
 | **DEFN-*.j2** | Data dictionaries | No CLI output | Only `{% set %}` blocks with fabric parameters |
-| **FABRIC-*.j2** | CLI generators | IOS-XE configuration | Includes DEFN and FUNC files; generates device configs |
-| **FUNC-*.j2** | Reusable macros | Macro definitions | Parameterized Jinja macros for shared logic |
+| **FABRIC-*.j2** | CLI generators | IOS-XE configuration | Includes DEFN files at render time; generates device configs |
 
 ### Composite Template Build Sequence
 
-The `BGP-EVPN-BUILD.yml` file is an Ansible helper that defines the ordered member list for composite template creation in Catalyst Center. The Ansible sync playbook reads this file and dynamically creates the `BGP-EVPN-BUILD` composite template, then attaches it to the CLI Network Profile. Only **FABRIC-*.j2** templates appear in this file; DEFN and FUNC templates are resolved internally via Jinja2 `{% include %}` statements:
+The `BGP-EVPN-BUILD.yml` file is an Ansible helper that defines the ordered member list for composite template creation in Catalyst Center. The Ansible sync playbook reads this file and dynamically creates the `BGP-EVPN-BUILD` composite template, then attaches it to the CLI Network Profile. Only **FABRIC-*.j2** templates appear in this file; DEFN templates are resolved internally via Jinja2 `{% include %}` statements:
 
 ```yaml
 templates:
@@ -140,16 +148,15 @@ templates:
 
 ### Template Relationship Diagram
 
-The Ansible sync playbook reads `BGP-EVPN-BUILD.yml` to create the `BGP-EVPN-BUILD` composite template in Catalyst Center and attaches it to the CLI Network Profile. That profile is then bound to the building-level site hierarchy, and Catalyst Center renders each `FABRIC-*.j2` template in sequence for the target device by evaluating `__device.hostname` while resolving `DEFN-*.j2` and `FUNC-*.j2` through Jinja includes.
+The Ansible sync playbook reads `BGP-EVPN-BUILD.yml` to create the `BGP-EVPN-BUILD` composite template in Catalyst Center and attaches it to the CLI Network Profile. That profile is then bound to the building-level site hierarchy, and Catalyst Center renders each `FABRIC-*.j2` template in sequence for the target device by evaluating `__device.hostname` while resolving `DEFN-*.j2` files through Jinja includes.
 
 ![BGP EVPN Template Relationships](DIAGRAMS/bgp-evpn-template-relationships.png)
 
 Editable Mermaid source: `DIAGRAMS/bgp-evpn-template-relationships.mmd`
 
-This diagram highlights four operational facts:
+This diagram highlights three operational facts:
 - The `BGP-EVPN-BUILD` composite is created in Catalyst Center by the Ansible sync playbook from `BGP-EVPN-BUILD.yml` and is the artifact attached to the Network Profile.
 - `FABRIC-*.j2` templates are the execution pipeline; each one generates a specific configuration layer in dependency order.
-- `DEFN-*.j2` templates hold deployment intent and topology data, while `FUNC-*.j2` templates provide reusable lookup and rendering logic.
 - Role-based conditionals and optional toggles such as `BORDER`, `MCLUSTER`, `L3OUT`, and NAC determine which configuration blocks are rendered per device.
 
 ### Per-Role Render Behavior Diagram
@@ -167,14 +174,14 @@ This diagram highlights three operational facts:
 
 ### Data Model Relationship Diagram
 
-The template repository is fundamentally data-driven. The `DEFN-*.j2` files act as the source of truth, the `FUNC-*.j2` files convert that data into device-local working objects, and the `FABRIC-*.j2` files emit IOS-XE configuration in the composite execution order.
+The template repository is fundamentally data-driven. The `DEFN-*.j2` files act as the source of truth, and the `FABRIC-*.j2` files consume that data to emit IOS-XE configuration in the composite execution order.
 
 ![BGP EVPN Data Model Relationships](DIAGRAMS/bgp-evpn-data-model.png)
 
 Editable Mermaid source: `DIAGRAMS/bgp-evpn-data-model.mmd`
 
 This diagram highlights four engineering facts:
-- `DEFN-VRF.j2` and `FUNC-VRF-LOOKUP.j2` are the core binding layer between intent data and per-device rendering.
+- `DEFN-VRF.j2` is the core binding layer between intent data and per-device rendering.
 - `DEFN-OVERLAY.j2`, `DEFN-VNIOFFSETS.j2`, and `DEFN-LOOPBACKS.j2` provide the numeric and addressing context consumed repeatedly across multiple FABRIC templates.
 - Optional behaviors such as L3OUT, multicast RP policy, client port provisioning, and NAC are each activated by dedicated DEFN structures rather than hardcoded logic.
 - `BGP-EVPN-BUILD.yml` is an Ansible helper, not a Catalyst Center artifact; the sync playbook uses it to serialize the fabric render stages into the `BGP-EVPN-BUILD` composite that Catalyst Center executes during provisioning.
@@ -201,9 +208,8 @@ The detailed engineering diagram above is useful for implementation work, but fo
 
 Editable Mermaid source: `DIAGRAMS/bgp-evpn-data-model-presentation.mmd`
 
-This simplified view highlights four architectural facts:
+This simplified view highlights three architectural facts:
 - The DEFN templates are the intent layer and carry role, addressing, tenant, policy, and numbering decisions.
-- The FUNC templates are the transformation layer that converts repository intent into device-local working objects.
 - The FABRIC templates are the rendering layer that emits infrastructure, edge, and tenant service CLI in a controlled order.
 - The composite ties that render pipeline to Catalyst Center provisioning at the building site level.
 
@@ -321,15 +327,15 @@ The **Border Leaf role and Multi-Cluster BGP configurations are optional**—dep
 
 ### Lab Topology Diagrams
 
-![Logical EVPN Topology](images/cisco_evpn_topology.png)
+![Logical EVPN Topology](DIAGRAMS/cisco_evpn_topology.png)
 
 **Logical fabric topology** showing spine-leaf architecture, border connections, and three tenant VRFs.
 
-![CML Lab Topology](images/cisco_evpn_cml.png)
+![CML Lab Topology](DIAGRAMS/cisco_evpn_cml.png)
 
 **Cisco Modeling Labs emulation** of the above using virtual Catalyst 9000 instances.
 
-![BGP ASN Relationships](images/cisco_evpn_ASN.png)
+![BGP ASN Relationships](DIAGRAMS/cisco_evpn_ASN.png)
 
 **High-level BGP control plane**: Three discrete ASN domains:
 - Campus fabric (ASN 65001): Spines as RR, Leaves/Borders as clients
@@ -338,7 +344,7 @@ The **Border Leaf role and Multi-Cluster BGP configurations are optional**—dep
 
 ### Spine-to-Core Interface Architecture
 
-![Spine-to-Core Connectivity](images/cisco_evpn_core_interface.png)
+![Spine-to-Core Connectivity](DIAGRAMS/cisco_evpn_core_interface.png)
 
 **L3OUT Architecture**: Spines interface the IP Core redundantly over dot1Q sub-interfaces, one per VRF. Each sub-interface carries iBGP (for default VRF underlay) and eBGP (for tenant VRF routes) sessions. East-West traffic protection is enforced via static Null0 routes for non-local VRF subnets, preventing accidental routing between tenants through the L3OUT path.
 
@@ -398,7 +404,7 @@ The **Border Leaf role and Multi-Cluster BGP configurations are optional**—dep
 
 Configuration components must be provisioned in strict order to respect feature dependencies. Spines (route reflectors) focus on control plane functions while leaves (edge forwarding) deliver overlay services.
 
-![IOS-XE BGP EVPN CLI Hierarchy](images/cisco_evpn_CLI_hierarchy.png)
+![IOS-XE BGP EVPN CLI Hierarchy](DIAGRAMS/cisco_evpn_CLI_hierarchy.png)
 
 The above diagram illustrates the **color-coded component taxonomy** essential for template understanding:
 
