@@ -68,16 +68,20 @@ BGP EVPN/                            # Template source files (Jinja2)
 │   ├── DEFN-CLIENT-PORTS.j2         # Access port definitions
 │   └── DEFN-VNIOFFSETS.j2           # VNI numbering offsets (L2VNI, L3VNI)
 │
-└── FABRIC-*.j2                      # Fabric CLI generators (include DEFN files)
-    ├── FABRIC-VRF.j2                # VRF configuration with RD/RT
-    ├── FABRIC-LOOPBACKS.j2          # Loopback interface configuration
-    ├── FABRIC-L3OUT.j2              # L3OUT sub-interfaces + east-west Null0 routes
-    ├── FABRIC-NVE.j2                # NVE interface + L3VNI VLANs/SVIs
-    ├── FABRIC-MCAST.j2              # Multicast RP, MSDP, VRF multicast setup
-    ├── FABRIC-EVPN.j2               # BGP EVPN peering, address-families, L3OUT BGP
-    ├── FABRIC-OVERLAY.j2            # L2VNI overlay services, L2VPN instances
-    ├── FABRIC-NAC.j2                # NAC access control policies
-    └── FABRIC-CLIENT-PORTS.j2       # Access port configuration
+├── FABRIC-*.j2                      # Fabric CLI generators (include DEFN/FUNC files)
+│   ├── FABRIC-VRF.j2                # VRF configuration with RD/RT
+│   ├── FABRIC-LOOPBACKS.j2          # Loopback interface configuration
+│   ├── FABRIC-L3OUT.j2              # L3OUT sub-interfaces + east-west Null0 routes
+│   ├── FABRIC-NVE.j2                # NVE interface + L3VNI VLANs/SVIs
+│   ├── FABRIC-MCAST.j2              # Multicast RP, MSDP, VRF multicast setup
+│   ├── FABRIC-EVPN.j2               # BGP EVPN peering, address-families, L3OUT BGP
+│   ├── FABRIC-OVERLAY.j2            # L2VNI overlay services, L2VPN instances
+│   ├── FABRIC-NAC.j2                # NAC access control policies
+│   └── FABRIC-CLIENT-PORTS.j2       # Access port configuration
+│
+└── FUNC-*.j2                        # Reusable Jinja macros (auxiliary functions)
+    ├── FUNC-VRF-LOOKUP.j2           # Macro: resolve VRF parameters by device hostname
+    └── FUNC-CLIENT-PORTS.j2         # Macro: render access port configurations
 
 Node Configs/                        # Reference device configurations (lab output)
 ├── Config-Backup-032626/            # Current validation baseline (March 26, 2026)
@@ -112,24 +116,26 @@ DIAGRAMS/                            # Architecture and topology diagrams
 
 **Key Points:**
 - **DEFN files**: Pure data structures (sets and dicts); never generate CLI output
-- **FABRIC files**: CLI generators; included DEFN files are resolved at render time
+- **FABRIC files**: CLI generators; included DEFN and FUNC files are resolved at render time
+- **FUNC files**: Reusable Jinja macros for parameterized CLI generation; included internally by FABRIC templates
 - **BGP-EVPN-BUILD.yml**: Ansible helper that defines the composite template member list and deployment order; consumed by the sync playbook to create the `BGP-EVPN-BUILD` composite in Catalyst Center
 - **Reference Configs**: Pre-rendered device configurations in `Node Configs/` for validation and troubleshooting
 
 ## Template Architecture and Execution Model
 
-### Two Template Categories: DEFN and FABRIC
+### Three Template Categories: DEFN, FABRIC, FUNC
 
-BGP EVPN templates are organized into two complementary categories:
+BGP EVPN templates are organized into three complementary categories:
 
 | Category | Purpose | Output | Notes |
 |----------|---------|--------|-------|
 | **DEFN-*.j2** | Data dictionaries | No CLI output | Only `{% set %}` blocks with fabric parameters |
-| **FABRIC-*.j2** | CLI generators | IOS-XE configuration | Includes DEFN files at render time; generates device configs |
+| **FABRIC-*.j2** | CLI generators | IOS-XE configuration | Includes DEFN and FUNC files at render time; generates device configs |
+| **FUNC-*.j2** | Reusable macros | Macro definitions | Parameterized Jinja macros for shared lookup and rendering logic |
 
 ### Composite Template Build Sequence
 
-The `BGP-EVPN-BUILD.yml` file is an Ansible helper that defines the ordered member list for composite template creation in Catalyst Center. The Ansible sync playbook reads this file and dynamically creates the `BGP-EVPN-BUILD` composite template, then attaches it to the CLI Network Profile. Only **FABRIC-*.j2** templates appear in this file; DEFN templates are resolved internally via Jinja2 `{% include %}` statements:
+The `BGP-EVPN-BUILD.yml` file is an Ansible helper that defines the ordered member list for composite template creation in Catalyst Center. The Ansible sync playbook reads this file and dynamically creates the `BGP-EVPN-BUILD` composite template, then attaches it to the CLI Network Profile. Only **FABRIC-*.j2** templates appear in this file; DEFN and FUNC templates are resolved internally via Jinja2 `{% include %}` statements:
 
 ```yaml
 templates:
@@ -148,15 +154,16 @@ templates:
 
 ### Template Relationship Diagram
 
-The Ansible sync playbook reads `BGP-EVPN-BUILD.yml` to create the `BGP-EVPN-BUILD` composite template in Catalyst Center and attaches it to the CLI Network Profile. That profile is then bound to the building-level site hierarchy, and Catalyst Center renders each `FABRIC-*.j2` template in sequence for the target device by evaluating `__device.hostname` while resolving `DEFN-*.j2` files through Jinja includes.
+The Ansible sync playbook reads `BGP-EVPN-BUILD.yml` to create the `BGP-EVPN-BUILD` composite template in Catalyst Center and attaches it to the CLI Network Profile. That profile is then bound to the building-level site hierarchy, and Catalyst Center renders each `FABRIC-*.j2` template in sequence for the target device by evaluating `__device.hostname` while resolving `DEFN-*.j2` and `FUNC-*.j2` files through Jinja includes.
 
 ![BGP EVPN Template Relationships](DIAGRAMS/bgp-evpn-template-relationships.png)
 
 Editable Mermaid source: `DIAGRAMS/bgp-evpn-template-relationships.mmd`
 
-This diagram highlights three operational facts:
+This diagram highlights four operational facts:
 - The `BGP-EVPN-BUILD` composite is created in Catalyst Center by the Ansible sync playbook from `BGP-EVPN-BUILD.yml` and is the artifact attached to the Network Profile.
 - `FABRIC-*.j2` templates are the execution pipeline; each one generates a specific configuration layer in dependency order.
+- `DEFN-*.j2` templates hold deployment intent and topology data; `FUNC-*.j2` templates provide reusable lookup and rendering logic included by FABRIC templates.
 - Role-based conditionals and optional toggles such as `BORDER`, `MCLUSTER`, `L3OUT`, and NAC determine which configuration blocks are rendered per device.
 
 ### Per-Role Render Behavior Diagram
@@ -174,14 +181,14 @@ This diagram highlights three operational facts:
 
 ### Data Model Relationship Diagram
 
-The template repository is fundamentally data-driven. The `DEFN-*.j2` files act as the source of truth, and the `FABRIC-*.j2` files consume that data to emit IOS-XE configuration in the composite execution order.
+The template repository is fundamentally data-driven. The `DEFN-*.j2` files act as the source of truth, the `FUNC-*.j2` files convert that data into device-local working objects, and the `FABRIC-*.j2` files emit IOS-XE configuration in the composite execution order.
 
 ![BGP EVPN Data Model Relationships](DIAGRAMS/bgp-evpn-data-model.png)
 
 Editable Mermaid source: `DIAGRAMS/bgp-evpn-data-model.mmd`
 
 This diagram highlights four engineering facts:
-- `DEFN-VRF.j2` is the core binding layer between intent data and per-device rendering.
+- `DEFN-VRF.j2` and `FUNC-VRF-LOOKUP.j2` are the core binding layer between intent data and per-device rendering.
 - `DEFN-OVERLAY.j2`, `DEFN-VNIOFFSETS.j2`, and `DEFN-LOOPBACKS.j2` provide the numeric and addressing context consumed repeatedly across multiple FABRIC templates.
 - Optional behaviors such as L3OUT, multicast RP policy, client port provisioning, and NAC are each activated by dedicated DEFN structures rather than hardcoded logic.
 - `BGP-EVPN-BUILD.yml` is an Ansible helper, not a Catalyst Center artifact; the sync playbook uses it to serialize the fabric render stages into the `BGP-EVPN-BUILD` composite that Catalyst Center executes during provisioning.
@@ -208,8 +215,9 @@ The detailed engineering diagram above is useful for implementation work, but fo
 
 Editable Mermaid source: `DIAGRAMS/bgp-evpn-data-model-presentation.mmd`
 
-This simplified view highlights three architectural facts:
+This simplified view highlights four architectural facts:
 - The DEFN templates are the intent layer and carry role, addressing, tenant, policy, and numbering decisions.
+- The FUNC templates are the transformation layer that converts repository intent into device-local working objects.
 - The FABRIC templates are the rendering layer that emits infrastructure, edge, and tenant service CLI in a controlled order.
 - The composite ties that render pipeline to Catalyst Center provisioning at the building site level.
 
