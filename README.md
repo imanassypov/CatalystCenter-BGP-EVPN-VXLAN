@@ -414,65 +414,65 @@ Configuration components must be provisioned in strict order to respect feature 
 
 ![IOS-XE BGP EVPN CLI Hierarchy](DIAGRAMS/cisco_evpn_CLI_hierarchy.png)
 
-The above diagram illustrates the **color-coded component taxonomy** essential for template understanding:
+The above diagram illustrates the component taxonomy and provisioning dependency order:
 
-| Color | Component | Role | Example CLI |
-|-------|-----------|------|------------|
-| 🟦 **BLUE** | VRF Definitions | Tenant isolation containers | `vrf definition red` |
-| 🟩 **GREEN** | Loopback Interfaces | Underlay/overlay addressing | `interface Loopback0`, `Loopback901` |
-| 🟨 **YELLOW** | VLAN/SVI Definitions | L2VNI VLANs and L3VNI transit VLANs | `vlan 101`, `interface Vlan901` |
-| 🟧 **ORANGE** | NVE Interface | VXLAN tunnel endpoint | `interface nve1` |
-| 🟥 **RED** | BGP EVPN Control Plane | Route reflection, EVPN peering | `router bgp 65001` |
-| 🟪 **PURPLE** | L2VPN EVPN Instances | L2 service binding | `l2vpn evpn instance 101` |
-| ⬜ **WHITE** | Global L2VPN EVPN | Global EVPN activation | `l2vpn evpn` → `replication-type static` |
+| Component | Role | Example CLI |
+|-----------|------|-------------|
+| VRF Definitions | Tenant isolation containers | `vrf definition red` |
+| Loopback Interfaces | Underlay/overlay addressing | `interface Loopback0`, `Loopback901` |
+| VLAN/SVI Definitions | L2VNI VLANs and L3VNI transit VLANs | `vlan 101`, `interface Vlan901` |
+| NVE Interface | VXLAN tunnel endpoint | `interface nve1` |
+| BGP EVPN Control Plane | Route reflection, EVPN peering | `router bgp 65001` |
+| L2VPN EVPN Instances | L2 service binding | `l2vpn evpn instance 101` |
+| Global L2VPN EVPN | Global EVPN activation | `l2vpn evpn` → `replication-type static` |
 
-### Template-to-Color Mapping
+### Template-to-Component Mapping
 
-| Template | Primary Colors | Components Delivered |
-|----------|---|---|
-| `FABRIC-VRF.j2` | 🟦 BLUE | VRF definitions with RD/RT |
-| `FABRIC-LOOPBACKS.j2` | 🟩 GREEN | Loopback0 and per-VRF overlay loopbacks |
-| `FABRIC-L3OUT.j2` | — | Spine-to-Core sub-interfaces (external only) |
-| `FABRIC-NVE.j2` | 🟨 YELLOW + 🟧 ORANGE | L3VNI VLANs, SVIs, NVE member VNIs |
-| `FABRIC-MCAST.j2` | — | Multicast RP, MSDP, VRF MDT |
-| `FABRIC-EVPN.j2` | 🟥 RED | BGP router, neighbors, address-families |
-| `FABRIC-OVERLAY.j2` | 🟨 YELLOW + 🟪 PURPLE | L2VNI VLANs, L2VPN instances, overlay SVIs |
+| Template | Components Delivered |
+|----------|----------------------|
+| `FABRIC-VRF.j2` | VRF definitions with RD/RT |
+| `FABRIC-LOOPBACKS.j2` | Loopback0 and per-VRF overlay loopbacks |
+| `FABRIC-L3OUT.j2` | Spine-to-Core sub-interfaces (external only) |
+| `FABRIC-NVE.j2` | L3VNI VLANs, SVIs, NVE member VNIs |
+| `FABRIC-MCAST.j2` | Multicast RP, MSDP, VRF MDT |
+| `FABRIC-EVPN.j2` | BGP router, neighbors, address-families |
+| `FABRIC-OVERLAY.j2` | L2VNI VLANs, L2VPN instances, overlay SVIs |
 
 ### Provisioning Sequence (Strict Dependency Order)
 
 ```
-Step 1: VRF DEFINITION (🟦 BLUE)
+Step 1: VRF DEFINITION
 ├─ Creates tenant isolation containers
 └─ Required before: Any feature referencing VRF
 
-Step 2: LOOPBACK INTERFACES (🟩 GREEN)
+Step 2: LOOPBACK INTERFACES
 ├─ Loopback0: Underlay addressing, BGP router-ID, OSPF router-ID, NVE source
 ├─ Loopback901-903: Per-VRF overlay addressing
 └─ Required before: NVE, BGP neighbors
 
-Step 3: VLAN + L3VNI SVI (🟨 YELLOW)
+Step 3: VLAN + L3VNI SVI
 ├─ L3VNI VLANs (901-903): Transit space for inter-subnet routing
 ├─ L2VNI VLANs (101, 201...): Tenant segments
 └─ Required before: NVE membership, EVPN instances
 
-Step 4: NVE INTERFACE (🟧 ORANGE)
+Step 4: NVE INTERFACE
 ├─ source-interface Loopback0
 ├─ member vni <L2VNI> mcast-group <group>
 ├─ member vni <L3VNI> vrf <name>
 └─ Required before: L2VPN instance activation
 
-Step 5: BGP EVPN CONTROL PLANE (🟥 RED)
+Step 5: BGP EVPN CONTROL PLANE
 ├─ iBGP to Spine RRs via Loopback0
 ├─ address-family l2vpn evpn: MAC/IP distribution
 ├─ address-family ipv4 mvpn: Multicast signaling
 └─ Required before: Overlay traffic forwarding
 
-Step 6: L2VPN EVPN INSTANCES (🟪 PURPLE)
+Step 6: L2VPN EVPN INSTANCES
 ├─ Binds VLAN to EVPN instance with encapsulation vxlan
 ├─ Defines replication-type (static = multicast)
 └─ Final step: Activates L2 extension across fabric
 
-Step 7: GLOBAL L2VPN EVPN (⬜ WHITE)
+Step 7: GLOBAL L2VPN EVPN
 ├─ l2vpn evpn block with replication-type, router-id, default-gateway
 └─ Activates EVPN subsystem fabric-wide
 ```
