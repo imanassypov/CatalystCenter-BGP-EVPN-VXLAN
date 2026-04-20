@@ -1,4 +1,33 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# ============================================================ #}
+{# DEFN_L3OUT — L3 EXTERNAL CONNECTIVITY DEFINITIONS           #}
+{#                                                              #}
+{# List of per-node L3OUT entries. Each entry defines one       #}
+{# spine's external uplinks to the upstream core router.        #}
+{#                                                              #}
+{# Fields:                                                      #}
+{#   vrf          — VRF name; must match an entry in DEFN_VRF   #}
+{#   node         — FQDN matching the Catalyst Center inventory  #}
+{#   neighbour_asn — BGP ASN of the upstream core router        #}
+{#   interfaces   — list of sub-interface dicts (see below)     #}
+{#                                                              #}
+{# Interface dict fields:                                       #}
+{#   ifname   — dot1Q sub-interface (e.g. Gi1/0/5.2)           #}
+{#   parent   — parent physical interface (no switchport)       #}
+{#   name     — human-readable uplink label (informational)     #}
+{#   vlan     — dot1Q encapsulation VLAN ID                     #}
+{#   ipaddr   — IP address + mask assigned to the sub-interface #}
+{#   neighbour — peer IP of the upstream core router            #}
+{#                                                              #}
+{# Consumed by:                                                 #}
+{#   FABRIC-L3OUT.j2  — renders parent + sub-interface CLI      #}
+{#   FABRIC-EVPN.j2   — renders BGP neighbor stanzas in        #}
+{#                       address-family ipv4 vrf on Spines      #}
+{#                                                              #}
+{# NOTE: 'interfaces' is a flat list (not a dict) to avoid      #}
+{# CatC Jinja2 dict-iteration non-determinism. See              #}
+{# CATC-JINJA-DICT-ITERATION-FIX.md for details.               #}
+{# ============================================================ #}
 {% set DEFN_L3OUT = [
   {
     'vrf': 'red',
@@ -19,8 +48,22 @@
     ]
   }
 ] %}
-{% set DEFN_L3OUT_AGGREGATES = ["10.1.100.0 255.255.255.0",
-                                "10.1.101.0 255.255.255.0",
+{# ============================================================ #}
+{# DEFN_L3OUT_AGGREGATES — BGP SUMMARY PREFIXES ADVERTISED     #}
+{# TO THE UPSTREAM CORE VIA THE L3OUT BGP SESSION              #}
+{#                                                              #}
+{# Each entry is advertised as:                                 #}
+{#   aggregate-address <prefix> summary-only                    #}
+{# inside the 'address-family ipv4 vrf <vrf>' block on Spines  #}
+{# (FABRIC-EVPN.j2, L3OUT section). 'summary-only' suppresses  #}
+{# the more-specific /24 host routes so only the aggregate is   #}
+{# leaked to the external fabric / core router.                 #}
+{#                                                              #}
+{# Entries must correspond to the 'network' values defined in   #}
+{# DEFN_OVERLAY for the L3OUT VRF (currently 'red'). Add one   #}
+{# entry per VLAN subnet that should be reachable externally.   #}
+{# ============================================================ #}
+{% set DEFN_L3OUT_AGGREGATES = ["10.1.101.0 255.255.255.0",
                                 "10.1.102.0 255.255.255.0"]
 %}
 {# ============================================================ #}
