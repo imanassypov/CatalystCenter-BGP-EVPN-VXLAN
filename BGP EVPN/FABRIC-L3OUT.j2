@@ -29,15 +29,14 @@
 {% for vrf in vrf_objs %}
 {% for l3out in DEFN_L3OUT %}
 {% if l3out.vrf == vrf.name and l3out.node == DEVICE_HOSTNAME %}
-{% for interface in l3out.interfaces %}
-{% set params = l3out.interfaces[interface] %}
-interface {{params.parent}}
+{% for iface in l3out.interfaces %}
+interface {{iface.parent}}
  no switchport
 !
-interface {{interface}}
- encapsulation dot1Q {{params.vlan}}
+interface {{iface.ifname}}
+ encapsulation dot1Q {{iface.vlan}}
  vrf forwarding {{vrf.name}}
- ip address {{params.ipaddr}}
+ ip address {{iface.ipaddr}}
 !
 {% endfor %}
 {% endif %}
@@ -54,7 +53,7 @@ interface {{interface}}
 {# For this VRF, install null routes for subnets from ALL OTHER VRFs #}
 {% for overlay in DEFN_OVERLAY %}
 {% if overlay.vrf != vrf.name %}
-{% for vlan_id in overlay.vlans %}
+{% for vlan_id in overlay.vlan_ids %}
 ip route vrf {{vrf.name}} {{overlay.vlans[vlan_id].network}} Null0
 {% endfor %}
 {% endif %}

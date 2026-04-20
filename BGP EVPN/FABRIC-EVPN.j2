@@ -182,10 +182,9 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endfor %}
    redistribute static
    redistribute connected
-{% for interface in l3out.interfaces %}
-{% set params = l3out.interfaces[interface] %}
-   neighbor {{params.neighbour}} remote-as {{l3out.neighbour_asn}}
-   neighbor {{params.neighbour}} activate
+{% for iface in l3out.interfaces %}
+   neighbor {{iface.neighbour}} remote-as {{l3out.neighbour_asn}}
+   neighbor {{iface.neighbour}} activate
 {% endfor %}
    maximum-paths ibgp {{ DEFN_NODE_ROLES['BORDER'] | length }}
 ! @start-ignore-compliance
