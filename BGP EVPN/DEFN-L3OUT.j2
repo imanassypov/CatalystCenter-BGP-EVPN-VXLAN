@@ -63,8 +63,9 @@
 {# DEFN_OVERLAY for the L3OUT VRF (currently 'red'). Add one   #}
 {# entry per VLAN subnet that should be reachable externally.   #}
 {# ============================================================ #}
-{% set DEFN_L3OUT_AGGREGATES = ["10.1.101.0 255.255.255.0",
-                                "10.1.102.0 255.255.255.0"]
+{% set DEFN_L3OUT_AGGREGATES = ["198.18.100.0 255.255.255.0",
+                                "198.18.101.0 255.255.255.0",
+                                "198.18.102.0 255.255.255.0"]
 %}
 {# ============================================================ #}
 {# DEFN_L3OUT_NODES — SINGLE TOGGLE FOR ALL L3OUT OUTPUT        #}

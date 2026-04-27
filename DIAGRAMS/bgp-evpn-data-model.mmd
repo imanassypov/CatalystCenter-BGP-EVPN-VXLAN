@@ -1,0 +1,104 @@
+flowchart TB
+  classDef defn fill:#FEF3C7,color:#422006,stroke:#D97706,stroke-width:1.5px;
+  classDef key fill:#FFF7ED,color:#7C2D12,stroke:#EA580C,stroke-width:1.2px;
+  classDef func fill:#DCFCE7,color:#14532D,stroke:#16A34A,stroke-width:1.5px;
+  classDef fabric fill:#E0F2FE,color:#0F172A,stroke:#0284C7,stroke-width:1.5px;
+  classDef output fill:#0E7490,color:#FFFFFF,stroke:#155E75,stroke-width:2px;
+
+  subgraph defnLayer["Definition Templates: Source Of Truth"]
+    direction LR
+    roles["DEFN-ROLES.j2"]:::defn
+    loopbacks["DEFN-LOOPBACKS.j2"]:::defn
+    vrf["DEFN-VRF.j2"]:::defn
+    overlay["DEFN-OVERLAY.j2"]:::defn
+    l3out["DEFN-L3OUT.j2"]:::defn
+    mcast["DEFN-MCAST.j2"]:::defn
+    ports["DEFN-CLIENT-PORTS.j2"]:::defn
+    nac["DEFN-NAC.j2"]:::defn
+    vni["DEFN-VNIOFFSETS.j2"]:::defn
+  end
+
+  roles --> rolesKey["Key structures\nDEFN_NODE_ROLES['SPINE'|'RR'|'CLIENT'|'BORDER'|'MCLUSTER']"]:::key
+  loopbacks --> loopKey["Key structures\nDEFN_LOOP_UNDERLAY\nDEFN_LOOP_MCLUSTER\nDEFN_LOOP_OVERLAY\nDEFN_LOOP_NAME"]:::key
+  vrf --> vrfKey["Key structures\nDEFN_VRF\nDEFN_VRF_TO_NODE"]:::key
+  overlay --> overlayKey["Key structures\nFABRIC_BGP_ASN\nFABRIC_UNDERLAY\nDEFN_OVERLAY"]:::key
+  l3out --> l3outKey["Key structures\nDEFN_L3OUT\nDEFN_L3OUT_AGGREGATES\nDEFN_L3OUT_NODES"]:::key
+  mcast --> mcastKey["Key structures\nFABRIC_RP_ADDR\nENTERPRISE_RP_ADDR\nRP scopes"]:::key
+  ports --> portsKey["Key structures\nDEFN_CLIENT_PORTS\nDEFN_CLIENT_PORT_DEVICES"]:::key
+  nac --> nacKey["Key structures\nDEFN_NAC_IOT"]:::key
+  vni --> vniKey["Key structures\nL2VNIOFFSET\nL3VNIOFFSET"]:::key
+
+  vrfKey --> vrfFunc
+  subgraph logicLayer["Reusable Jinja Logic"]
+    direction LR
+    vrfFunc["FUNC-VRF-LOOKUP.j2\nConverts DEFN_VRF_TO_NODE into vrf_objs\nfor the current __device.hostname"]:::func
+    portFunc["FUNC-CLIENT-PORTS.j2\nExpands access, trunk, and range macros"]:::func
+  end
+  portsKey --> portFunc
+
+  subgraph renderLayer["Fabric Render Targets"]
+    direction LR
+    fabric1["FABRIC-VRF\nVRF definitions and RTs"]:::fabric
+    fabric2["FABRIC-LOOPBACKS\nLoopback0 and per-VRF Loopbacks"]:::fabric
+    fabric3["FABRIC-L3OUT\nExternal interfaces and Null0 guards"]:::fabric
+    fabric4["FABRIC-NVE\nL3VNI VLANs, SVIs, NVE1"]:::fabric
+    fabric5["FABRIC-MCAST\nPIM, RP, MSDP"]:::fabric
+    fabric6["FABRIC-EVPN\nBGP EVPN control plane"]:::fabric
+    fabric7["FABRIC-OVERLAY\nL2VNI VLANs, EVPN instances, SVIs"]:::fabric
+    fabric8["FABRIC-CLIENT-PORTS\nLeaf interface config"]:::fabric
+    fabric9["FABRIC-NAC\nAAA and IBNS policies"]:::fabric
+  end
+
+  vrfFunc --> fabric1
+  loopKey --> fabric1
+  overlayKey --> fabric1
+
+  vrfKey --> fabric2
+  rolesKey --> fabric2
+  loopKey --> fabric2
+
+  vrfFunc --> fabric3
+  l3outKey --> fabric3
+  overlayKey --> fabric3
+
+  vrfFunc --> fabric4
+  rolesKey --> fabric4
+  loopKey --> fabric4
+  vniKey --> fabric4
+
+  vrfFunc --> fabric5
+  rolesKey --> fabric5
+  loopKey --> fabric5
+  mcastKey --> fabric5
+
+  vrfFunc --> fabric6
+  rolesKey --> fabric6
+  loopKey --> fabric6
+  l3outKey --> fabric6
+  overlayKey --> fabric6
+  vniKey --> fabric6
+
+  vrfFunc --> fabric7
+  rolesKey --> fabric7
+  overlayKey --> fabric7
+  vniKey --> fabric7
+
+  portFunc --> fabric8
+  rolesKey --> fabric8
+  portsKey --> fabric8
+
+  vrfFunc --> fabric9
+  rolesKey --> fabric9
+  nacKey --> fabric9
+
+  fabric1 --> composite["BGP-EVPN-BUILD composite\nserializes the fabric templates into one deployment pipeline"]:::output
+  fabric2 --> composite
+  fabric3 --> composite
+  fabric4 --> composite
+  fabric5 --> composite
+  fabric6 --> composite
+  fabric7 --> composite
+  fabric8 --> composite
+  fabric9 --> composite
+
+  composite --> result["Catalyst Center renders role-aware IOS-XE CLI\nfor each target switch at provisioning time"]:::output
