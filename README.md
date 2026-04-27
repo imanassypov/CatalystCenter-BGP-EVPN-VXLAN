@@ -251,6 +251,151 @@ Parser and template-engine caveats are consolidated in **Appendix A** so deploym
 
 ---
 
+Catalyst Center uses a restricted Jinja2 engine. The following constructs are **not supported**:
+
+| Unsupported | Workaround |
+|-------------|------------|
+| `not in` operator | Use `is not defined`: `{% if dict[key] is not defined %}` |
+| `.keys()` method | Not supported on dictionaries |
+| Two-variable `for` loop: `{% for k, v in dict.items() %}` | Single-variable: `{% for k in dict %}` then `{% set v = dict[k] %}` |
+| Literal dot in `.split()`: `.split('.')` | Escape the dot: `.split('\\.')` — CatC treats `.` as a regex wildcard |
+| Intermediate variables in conditionals | May cause false-positive "undefined variable" detection; inline expressions where possible |
+| Complex nested expressions | Restructure into simpler steps |
+
+**Example - Checking if key exists in dictionary:**
+```jinja
+{# WRONG - 'not in' not supported #}
+{% if DEVICE_HOSTNAME not in DEFN_LOOP_UNDERLAY %}
+
+{# CORRECT - use 'is not defined' #}
+{% if DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] is not defined %}
+```
+
+### Known Bug: Non-Deterministic Dict-Key Iteration
+
+#### Symptom
+
+Templates that iterate over a dictionary and use the loop variable as a bracket-lookup key (`dict[key]`) render correctly in most Jinja2 engines, but produce **intermittent, non-reproducible failures** in Catalyst Center. The failure manifests as broken IOS-XE CLI — for example, a Spine receiving this during provisioning:
+
+```
+interface {parent=GigabitEthernet1/0/5, name=uplink1, vlan=2, ipaddr=198.19.2.50...}
+interface
+% Incomplete command.
+```
+
+Instead of the expected:
+
+```
+interface GigabitEthernet1/0/5
+ no switchport
+!
+interface GigabitEthernet1/0/5.2
+ encapsulation dot1Q 2
+ vrf forwarding red
+ ip address 198.19.2.50 255.255.255.252
+!
+```
+
+#### Root Cause
+
+Standard Jinja2 yields the **key** (a string) when iterating a dict: `{% for k in some_dict %}`. CatC's Jinja2 engine has a non-deterministic inconsistency: on some renders — typically in templates loaded via `{% include %}` from a composite template — it yields the **value object** instead of the key string.
+
+When this happens:
+
+| What CatC yields | Downstream effect |
+|---|---|
+| `interface` = the value dict itself | Printed as Java-style `{k=v,...}` notation — invalid CLI |
+| `dict[<value dict>]` | Lookup fails → variable undefined → empty string |
+
+The failure is **intermittent** because it is tied to CatC's internal template-caching and include-order resolution, which is non-deterministic across re-renders and CatC version upgrades. A template can render correctly dozens of times before failing.
+
+This bug affects **any dict defined in an included `DEFN-*.j2` file** when the iteration pattern is:
+
+```jinja
+{# BROKEN — yields value-objects unpredictably in CatC's include scope #}
+{% for key in some_dict %}
+{% set params = some_dict[key] %}
+  ... {{ params.field }} ...
+{% endfor %}
+```
+
+#### Fix: Dict-of-Dicts → List-of-Dicts
+
+The solution is to eliminate dict-key iteration entirely by converting `dict-of-dicts` data structures to **flat lists of dicts**. The former dict key (e.g., the sub-interface name) is promoted to a named field (`ifname`) inside each list entry. CatC iterates lists without ambiguity.
+
+**Before (dict-of-dicts — broken):**
+
+```jinja
+{# DEFN-L3OUT.j2 #}
+'interfaces': {
+  'GigabitEthernet1/0/5.2': {'parent': 'GigabitEthernet1/0/5', 'vlan': '2', 'ipaddr': '198.19.2.50 255.255.255.252', 'neighbour': '198.19.2.49'},
+  'GigabitEthernet1/0/6.2': {'parent': 'GigabitEthernet1/0/6', 'vlan': '2', 'ipaddr': '198.19.2.54 255.255.255.252', 'neighbour': '198.19.2.53'}
+}
+
+{# FABRIC-L3OUT.j2 — non-deterministically broken #}
+{% for interface in l3out.interfaces %}
+{% set params = l3out.interfaces[interface] %}
+interface {{params.parent}}
+ no switchport
+!
+interface {{interface}}
+ encapsulation dot1Q {{params.vlan}}
+ ...
+{% endfor %}
+```
+
+**After (list-of-dicts — safe):**
+
+```jinja
+{# DEFN-L3OUT.j2 #}
+'interfaces': [
+  {'ifname': 'GigabitEthernet1/0/5.2', 'parent': 'GigabitEthernet1/0/5', 'vlan': '2', 'ipaddr': '198.19.2.50 255.255.255.252', 'neighbour': '198.19.2.49'},
+  {'ifname': 'GigabitEthernet1/0/6.2', 'parent': 'GigabitEthernet1/0/6', 'vlan': '2', 'ipaddr': '198.19.2.54 255.255.255.252', 'neighbour': '198.19.2.53'}
+]
+
+{# FABRIC-L3OUT.j2 — deterministic #}
+{% for iface in l3out.interfaces %}
+interface {{iface.parent}}
+ no switchport
+!
+interface {{iface.ifname}}
+ encapsulation dot1Q {{iface.vlan}}
+ ...
+{% endfor %}
+```
+
+#### Companion List Pattern for Dict Lookups
+
+When a dict must be **kept** for O(1) key-based lookup (e.g., `DEFN_OVERLAY.vlans`), but also needs to be **iterated**, always define a parallel companion list that holds the keys in order. Iterate the companion list; use the resulting string as a safe bracket-lookup key into the dict.
+
+```jinja
+{# DEFN-OVERLAY.j2 — companion list alongside the dict #}
+{
+  'vrf': 'red',
+  'vlan_ids': ['101', '102'],          {# companion list — iterate this #}
+  'vlans': {
+    '101': {'name': 'corp-101', 'network': '10.1.101.0 255.255.255.0', ...},
+    '102': {'name': 'corp-102', 'network': '10.1.102.0 255.255.255.0', ...}
+  }
+}
+
+{# FABRIC-L3OUT.j2 — iterate companion list; bracket lookup is safe #}
+{% for vlan_id in overlay.vlan_ids %}
+ip route vrf {{vrf.name}} {{overlay.vlans[vlan_id].network}} Null0
+{% endfor %}
+```
+
+#### Files Changed
+
+| File | Change |
+|---|---|
+| `DEFN-L3OUT.j2` | `interfaces` converted from dict-of-dicts to list-of-dicts; `ifname` field added to each entry |
+| `DEFN-OVERLAY.j2` | `vlan_ids` companion list added to each overlay entry |
+| `FABRIC-L3OUT.j2` | Interface config loop and null-route loop updated to use list iteration |
+| `FABRIC-EVPN.j2` | BGP neighbor loop (ipv4 vrf / L3OUT block) updated to use list iteration |
+
+> See `CATC-JINJA-DICT-ITERATION-FIX.md` for the full companion-list pattern reference, including all existing companion lists in this project.
+
 ## Deploying Templates to Catalyst Center
 
 ### Prerequisites
