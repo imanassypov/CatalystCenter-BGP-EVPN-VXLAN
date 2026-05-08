@@ -29,3 +29,22 @@ interface Loopback{{vrf_entry.id}}
 {% endfor %}
 {% endfor %}
 {% endif %}
+{# ================================================================== #}
+{# BORDER GRE LOOPBACKS — Loopback1 (tunnel source) + Loopback2       #}
+{# (OSPF 100 RID / GRE EVPN peer network). One of each per border.    #}
+{# No Loopback2 conflict: Spines use Lo2 for Anycast RP (MCAST,       #}
+{# SPINE-guarded); Borders use Lo2 for GRE peer (BORDER-guarded).     #}
+{# ================================================================== #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+interface Loopback1
+ description GRE TUNNEL SOURCE
+ ip address {{DEFN_LOOP_GRE_SRC[DEVICE_HOSTNAME]}} 255.255.255.255
+ ip ospf 1 area 0
+!
+interface Loopback2
+ description GRE EVPN PEER NETWORK
+ ip address {{DEFN_LOOP_GRE_PEER[DEVICE_HOSTNAME]}} 255.255.255.255
+ ip pim sparse-mode
+ ip ospf 100 area 0
+!
+{% endif %}

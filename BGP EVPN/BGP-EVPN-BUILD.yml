@@ -18,6 +18,7 @@
 templates:
   - name: "FABRIC-VRF.j2"
   - name: "FABRIC-LOOPBACKS.j2"
+  - name: "FABRIC-BORDER-DMZ-TUNNELS.j2"
   - name: "FABRIC-L3OUT.j2"
   - name: "FABRIC-NVE.j2"
   - name: "FABRIC-MCAST.j2"
