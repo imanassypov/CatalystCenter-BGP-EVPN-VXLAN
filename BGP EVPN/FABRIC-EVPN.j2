@@ -41,16 +41,23 @@ route-map FABRIC-LOOPBACKS permit 10
  match ip address prefix-list FABRIC-LOOPBACKS
 !
 {# ================================================================== #}
-{# MCLUSTER-LOOPBACKS: eBGP multi-cluster peer /32 fall-over tracking #}
-{# Only rendered on BORDER nodes                                       #}
+{# NODE-LOOPBACKS: combined fabric + mcluster /32 fall-over tracking  #}
+{# Only rendered on BORDER nodes — used by MCLUSTER peer session      #}
+{# Seq: SPINE(1..N) + CLIENT(N+1..M) + MCLUSTER(M+1..K)              #}
 {# ================================================================== #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+{% for node in DEFN_NODE_ROLES['SPINE'] %}
+ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% endfor %}
+{% for node in DEFN_NODE_ROLES['CLIENT'] %}
+ip prefix-list NODE-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% endfor %}
 {% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
-ip prefix-list MCLUSTER-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
+ip prefix-list NODE-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + DEFN_NODE_ROLES['CLIENT'] | length + loop.index}} permit {{DEFN_LOOP_MCLUSTER[remote]['ip']}}/32
 {% endfor %}
 !
-route-map MCLUSTER-LOOPBACKS permit 10
- match ip address prefix-list MCLUSTER-LOOPBACKS
+route-map NODE-LOOPBACKS permit 10
+ match ip address prefix-list NODE-LOOPBACKS
 !
 {% endif %}
 router bgp {{FABRIC_BGP_ASN}}
@@ -126,7 +133,7 @@ router bgp {{FABRIC_BGP_ASN}}
   log-neighbor-changes
   ebgp-multihop 4
   update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
-  fall-over route-map MCLUSTER-LOOPBACKS
+  fall-over route-map NODE-LOOPBACKS
 ! @start-ignore-compliance
  exit-peer-session
 ! @end-ignore-compliance
@@ -164,6 +171,22 @@ router bgp {{FABRIC_BGP_ASN}}
 {% endfor %}
 {% endif %}
 !
+{# ======================================== #}
+{# Address-Family: ipv4 (global unicast)     #}
+{# BORDER only — activate mcluster peers    #}
+{# in IPv4 unicast for GRE overlay routing   #}
+{# ======================================== #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+  address-family ipv4
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
+{% endfor %}
+! @start-ignore-compliance
+   exit-address-family
+! @end-ignore-compliance
+!
+{% endif %}
 {# ============================= #}
 {# Address-Family: ipv4 vrf      #}
 {# L3OUT CONFIGURATION ON SPINES #}
