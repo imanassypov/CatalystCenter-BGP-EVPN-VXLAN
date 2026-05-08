@@ -20,7 +20,8 @@ flowchart TB
     direction TB
     build["BGP-EVPN-BUILD composite\nCreated in CatC from BGP-EVPN-BUILD.yml via Ansible"]:::composite
     vrf["FABRIC-VRF\nVRF definitions, RD/RT, stitching RTs"]:::fabric
-    loopbacks["FABRIC-LOOPBACKS\nLoopback0 and per-VRF overlay loopbacks"]:::fabric
+    loopbacks["FABRIC-LOOPBACKS\nLoopback0, Loopback1/2 (Border), per-VRF overlay loopbacks"]:::fabric
+    tunnels["FABRIC-BORDER-DMZ-TUNNELS\nGRE tunnel interfaces and OSPF 100 for border-to-DMZ"]:::fabric
     l3out["FABRIC-L3OUT\nSpine-to-core subinterfaces and east-west Null0 guards"]:::fabric
     nve["FABRIC-NVE\nL3VNI VLANs, SVIs, and NVE1 base membership"]:::fabric
     mcast["FABRIC-MCAST\nPIM, Anycast RP, MSDP, VRF multicast enablement"]:::fabric
@@ -29,12 +30,15 @@ flowchart TB
     ports["FABRIC-CLIENT-PORTS\nLeaf access and trunk interface rendering"]:::fabric
     nac["FABRIC-NAC\nIBNS 2.0, AAA, RADIUS, IoT NAC policies"]:::fabric
 
-    build --> vrf --> loopbacks --> l3out --> nve --> mcast --> evpn --> overlay --> ports --> nac
+    build --> vrf --> loopbacks --> tunnels --> l3out --> nve --> mcast --> evpn --> overlay --> ports --> nac
   end
 
   vrf -. uses .-> vrfDeps["DEFN-VRF: VRF catalog and per-node placement<br/>DEFN-LOOPBACKS: RD source loopback IPs<br/>DEFN-OVERLAY: fabric ASN and shared overlay context"]:::support
 
-  loopbacks -. uses .-> loopDeps["DEFN-VRF: which VRFs exist on the node<br/>DEFN-ROLES: role-aware behavior<br/>DEFN-LOOPBACKS: underlay and overlay loopback addressing"]:::support
+  loopbacks -. uses .-> loopDeps["DEFN-VRF: which VRFs exist on the node<br/>DEFN-ROLES: role-aware behavior<br/>DEFN-LOOPBACKS: underlay, overlay, and GRE loopback addressing"]:::support
+
+  tunnels -. uses .-> tunnelDeps["DEFN-BORDER-DMZ-TUNNELS: per-border × DMZ tunnel definitions<br/>DEFN-ROLES: BORDER guard<br/>DEFN-LOOPBACKS: GRE source and peer loopback IPs"]:::support
+  tunnels -. optional .-> tunnelOpt["Rendered only on BORDER nodes — skipped for spines and leaves"]:::optional
 
   l3out -. uses .-> l3outDeps["DEFN-L3OUT: uplinks, peers, aggregates, L3OUT enable toggle<br/>DEFN-VRF: VRF-to-node placement<br/>DEFN-OVERLAY: foreign-subnet Null0 guards"]:::support
   l3out -. optional .-> l3outOpt["Rendered only when DEFN_L3OUT_NODES contains the current device"]:::optional
@@ -46,7 +50,7 @@ flowchart TB
   evpn -. uses .-> evpnDeps["DEFN-ROLES: RR, CLIENT, BORDER, MCLUSTER logic<br/>DEFN-LOOPBACKS: peer and remote-site loopback IPs<br/>DEFN-VRF and DEFN-VNIOFFSETS: per-VRF control-plane context<br/>DEFN-L3OUT and DEFN-OVERLAY: external BGP and route policy inputs"]:::support
   evpn -. optional .-> evpnOpt["Border remote-site EVPN is active only when BORDER and MCLUSTER data are populated"]:::optional
 
-  overlay -. uses .-> overlayDeps["DEFN-OVERLAY: VLAN, SVI, DHCP relay, multicast BUM data<br/>DEFN-VRF: tenant binding<br/>DEFN-ROLES: leaf-only L2 service rendering<br/>DEFN-VNIOFFSETS: L2VNI numbering rules"]:::support
+  overlay -. uses .-> overlayDeps["DEFN-OVERLAY: VLAN, SVI, DHCP relay, multicast BUM data<br/>DEFN-VRF: tenant binding<br/>DEFN-ROLES: CLIENT role L2 service and VRF AF rendering<br/>DEFN-VNIOFFSETS: L2VNI numbering rules"]:::support
 
   ports -. uses .-> portsDeps["DEFN-CLIENT-PORTS: port-to-VLAN intent per leaf"]:::support
   ports -. optional .-> portsOpt["Skipped on spines and borders by role guard"]:::optional
@@ -57,4 +61,4 @@ flowchart TB
   nac --> final["Catalyst Center produces role-aware IOS-XE configuration blocks"]:::composite
   final --> spineOut["Spines and RRs<br/>VRF, loopbacks, Anycast RP, EVPN RR, optional L3OUT"]:::outcome
   final --> leafOut["Leaves<br/>L3VNI and L2VNI services, client ports, optional NAC"]:::outcome
-  final --> borderOut["Borders<br/>VRF, loopbacks, EVPN border policy, optional multi-cluster peering"]:::outcome
+  final --> borderOut["Borders<br/>VRF, loopbacks, GRE tunnels, OSPF 100, EVPN border policy, optional multi-cluster peering"]:::outcome
