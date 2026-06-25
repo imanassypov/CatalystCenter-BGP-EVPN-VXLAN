@@ -50,9 +50,9 @@ route-map FABRIC-LOOPBACKS permit 10
 !
 {# ================================================================== #}
 {# NODE-LOOPBACKS: combined fabric + mcluster /32 fall-over tracking  #}
-{# Only rendered on BORDER nodes — used by DMZ peer session            #}
+{# Only rendered on BORDER nodes - used by DMZ peer session            #}
 {# Seq: SPINE(1..N) + CLIENT(N+1..M) + MCLUSTER(M+1..K)              #}
-{# Gated on DEFN_TUNNELS — skipped when the DMZ interconnect is off.   #}
+{# Gated on DEFN_TUNNELS - skipped when the DMZ interconnect is off.   #}
 {# ================================================================== #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
 {% for node in DEFN_NODE_ROLES['SPINE'] %}

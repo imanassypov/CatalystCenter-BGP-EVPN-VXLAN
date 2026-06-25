@@ -22,7 +22,7 @@
 {% endif %}
 {# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
 {% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
-{# NAC/dot1x only applies to Leaf nodes — skip Spine and Border #}
+{# NAC/dot1x only applies to Leaf nodes - skip Spine and Border #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] %}
 {# SKIP NAC ON SPINE AND BORDER NODES #}
 {# AS NOT IN LOGIC IS NOT SUPPORTED IN THIS J2 ENGINE #}
