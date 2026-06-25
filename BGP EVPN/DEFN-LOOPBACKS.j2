@@ -30,4 +30,19 @@
         'ANYCAST':  'Loopback2'
     }
 %}
+{# DEFN_LOOP_GRE_SRC: per-border Loopback1 IP — GRE tunnel source for all DMZ tunnels      #}
+{# DEFN_LOOP_GRE_PEER: per-border Loopback2 IP — OSPF 100 router-id and GRE peer network   #}
+{# Lookup by DEVICE_HOSTNAME only; never iterated — no companion list needed                 #}
+{% set DEFN_LOOP_GRE_SRC =
+    {
+      'Border-01.dcloud.cisco.com':  '10.100.1.1',
+      'Border-02.dcloud.cisco.com':  '10.100.3.1'
+    }
+%}
+{% set DEFN_LOOP_GRE_PEER =
+    {
+      'Border-01.dcloud.cisco.com':  '10.101.1.2',
+      'Border-02.dcloud.cisco.com':  '10.101.2.2'
+    }
+%}
 {# End of File #}

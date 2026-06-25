@@ -1,0 +1,48 @@
+flowchart TB
+  classDef defn      fill:#FEF3C7,color:#422006,stroke:#D97706,stroke-width:1.5px
+  classDef func      fill:#F3E8FF,color:#4C1D95,stroke:#7C3AED,stroke-width:1.5px
+  classDef fabric    fill:#E0F2FE,color:#0F172A,stroke:#0284C7,stroke-width:1.5px
+  classDef composite fill:#0E7490,color:#FFFFFF,stroke:#155E75,stroke-width:2px
+  classDef output    fill:#DCFCE7,color:#14532D,stroke:#16A34A,stroke-width:1.5px
+
+  subgraph defnLayer["  DEFN-*.j2  ·  Data Model  (operator-edited)  "]
+    direction LR
+    dRoles["DEFN-ROLES\nSpine · Leaf · Border · RR"]:::defn
+    dVRF["DEFN-VRF\nTenant VRFs · L3VNI · MDT"]:::defn
+    dLoop["DEFN-LOOPBACKS\nUnderlay · Anycast IPs"]:::defn
+    dOverlay["DEFN-OVERLAY\nVLANs · SVIs · ASN"]:::defn
+    dVNI["DEFN-VNIOFFSETS\nL2VNI · L3VNI offsets"]:::defn
+    dL3Out["DEFN-L3OUT\nCore uplinks · BGP peers"]:::defn
+    dMcast["DEFN-MCAST\nRP addresses · MDT groups"]:::defn
+    dNAC["DEFN-NAC\nRADIUS · 802.1X policy"]:::defn
+    dPorts["DEFN-CLIENT-PORTS\nAccess port intent"]:::defn
+    dTunnels["DEFN-BORDER-DMZ-TUNNELS\nGRE tunnel data per border"]:::defn
+  end
+
+  subgraph funcLayer["  FUNC-*.j2  ·  Reusable Macros  "]
+    direction LR
+    fVRF["FUNC-VRF-LOOKUP\nResolves per-device VRF scope"]:::func
+    fPorts["FUNC-CLIENT-PORTS\nPort rendering logic"]:::func
+  end
+
+  subgraph fabricPipeline["  FABRIC-*.j2  ·  CLI Generators  ·  Executed in order by BGP-EVPN-BUILD composite  "]
+    direction LR
+    f1["FABRIC-VRF\nVRF · RD · RT"]:::fabric
+    f2["FABRIC-LOOPBACKS\nLoopback0 · Loopback1/2 (Border)"]:::fabric
+    f2a["FABRIC-BORDER-DMZ-TUNNELS\nGRE tunnels · OSPF 100"]:::fabric
+    f3["FABRIC-L3OUT\nSpine uplinks to core"]:::fabric
+    f4["FABRIC-NVE\nVXLAN NVE · L3VNI VLANs"]:::fabric
+    f5["FABRIC-MCAST\nPIM · Anycast RP · MSDP"]:::fabric
+    f6["FABRIC-EVPN\niBGP · RR policy · Border eBGP"]:::fabric
+    f7["FABRIC-OVERLAY\nL2VNI · EVPN · Tenant SVIs"]:::fabric
+    f8["FABRIC-CLIENT-PORTS\nAccess & trunk interfaces"]:::fabric
+    f9["FABRIC-NAC\nIBNS 2.0 · AAA · RADIUS"]:::fabric
+    f1 --> f2 --> f2a --> f3 --> f4 --> f5 --> f6 --> f7 --> f8 --> f9
+  end
+
+  defnLayer  -->|"{% include %} at runtime"| fabricPipeline
+  funcLayer  -->|"macro calls"| fabricPipeline
+
+  fabricPipeline --> spineOut["Spine / RR\nBGP RR · Anycast RP\nL3OUT to core"]:::output
+  fabricPipeline --> leafOut["Leaf\nL2VNI · L3VNI\nAccess ports · NAC"]:::output
+  fabricPipeline --> borderOut["Border\neBGP · Multi-cluster\nGRE tunnels · VXLAN peering"]:::output

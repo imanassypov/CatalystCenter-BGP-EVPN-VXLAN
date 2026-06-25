@@ -1,0 +1,47 @@
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# ============================================================ #}
+{# DEFN_TUNNELS — GRE TUNNEL DEFINITIONS (BORDER → DMZ)        #}
+{#                                                              #}
+{# Flat list of dicts — one entry per (border × DMZ) pair.      #}
+{# FABRIC-BORDER-DMZ-TUNNELS.j2 iterates this list and matches  #}
+{# on t.node == DEVICE_HOSTNAME.                                #}
+{#                                                              #}
+{# Fields:                                                      #}
+{#   node    — FQDN of the border switch (CatC inventory)       #}
+{#   remote  — FQDN of the remote DMZ peer (informational)      #}
+{#   ifname  — GRE tunnel interface name (must be unique)        #}
+{#   addr    — local tunnel IP address                           #}
+{#   mask    — tunnel subnet mask                                #}
+{#   source  — tunnel source interface (Loopback1 for all)       #}
+{#   dest    — remote tunnel endpoint IP                         #}
+{#                                                              #}
+{# ospf_rid is NOT stored here — derived at render time from     #}
+{# DEFN_LOOP_GRE_PEER[DEVICE_HOSTNAME] (per-border, not         #}
+{# per-tunnel).                                                  #}
+{#                                                              #}
+{# To add a second DMZ:                                          #}
+{#   1. DEFN-ROLES.j2: add FQDN to MCLUSTER list                #}
+{#   2. DEFN-LOOPBACKS.j2: add entry to DEFN_LOOP_MCLUSTER      #}
+{#   3. Here: append one entry per border node                   #}
+{# ============================================================ #}
+{% set DEFN_TUNNELS = [
+  {
+    'node':   'Border-01.dcloud.cisco.com',
+    'remote': 'dmz1.dcloud.cisco.com',
+    'ifname': 'Tunnel10',
+    'addr':   '10.100.100.2',
+    'mask':   '255.255.255.252',
+    'source': 'Loopback1',
+    'dest':   '10.100.2.1'
+  },
+  {
+    'node':   'Border-02.dcloud.cisco.com',
+    'remote': 'dmz1.dcloud.cisco.com',
+    'ifname': 'Tunnel11',
+    'addr':   '10.100.101.2',
+    'mask':   '255.255.255.252',
+    'source': 'Loopback1',
+    'dest':   '10.100.2.1'
+  }
+] %}
+{# End of File #}
