@@ -1,0 +1,11 @@
+.DS_Store
+venv
+# Ansible runtime artifacts
+.ansible/
+dnac.log
+*.log
+# Ansible Vault secrets and password files
+vault.yml
+.vault_pass
+# Copilot instructions
+.github/copilot-instructions.md
