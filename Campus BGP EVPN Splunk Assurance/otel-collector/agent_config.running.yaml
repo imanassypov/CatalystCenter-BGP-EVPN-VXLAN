@@ -1,0 +1,77 @@
+# =============================================================================
+# OTel Collector config — cloud Splunk/OTel host (source of truth)
+#   host:    18.224.25.161 (ip-172-31-30-149.us-east-2.compute.internal)
+#   path:    /etc/otel/collector/agent_config.yaml
+#   unit:    splunk-otel-collector.service  (ExecStart=/usr/bin/otelcol)
+#   envfile: /etc/otel/collector/splunk-otel-collector.conf
+#            SPLUNK_CONFIG=/etc/otel/collector/agent_config.yaml
+#   synced:  2026-06-22
+#
+# This mirrors what the collector actually runs on the EC2 host. It collects EC2
+# host metrics plus Cisco IOS-XE MDT via gRPC dial-out (yang_grpc on :57444) and
+# ships both pipelines to the co-located Splunk HEC on localhost:8088.
+#
+# Device dial-out target (configure on each fabric switch):
+#   receiver ip address 18.224.25.161 57444 protocol grpc-tcp
+#
+# NOTE: splunk_hec.endpoint must be "https://localhost:8088/services/collector".
+# The host cannot reach its own public IP (EC2 has no hairpin NAT) and HEC
+# listens locally on :8088, so loopback is required.
+# =============================================================================
+
+receivers:
+  # Standard host metrics for your EC2 instance
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      network:
+
+  # NEW: YANG gRPC Dial-out Receiver
+#  yang_grpc:
+#    endpoint: "0.0.0.0:57000" # The port your network devices will stream telemetry to
+
+  yang_grpc:
+    endpoint: "0.0.0.0:57444"
+    transport: tcp
+    keepalive:
+      server_parameters:
+        time: 30s
+        timeout: 10s
+    max_concurrent_streams: 100
+    max_recv_msg_size_mib: 4
+
+    # YANG model loading is not required. Numeric YANG list keys (vni, vni-id,
+    # evni, unit-number, evpn-inst-id, vlan-id, evpn-stats-id) are emitted as
+    # dimensions by the PATCHED yanggrpcreceiver build 26_05_27, compiled into
+    # the custom collector /usr/local/bin/otelcol-yangfix that runs this config
+    # (deployed 2026-06-23). The patch fixes key extraction in the converter
+    # itself (extractKeysOnly stringifies every leaf under the GPB `keys` branch),
+    # so the parsed schema is not needed to recover numeric keys.
+    #
+    # History: with the stock contrib receiver v0.154.0, loading the Cisco NVE
+    # models (enable_rfc_parser + module_paths) had ZERO effect — that receiver
+    # only promoted STRING leaves to dimensions and never consulted the schema on
+    # the metric-conversion path. The custom build resolves this. Details and the
+    # upstream bug report: see README.md and yanggrpcreceiver-numeric-key-issue.md
+    # in this folder.
+
+processors:
+  batch:
+
+exporters:
+  splunk_hec:
+    endpoint: "https://localhost:8088/services/collector"
+    token: "***REMOVED***"
+    tls:
+      insecure_skip_verify: true
+
+service:
+  pipelines:
+    metrics:
+      # Combine your EC2 metrics and your network YANG telemetry into the same HEC output
+      receivers: [hostmetrics,yang_grpc]
+      processors: [batch]
+      exporters: [splunk_hec]

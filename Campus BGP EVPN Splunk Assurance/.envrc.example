@@ -1,0 +1,33 @@
+# Environment variables for EVPN Splunk lab scripts
+# Copy to .envrc and fill in your own values:  cp .envrc.example .envrc
+# Load with: source .envrc  OR  direnv allow (if direnv is installed)
+# Referenced by /tmp/*.py scripts via python-dotenv
+#
+# NOTE: .envrc is gitignored — never commit real credentials.
+
+export IOSXE_PASS="<device-enable-password>"
+export HF_PASS="<heavy-forwarder-password>"
+
+# SSH bastion / jump host (script-server) — required to reach the cloud
+# Splunk/OTel host over SSH.
+export SSH_BASTION_KEY="$HOME/.ssh/id_ed25519"
+# Key for the cloud Splunk/OTel host itself (reached through the bastion).
+export SSH_KEY_PATH="$PWD/dcloud-splunk-creds/<your-key>.pem"
+
+# Splunk Search Head
+# Splunk runs on the cloud EC2 host (same host as the OTel collector).
+# REST/search reached on that host via https://localhost:8089 when running on it,
+# or https://<splunk-host>:8089 through the bastion.
+# Admin account is instance-global and required to search the metric indexes
+# (evpn_assurance, cisco_metrics) — the legacy "cisco" lab user has no index ACL.
+export SPLUNK_HOST="<splunk-host-ip>"
+export SPLUNK_PORT="8089"
+export SPLUNK_USER="<splunk-user>"
+export SPLUNK_PASS="<splunk-password>"
+
+# Cloud EC2 OTel collector (primary) — runs otel-collector/agent_config.running.yaml
+# Devices dial out to OTEL_COLLECTOR_HOST:57444; collector exports to local Splunk HEC.
+export OTEL_COLLECTOR_HOST="<otel-collector-ip>"
+export OTEL_COLLECTOR_PORT="57444"
+# HEC token consumed by the collector via ${env:SPLUNK_HEC_TOKEN} (set on the EC2).
+export SPLUNK_HEC_TOKEN="<splunk-hec-token>"
