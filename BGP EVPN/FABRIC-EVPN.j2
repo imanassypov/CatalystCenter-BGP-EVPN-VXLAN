@@ -28,13 +28,17 @@ route-map EVPN-PEER-BORDER-OUT permit 10
 !
 {# ================================================================== #}
 {# FABRIC-LOOPBACKS: intra-fabric iBGP peer /32 fall-over tracking    #}
-{# Iterate SPINE then CLIENT roles - covers all fabric nodes           #}
+{# Iterate SPINE, CLIENT, then BORDER Loopback1 GRE tunnel sources    #}
+{# BORDER Loopback0 comes from DEFN_LOOP_UNDERLAY via CLIENT role      #}
 {# ================================================================== #}
 {% for node in DEFN_NODE_ROLES['SPINE'] %}
 ip prefix-list FABRIC-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
 {% for node in DEFN_NODE_ROLES['CLIENT'] %}
 ip prefix-list FABRIC-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
+{% endfor %}
+{% for node in DEFN_NODE_ROLES['BORDER'] %}
+ip prefix-list FABRIC-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + DEFN_NODE_ROLES['CLIENT'] | length + loop.index}} permit {{DEFN_LOOP_GRE_SRC[node]}}/32
 {% endfor %}
 !
 route-map FABRIC-LOOPBACKS permit 10
