@@ -1,0 +1,214 @@
+<mxfile host="Electron" version="21.0.0">
+  <diagram name="MCAST-TCASE-Topology" id="mcast-tcase">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== TITLE ===== -->
+        <mxCell id="title" value="Campus BGP EVPN — End-to-End Multicast Verification&#xa;Test Group: 239.1.2.3  |  VNI 50101  |  Underlay BUM: 239.190.100.101" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#1a1a2e;" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="1000" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ===== LEGEND BOX ===== -->
+        <mxCell id="leg_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="90" width="300" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_title" value="Legend" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1075" y="100" width="270" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" value="" style="endArrow=block;endFill=1;strokeColor=#006EAF;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry x="1075" y="135" width="60" height="10" as="geometry" relative="0">
+            <Array as="points" />
+            <mxPoint x="1075" y="135" as="sourcePoint" />
+            <mxPoint x="1135" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg1l" value="OSPF Underlay Link" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="125" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" value="" style="endArrow=block;endFill=1;strokeColor=#d6b656;strokeWidth=2;dashed=1;" edge="1" parent="1">
+          <mxGeometry x="1075" y="165" width="60" height="10" as="geometry" relative="0">
+            <Array as="points" />
+            <mxPoint x="1075" y="165" as="sourcePoint" />
+            <mxPoint x="1135" y="165" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg2l" value="VXLAN Tunnel (UDP/4789)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="155" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" value="" style="endArrow=block;endFill=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry x="1075" y="195" width="60" height="10" as="geometry" relative="0">
+            <Array as="points" />
+            <mxPoint x="1075" y="195" as="sourcePoint" />
+            <mxPoint x="1135" y="195" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg3l" value="Host Access Link (VLAN 101)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="185" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg4" value="" style="endArrow=block;endFill=1;strokeColor=#DC4E41;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry x="1075" y="225" width="60" height="10" as="geometry" relative="0">
+            <Array as="points" />
+            <mxPoint x="1075" y="225" as="sourcePoint" />
+            <mxPoint x="1135" y="225" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg4l" value="Multicast Flow (239.1.2.3)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="215" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg5" value="" style="endArrow=block;endFill=1;strokeColor=#9673a6;strokeWidth=2;dashed=1;" edge="1" parent="1">
+          <mxGeometry x="1075" y="255" width="60" height="10" as="geometry" relative="0">
+            <Array as="points" />
+            <mxPoint x="1075" y="255" as="sourcePoint" />
+            <mxPoint x="1135" y="255" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg5l" value="BUM Outer Mcast (239.190.100.101)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="245" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ===== RED01 HOST ===== -->
+        <mxCell id="red01" value="&lt;b&gt;red01&lt;/b&gt;&#xa;198.18.101.10&#xa;VLAN 101 / eth0&#xa;Sender: 239.1.2.3" style="shape=mxgraph.cisco.computers_and_peripherals.pc;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#dae8fc;strokeColor=#006EAF;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;labelBackgroundColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="380" width="80" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== LEAF-01 ===== -->
+        <mxCell id="leaf01" value="&lt;b&gt;Leaf-01&lt;/b&gt;&#xa;Lo0: 198.19.1.3&#xa;VNI 50101&#xa;mcast-grp 239.190.100.101&#xa;VRF: red" style="shape=mxgraph.cisco.routers.layer_3_switch;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;labelBackgroundColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="370" width="90" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== SPINE-01 ===== -->
+        <mxCell id="spine01" value="&lt;b&gt;Spine-01&lt;/b&gt;&#xa;Lo0: 198.19.1.1&#xa;PIM RP: 198.19.1.254" style="shape=mxgraph.cisco.routers.layer_3_switch;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;labelBackgroundColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="540" y="200" width="90" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== SPINE-02 ===== -->
+        <mxCell id="spine02" value="&lt;b&gt;Spine-02&lt;/b&gt;&#xa;Lo0: 198.19.1.2" style="shape=mxgraph.cisco.routers.layer_3_switch;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;labelBackgroundColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="540" y="520" width="90" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== LEAF-02 ===== -->
+        <mxCell id="leaf02" value="&lt;b&gt;Leaf-02&lt;/b&gt;&#xa;Lo0: 198.19.1.4&#xa;VNI 50101&#xa;mcast-grp 239.190.100.101&#xa;VRF: red" style="shape=mxgraph.cisco.routers.layer_3_switch;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;labelBackgroundColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="800" y="370" width="90" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== RED02 HOST ===== -->
+        <mxCell id="red02" value="&lt;b&gt;red02&lt;/b&gt;&#xa;198.18.101.20&#xa;VLAN 101 / eth0&#xa;Receiver: 239.1.2.3&#xa;socat listener UDP/5000" style="shape=mxgraph.cisco.computers_and_peripherals.pc;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;labelBackgroundColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="380" width="80" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== RP ANNOTATION ===== -->
+        <mxCell id="rp_note" value="&lt;b&gt;PIM RP&lt;/b&gt;&#xa;Anycast: 198.19.1.254&#xa;(hosted on Spines)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="520" y="370" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===== HOST ACCESS LINKS ===== -->
+        <!-- red01 → Leaf-01 -->
+        <mxCell id="e_red01_leaf01" value="Gi1/0/3&#xa;VLAN 101" style="endArrow=none;strokeColor=#82b366;strokeWidth=2;fontSize=10;align=center;" edge="1" parent="1" source="red01" target="leaf01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- red02 → Leaf-02 -->
+        <mxCell id="e_red02_leaf02" value="Gi1/0/3&#xa;VLAN 101" style="endArrow=none;strokeColor=#82b366;strokeWidth=2;fontSize=10;align=center;" edge="1" parent="1" source="red02" target="leaf02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== UNDERLAY OSPF LINKS ===== -->
+        <!-- Leaf-01 → Spine-01 -->
+        <mxCell id="e_l1_s1" value="Gi1/0/1&#xa;198.19.2.x" style="endArrow=none;strokeColor=#006EAF;strokeWidth=3;fontSize=10;" edge="1" parent="1" source="leaf01" target="spine01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Leaf-01 → Spine-02 -->
+        <mxCell id="e_l1_s2" value="Gi1/0/2&#xa;198.19.2.x" style="endArrow=none;strokeColor=#006EAF;strokeWidth=3;fontSize=10;" edge="1" parent="1" source="leaf01" target="spine02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Leaf-02 → Spine-01 -->
+        <mxCell id="e_l2_s1" value="" style="endArrow=none;strokeColor=#006EAF;strokeWidth=3;" edge="1" parent="1" source="leaf02" target="spine01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Leaf-02 → Spine-02 -->
+        <mxCell id="e_l2_s2" value="" style="endArrow=none;strokeColor=#006EAF;strokeWidth=3;" edge="1" parent="1" source="leaf02" target="spine02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== VXLAN TUNNEL (unicast lo-to-lo) ===== -->
+        <mxCell id="e_vxlan" value="VXLAN UDP/4789&#xa;Lo:198.19.1.3 → Lo:198.19.1.4&#xa;VNI 50101" style="endArrow=block;endFill=1;startArrow=block;startFill=1;strokeColor=#d6b656;strokeWidth=2;dashed=1;fontSize=10;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="leaf01" target="leaf02">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="325" y="100" />
+              <mxPoint x="845" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== BUM OUTER MCAST PATH ===== -->
+        <mxCell id="e_bum" value="BUM outer mcast&#xa;239.190.100.101&#xa;(VXLAN-encapped)" style="endArrow=block;endFill=1;strokeColor=#9673a6;strokeWidth=2;dashed=1;fontSize=10;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="leaf01" target="leaf02">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="420" y="390" />
+              <mxPoint x="585" y="340" />
+              <mxPoint x="760" y="390" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== MULTICAST DATA FLOW (red01 → red02) ===== -->
+        <!-- red01 → Leaf-01 -->
+        <mxCell id="e_mc1" value="① UDP 239.1.2.3:5000&#xa;TTL=32" style="endArrow=block;endFill=1;strokeColor=#DC4E41;strokeWidth=3;fontSize=10;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="red01" target="leaf01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Leaf-01 → (via spines/BUM) → Leaf-02 -->
+        <mxCell id="e_mc2" value="② VXLAN BUM encap&#xa;src 198.19.1.3&#xa;dst 239.190.100.101" style="endArrow=block;endFill=1;strokeColor=#DC4E41;strokeWidth=3;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="leaf01" target="leaf02">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="415" />
+              <mxPoint x="585" y="470" />
+              <mxPoint x="750" y="415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Leaf-02 → red02 -->
+        <mxCell id="e_mc3" value="③ Decap + deliver&#xa;239.1.2.3 → VLAN 101" style="endArrow=block;endFill=1;strokeColor=#DC4E41;strokeWidth=3;fontSize=10;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="leaf02" target="red02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== IGMP JOIN FLOW (red02 → Leaf-02) ===== -->
+        <mxCell id="e_igmp" value="IGMP Join&#xa;239.1.2.3" style="endArrow=block;endFill=1;strokeColor=#82b366;strokeWidth=2;dashed=1;fontSize=10;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="red02" target="leaf02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== ANNOTATION BOXES ===== -->
+        <!-- Leaf-01 mroute box -->
+        <mxCell id="ann_leaf01" value="&lt;b&gt;show ip mroute vrf red 239.1.2.3 count&lt;/b&gt;&#xa;(198.18.101.10, 239.1.2.3): 154 pkts fwd ✅&#xa;RP-tree: 85 pkts | (S,G): 69 pkts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="160" y="620" width="310" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ann_leaf01_arrow" value="" style="endArrow=open;endSize=6;strokeColor=#d6b656;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="ann_leaf01" target="leaf01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Leaf-02 mroute box -->
+        <mxCell id="ann_leaf02" value="&lt;b&gt;show ip mroute vrf red 239.1.2.3 count&lt;/b&gt;&#xa;(*,G): 114 pkts received/forwarded ✅&#xa;show ip igmp vrf red groups → 239.1.2.3 on Vlan101 ✅" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="690" y="620" width="330" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ann_leaf02_arrow" value="" style="endArrow=open;endSize=6;strokeColor=#82b366;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="ann_leaf02" target="leaf02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- NVE counter box -->
+        <mxCell id="ann_nve" value="&lt;b&gt;show nve interface nve1 detail&lt;/b&gt;&#xa;Pkts Out: 15,765 (UC + BUM) ✅&#xa;Multicast BUM encapsulation: Vxlan IPv4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#006EAF;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="160" y="720" width="310" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ann_nve_arrow" value="" style="endArrow=open;endSize=6;strokeColor=#006EAF;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="ann_nve" target="leaf01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

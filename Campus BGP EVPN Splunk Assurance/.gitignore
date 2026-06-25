@@ -1,0 +1,31 @@
+# macOS metadata
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# SSH keys / certificates (never commit private keys)
+*.pem
+
+# Local credentials / environment (use the .example templates instead)
+.envrc
+.vscode/mcp.json
+
+# Splunk app archives (app is tracked as source, not tarball)
+*.tar.gz
+*.spl
+
+# Temp files
+/tmp/
+
+# Model Maps (Cisco internal reference docs — not for version control)
+Model Maps/
+
+# Production config snapshots (device backups — not for version control)
+Prod Config Snapshots/
+
+# CML lab topologies & device configs (lab artifacts — not for version control)
+EVPN CML Ottawa/
+EVPN CML Ottawa adapted configs/
