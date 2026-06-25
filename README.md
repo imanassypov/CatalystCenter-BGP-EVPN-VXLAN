@@ -73,7 +73,7 @@ BGP EVPN/                            # Template source files (Jinja2)
 │   ├── FABRIC-VRF.j2                # VRF configuration with RD/RT
 │   ├── FABRIC-LOOPBACKS.j2          # Loopback interface configuration
 │   ├── FABRIC-L3OUT.j2              # L3OUT sub-interfaces + east-west Null0 routes
-│   ├── FABRIC-NVE.j2                # NVE interface + L3VNI VLANs/SVIs
+│   ├── FABRIC-NVE.j2                # NVE interface + L3VNI VLANs/SVIs + EVPN statistics enablement
 │   ├── FABRIC-MCAST.j2              # Multicast RP, MSDP, VRF multicast setup
 │   ├── FABRIC-EVPN.j2               # BGP EVPN peering, address-families, L3OUT BGP
 │   ├── FABRIC-OVERLAY.j2            # L2VNI overlay services, L2VPN instances
@@ -899,7 +899,7 @@ This execution order mirrors `BGP EVPN/BGP-EVPN-BUILD.yml` and should be used fo
 7. Deploy `FABRIC-OVERLAY.j2` → L2VNI overlay services
 8. Deploy `FABRIC-CLIENT-PORTS.j2` → Client-facing interface configuration
 9. Deploy `FABRIC-NAC.j2` → Network Access Control policies
-10. Deploy `FABRIC-TELEMETRY-SPLUNK.j2` → MDT telemetry subscriptions for Splunk/OpenTelemetry collection
+10. Deploy `FABRIC-TELEMETRY-SPLUNK.j2` → MDT telemetry subscriptions and EVPN statistics enablement for Splunk/OpenTelemetry collection
 
 ### Post-Deployment Validation
 - Verify BGP EVPN sessions (Status = **Established**)
