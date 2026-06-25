@@ -1,0 +1,92 @@
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# DEFN-TELEMETRY-SPLUNK.j2 - IOS-XE MDT Telemetry subscription data for Splunk/OpenTelemetry collection #}
+{# Applies to the deduplicated union of DEFN_NODE_ROLES['SPINE'], ['BORDER'], and ['CLIENT'] #}
+{% set DEFN_TELEMETRY_SPLUNK_RECEIVER_IP = '18.224.25.161' %}
+{% set DEFN_TELEMETRY_SPLUNK_RECEIVER_PORT = '57444' %}
+{% set DEFN_TELEMETRY_SPLUNK_ROLES = ['SPINE', 'BORDER', 'CLIENT'] %}
+{% set DEFN_TELEMETRY_SPLUNK = [
+  {
+    'section': 'NVE Global State',
+    'xpath': '/nve-oper-data/nve-oper',
+    'subscriptions': [
+      {'id': '40101', 'policy': 'on-change', 'period': ''},
+      {'id': '40102', 'policy': 'periodic', 'period': '30000'}
+    ]
+  },
+  {
+    'section': 'NVE VNI Per-Instance State',
+    'xpath': '/nve-oper-data/nve-oper/nve-vni-oper',
+    'subscriptions': [
+      {'id': '40103', 'policy': 'on-change', 'period': ''},
+      {'id': '40104', 'policy': 'periodic', 'period': '60000'}
+    ]
+  },
+  {
+    'section': 'NVE VTEP Peer Adjacency',
+    'xpath': '/nve-oper-data/nve-oper/nve-peer-oper',
+    'subscriptions': [
+      {'id': '40105', 'policy': 'on-change', 'period': ''},
+      {'id': '40106', 'policy': 'periodic', 'period': '30000'}
+    ]
+  },
+  {
+    'section': 'EVPN Instance (EVI) State',
+    'xpath': '/evpn-oper-data/evpn-inst',
+    'subscriptions': [
+      {'id': '40107', 'policy': 'on-change', 'period': ''},
+      {'id': '40108', 'policy': 'periodic', 'period': '60000'}
+    ]
+  },
+  {
+    'section': 'EVPN VLAN / Data-Plane Binding',
+    'xpath': '/evpn-oper-data/evpn-inst/evpn-vlan',
+    'subscriptions': [
+      {'id': '40109', 'policy': 'on-change', 'period': ''},
+      {'id': '40110', 'policy': 'periodic', 'period': '60000'}
+    ]
+  },
+  {
+    'section': 'EVPN Per-EVI Peer',
+    'xpath': '/evpn-oper-data/evpn-inst/evpn-vlan/evpn-peer',
+    'subscriptions': [
+      {'id': '40111', 'policy': 'on-change', 'period': ''},
+      {'id': '40112', 'policy': 'periodic', 'period': '30000'}
+    ]
+  },
+  {
+    'section': 'EVPN Route Statistics',
+    'xpath': '/evpn-oper-data/evpn-stats',
+    'subscriptions': [
+      {'id': '40113', 'policy': 'periodic', 'period': '6000'}
+    ]
+  },
+  {
+    'section': 'BGP Neighbor State',
+    'xpath': '/bgp-state-data/neighbors/neighbor',
+    'subscriptions': [
+      {'id': '40114', 'policy': 'periodic', 'period': '3000'},
+      {'id': '40119', 'policy': 'on-change', 'period': ''}
+    ]
+  },
+  {
+    'section': 'NVE Traffic Counters',
+    'xpath': '/nve-oper-data/nve-oper-counters',
+    'subscriptions': [
+      {'id': '40115', 'policy': 'periodic', 'period': '6000'}
+    ]
+  },
+  {
+    'section': 'BGP Address-Family Summary',
+    'xpath': '/bgp-state-data/address-families/address-family',
+    'subscriptions': [
+      {'id': '40116', 'policy': 'periodic', 'period': '6000'}
+    ]
+  },
+  {
+    'section': 'NVE Per-VNI Traffic Counters',
+    'xpath': '/nve-oper-data/nve-oper-counters/nve-vni-oper-counters',
+    'subscriptions': [
+      {'id': '40117', 'policy': 'periodic', 'period': '6000'}
+    ]
+  }
+] %}
