@@ -13,7 +13,9 @@
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-BORDER-DMZ-TUNNELS.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+{# Master gate: only build the Border↔DMZ interconnect when at least one GRE   #}
+{# tunnel is defined. Set DEFN_TUNNELS = [] (or remove it) to disable entirely. #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
 {# ============================================= #}
 {# GRE TUNNEL INTERFACES                         #}
 {# One per (border × DMZ) entry in DEFN_TUNNELS  #}

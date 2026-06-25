@@ -9,8 +9,10 @@
       'Border-02.dcloud.cisco.com':  '198.19.1.6'
     }
 %}
-{# DEFN_LOOP_MCLUSTER: remote Border peers for cross-site VXLAN multi-cluster BGP  #}
-{# Keys = remote border hostnames; values = their Loopback0 IP and remote site ASN  #}
+{# DEFN_LOOP_MCLUSTER: remote DMZ EVPN peers reached over the GRE/OSPF 100 underlay #}
+{# Keys = remote DMZ hostnames; values = overlay EVPN identity (Loopback2) and ASN   #}
+{# The 'ip' is the remote overlay loopback (EVPN peer identity), reachable via OSPF  #}
+{# 100 over the GRE tunnels — NOT a directly-connected Loopback0.                    #}
 {# Iterate via DEFN_NODE_ROLES['MCLUSTER'] list in FABRIC templates                 #}
 {% set DEFN_LOOP_MCLUSTER =
     {
@@ -26,8 +28,9 @@
 %}
 {% set DEFN_LOOP_NAME =
     {
-        'UNDERLAY': 'Loopback0',
-        'ANYCAST':  'Loopback2'
+        'UNDERLAY':     'Loopback0',
+        'ANYCAST':      'Loopback2',
+        'DMZ_OVERLAY':  'Loopback2'
     }
 %}
 {# DEFN_LOOP_GRE_SRC: per-border Loopback1 IP — GRE tunnel source for all DMZ tunnels      #}
