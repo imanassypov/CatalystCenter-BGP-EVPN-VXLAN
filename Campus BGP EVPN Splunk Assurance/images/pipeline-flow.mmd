@@ -1,0 +1,7 @@
+flowchart LR
+    CLI["show l2vpn evpn …<br/>show nve …"] -. documents .-> YANG
+    YANG["Cisco native YANG<br/>/evpn-oper-data, /nve-oper-data"] --> GRPC["gNMI / gRPC dial-out<br/>(yang_grpc)"]
+    GRPC --> OTEL["OTel Collector<br/>yanggrpcreceiver"]
+    OTEL --> HEC["splunk_hec exporter"]
+    HEC --> SPLUNK["Splunk index<br/>evpn_assurance"]
+    SPLUNK --> DASH["campus_evpn_assurance<br/>dashboards"]

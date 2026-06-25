@@ -6,6 +6,7 @@
 {% include "{{ TEMPLATE_PROJECT_NAME }}/FUNC-VRF-LOOKUP.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-BORDER-DMZ-TUNNELS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-VNIOFFSETS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-L3OUT.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-OVERLAY.j2" %}
@@ -37,19 +38,23 @@ ip prefix-list FABRIC-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[n
 {% for node in DEFN_NODE_ROLES['CLIENT'] %}
 ip prefix-list FABRIC-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
+{# BORDER Loopback1 (GRE source) only tracked when the DMZ interconnect is built #}
+{% if DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
 {% for node in DEFN_NODE_ROLES['BORDER'] %}
 ip prefix-list FABRIC-LOOPBACKS seq {{DEFN_NODE_ROLES['SPINE'] | length + DEFN_NODE_ROLES['CLIENT'] | length + loop.index}} permit {{DEFN_LOOP_GRE_SRC[node]}}/32
 {% endfor %}
+{% endif %}
 !
 route-map FABRIC-LOOPBACKS permit 10
  match ip address prefix-list FABRIC-LOOPBACKS
 !
 {# ================================================================== #}
 {# NODE-LOOPBACKS: combined fabric + mcluster /32 fall-over tracking  #}
-{# Only rendered on BORDER nodes — used by MCLUSTER peer session      #}
+{# Only rendered on BORDER nodes — used by DMZ peer session            #}
 {# Seq: SPINE(1..N) + CLIENT(N+1..M) + MCLUSTER(M+1..K)              #}
+{# Gated on DEFN_TUNNELS — skipped when the DMZ interconnect is off.   #}
 {# ================================================================== #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
 {% for node in DEFN_NODE_ROLES['SPINE'] %}
 ip prefix-list NODE-LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
@@ -131,18 +136,21 @@ router bgp {{FABRIC_BGP_ASN}}
 ! @end-ignore-compliance
 !
 {% endif %}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
- template peer-session OVERLAY-MCLUSTER-EVPN-PEER-SESSION-POLICY
-  description VXLAN-MULTICLUSTER-REMOTE-SITE-EVPN-PEER
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
+{# border-DMZ EVPN sourced from Loopback2 (overlay identity)  #}
+{# with ebgp-multihop 255 over the GRE/OSPF 100 underlay, replacing the legacy        #}
+{# Loopback0 / ebgp-multihop 4 multicluster model.                                    #}
+ template peer-session OVERLAY-DMZ-EVPN-PEER-SESSION-POLICY
+  description VXLAN-GW-2-LEAF-EVPN-PEER
   log-neighbor-changes
-  ebgp-multihop 4
-  update-source {{DEFN_LOOP_NAME['UNDERLAY']}}
+  ebgp-multihop 255
+  update-source {{DEFN_LOOP_NAME['DMZ_OVERLAY']}}
   fall-over route-map NODE-LOOPBACKS
 ! @start-ignore-compliance
  exit-peer-session
 ! @end-ignore-compliance
 !
- template peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
+ template peer-policy OVERLAY-DMZ-EVPN-PEER-POLICY
   soft-reconfiguration inbound
   send-community both
 ! @start-ignore-compliance
@@ -167,30 +175,21 @@ router bgp {{FABRIC_BGP_ASN}}
   neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-session UNDERLAY-SPINE-EVPN-PEER-SESSION-POLICY
 {% endfor %}
 {% endif %}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-{# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE LOOPBACK0 PEERING (eBGP) #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
+{# BUILD DMZ EVPN NEIGHBORS - REMOTE OVERLAY (Loopback2) PEERING (eBGP) #}
 {% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} remote-as {{DEFN_LOOP_MCLUSTER[remote]['asn']}}
-  neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-session OVERLAY-MCLUSTER-EVPN-PEER-SESSION-POLICY
+  neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-session OVERLAY-DMZ-EVPN-PEER-SESSION-POLICY
 {% endfor %}
 {% endif %}
 !
 {# ======================================== #}
 {# Address-Family: ipv4 (global unicast)     #}
-{# BORDER only — activate mcluster peers    #}
-{# in IPv4 unicast for GRE overlay routing   #}
+{# DMZ peers are EVPN-only. Greenfield: with #}
+{# 'no bgp default ipv4-unicast' set above,  #}
+{# neighbors are never activated in IPv4     #}
+{# unicast, so no explicit block is needed.  #}
 {# ======================================== #}
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-  address-family ipv4
-{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
-{% endfor %}
-! @start-ignore-compliance
-   exit-address-family
-! @end-ignore-compliance
-!
-{% endif %}
 {# ============================= #}
 {# Address-Family: ipv4 vrf      #}
 {# L3OUT CONFIGURATION ON SPINES #}
@@ -249,20 +248,24 @@ router bgp {{FABRIC_BGP_ASN}}
 {# BORDER NODES ARE SUBSET OF CLIENTS, BUT THEY HAVE ADDITIONAL LOGIC            #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
-{# VXLAN MULTI-CLUSTER SUPPORT - REMOTE SITE eBGP PEERING VIA LOOPBACK0 #}
+{% if DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
+{# DMZ EVPN SUPPORT - REMOTE OVERLAY eBGP PEERING VIA LOOPBACK2 #}
    rewrite-evpn-rt-asn
-{# BUILD MULTI-CLUSTER NEIGHBORS - REMOTE SITE #}
+{# BUILD DMZ EVPN NEIGHBORS - REMOTE OVERLAY #}
 {% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
    neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} activate
-   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-MCLUSTER-EVPN-PEER-POLICY
+   neighbor {{DEFN_LOOP_MCLUSTER[remote]['ip']}} inherit peer-policy OVERLAY-DMZ-EVPN-PEER-POLICY
 {% endfor %}
+{% endif %}
 {% else %}
    bgp additional-paths receive
 {% endif %}
 {% for rr in DEFN_NODE_ROLES['RR'] %}
    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} activate
    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} inherit peer-policy OVERLAY-SPINE-EVPN-PEER-POLICY
-{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+{# next-hop-self re-originates DMZ-learned EVPN routes toward the RRs; only #}
+{# required when the Border\u2194DMZ interconnect is built (DEFN_TUNNELS set).   #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
    neighbor {{DEFN_LOOP_UNDERLAY[rr]}} next-hop-self
 {% endif %}
 {% endfor %}

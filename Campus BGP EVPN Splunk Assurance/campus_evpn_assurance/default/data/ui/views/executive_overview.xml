@@ -1,0 +1,718 @@
+<dashboard version="2" theme="dark">
+  <label>Executive Overview</label>
+  <definition><![CDATA[
+{
+  "title": "Executive Overview",
+  "visualizations": {
+    "viz_executive_overview_0": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_executive_overview_0"
+      },
+      "title": "NVE VNIs \u25b2 Up / \u25bc Down (Fabric)",
+      "description": "Single card showing the latest-snapshot count of operationally Up (\u25b2) and Down (\u25bc) NVE VNIs (cisco.vni-oper-state_info, nve-vni-oper) aggregated across the entire fabric, all roles. A non-zero \u25bc Down count flags a VNI gone operationally down (e.g. an L3VNI core SVI shut); drill into the matching role tab (Leafs/Spines/Borders) for VRF/type detail.",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      }
+    },
+    "viz_executive_overview_1": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_executive_overview_1"
+      },
+      "title": "BGP Sessions \u25b2 Up / \u25bc Down",
+      "description": "Single card showing the latest-snapshot count of BGP sessions that are Up (\u25b2, negotiated hold-time > 0) and Down (\u25bc, hold-time = 0) across the entire fabric, all roles. A non-zero \u25bc Down count flags one or more BGP neighbors not Established.",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      }
+    },
+    "viz_executive_overview_2": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_executive_overview_2"
+      },
+      "title": "VTEP Tunnel Peers (Fabric)",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      }
+    },
+    "viz_executive_overview_3": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_executive_overview_3"
+      },
+      "title": "Active L2 VNIs (Fabric)",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      }
+    },
+    "viz_executive_overview_4": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_executive_overview_4"
+      },
+      "title": "Active VRFs (L3 VNIs)",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      }
+    },
+    "viz_executive_overview_5": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_executive_overview_5"
+      },
+      "title": "Silent Devices (>5m)",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "backgroundColor": "> primary | seriesByIndex(0) | lastPoint() | rangeValue(singleValueColorConfig)"
+      },
+      "context": {
+        "singleValueColorConfig": [
+          {
+            "to": 1,
+            "value": "#53A051"
+          },
+          {
+            "from": 1,
+            "value": "#DC4E41"
+          }
+        ]
+      }
+    },
+    "viz_executive_overview_6": {
+      "type": "splunk.line",
+      "dataSources": {
+        "primary": "ds_executive_overview_6"
+      },
+      "title": "BGP Sessions Established \u2014 Per Device Over Time",
+      "options": {
+        "legendDisplay": "right",
+        "xAxisTitleVisibility": "hide",
+        "yAxisTitleText": "Sessions Established",
+        "nullValueDisplay": "connect"
+      }
+    },
+    "viz_executive_overview_7": {
+      "type": "splunk.sankey",
+      "dataSources": {
+        "primary": "ds_executive_overview_7"
+      },
+      "title": "Device Role \u2192 Active Tenant VRF (L3 VNI Presence per Role)",
+      "description": "Tenant VRF distribution across the fabric from the NVE L3 VNI data-plane state (nve-oper/nve-vni-oper, vni-type=l3). Each link maps a device role to a VRF it hosts an L3 VNI for; link width = number of devices in that role running the VRF. Sourced from the NVE model (not the BGP vpnv4 address-family, which only advertises the route-reflected VRF on the spine) so all tenant VRFs \u2014 red, blue, green \u2014 are represented.",
+      "options": {
+        "seriesColors": [
+          "#1D6FA4",
+          "#53A051",
+          "#F8BE34",
+          "#DC4E41",
+          "#F1813F",
+          "#6DB7C6"
+        ]
+      }
+    },
+    "viz_executive_overview_8": {
+      "type": "splunk.bar",
+      "dataSources": {
+        "primary": "ds_executive_overview_8"
+      },
+      "title": "VNIs per Tenant (VRF) \u2014 Fabric-Wide Segment Inventory",
+      "description": "Per-tenant overlay footprint at a glance: one horizontal bar per tenant VRF, stacked by segment type \u2014 L2 VNIs (bridged segments) and L3 VNIs (routed segments). Bar length = total distinct segments the tenant owns across the fabric, so the biggest tenant by overlay size jumps out immediately. Made possible by the fixed yanggrpcreceiver carrying the numeric vni-id list key as a dimension and the per-VNI tenant VRF (nve-vni-vrf_info) as a joinable attribute. Complements the headline \"Active L2/L3 VNIs\" tiles by attributing every segment to its tenant.",
+      "options": {
+        "stackMode": "stacked",
+        "legendDisplay": "bottom",
+        "xAxisTitleText": "Distinct Segments (VNIs)",
+        "yAxisTitleText": "Tenant VRF",
+        "showYMajorGridLines": true,
+        "seriesColors": [
+          "#1D6FA4",
+          "#53A051"
+        ]
+      }
+    },
+    "viz_executive_overview_9": {
+      "type": "splunk.bar",
+      "dataSources": {
+        "primary": "ds_executive_overview_9"
+      },
+      "title": "Top 3 Busiest VXLAN Segments",
+      "description": "Fabric-wide leaderboard of the heaviest VXLAN segments as horizontal bars (longest = busiest). Bytes = per-minute delta of the per-VNI uc/mc input+output byte counters (nve-vni-oper-counters, Sub 40115) summed across the selected time range, per device + VNI, attributed to its tenant VRF and L2/L3 type. Made possible by the fixed yanggrpcreceiver carrying the per-VNI counter list key (vni-id) as a dimension. Each bar label is \"VNI <id> <vrf>/<type> @ <device>\". Idle segments correctly show 0 bytes.",
+      "options": {
+        "legendDisplay": "off",
+        "xAxisTitleText": "VXLAN Bytes (selected range)",
+        "yAxisTitleVisibility": "hide",
+        "seriesColors": [
+          "#1D6FA4"
+        ]
+      }
+    },
+    "viz_executive_overview_10": {
+      "type": "splunk.table",
+      "dataSources": {
+        "primary": "ds_executive_overview_10"
+      },
+      "title": "BGP Session Health Matrix \u2014 Device \u00d7 Peer",
+      "description": "Fabric BGP control-plane mesh at a glance: each row is a fabric device, each column a peer it neighbors with. A cell shows \ud83d\udfe2 when every BGP session between that device/peer pair is Established, \ud83d\udd34 when any session has dropped (hold-time = 0), and is blank when the pair does not peer. Worst-case per pair across all VRFs. Rows and columns are driven entirely by the evpn_device_inventory lookup \u2014 add or remove a device there and the matrix grows or shrinks automatically, with no dashboard edits. External (core/DMZ) eBGP peers that are not in the inventory are shown by their neighbor IP address so no session is hidden.",
+      "options": {}
+    },
+    "viz_executive_overview_11": {
+      "type": "splunk.table",
+      "dataSources": {
+        "primary": "ds_executive_overview_11"
+      },
+      "title": "NVE Overlay Counts \u2014 Per Device",
+      "description": "Point-in-time snapshot of NVE data-plane counts per device from nve-oper. Cell colors: green = all devices in the same role report the same count (expected); yellow = count differs from at least one peer in the same role (config drift / partial failure); red = count is zero (overlay not established).",
+      "options": {
+        "showInternalFields": false,
+        "columnFormat": {
+          "VTEP Peers": {
+            "rowBackgroundColors": "> table | seriesByName(\"_col_vtep\") | matchValue(RoleColorConfig)"
+          },
+          "L2 VNIs Active": {
+            "rowBackgroundColors": "> table | seriesByName(\"_col_l2\") | matchValue(RoleColorConfig)"
+          },
+          "L3 VNIs / VRFs": {
+            "rowBackgroundColors": "> table | seriesByName(\"_col_l3\") | matchValue(RoleColorConfig)"
+          }
+        }
+      },
+      "context": {
+        "RoleColorConfig": [
+          {"match": "ZERO", "value": "#DC4E41"},
+          {"match": "MISMATCH", "value": "#F8BE34"},
+          {"match": "MATCH", "value": "#118832"}
+        ]
+      }
+    },
+    "viz_executive_overview_12": {
+      "type": "splunk.table",
+      "dataSources": {
+        "primary": "ds_executive_overview_12"
+      },
+      "title": "EVPN Route Advertisement Activity per Node \u2014 New Type-2/3/5 Updates in Selected Time Range (Sub 40113 \u2014 requires IOS-XE 26.2.1+)",
+      "description": "Source: evpn-stats/evpn-vni-rt-cnt local-add/remote-add counters. Values shown are the INCREMENT (delta) within the selected dashboard time range \u2014 i.e. new route advertisement (Update) operations during that window, computed as last(total) minus first(total) per device with a counter-reset guard. Not current route-table size. For current route counts use the device CLI: show l2vpn evpn summary."
+    },
+    "viz_executive_overview_13": {
+      "type": "splunk.bar",
+      "dataSources": {
+        "primary": "ds_executive_overview_13"
+      },
+      "title": "EVPN Route Advertisement Updates by Node Role (Selected Time Range) \u2014 Type 2 (MAC/IP) vs Type 5 (IP-Prefix) (Sub 40113 \u2014 requires IOS-XE 26.2.1+)",
+      "description": "New route advertisement (Update) operations from evpn-vni-rt-cnt during the selected dashboard time range (delta: last total minus first total per device, summed by role) \u2014 not current route counts. See the table panel note.",
+      "options": {
+        "legendDisplay": "bottom",
+        "yAxisTitleText": "New Updates (Selected Range)",
+        "stackMode": "stacked"
+      }
+    },
+    "viz_executive_overview_14": {
+      "type": "splunk.line",
+      "dataSources": {
+        "primary": "ds_executive_overview_14"
+      },
+      "title": "BGP Route Instability \u2014 EVPN Table Version Churn (Route Changes/min per Device)",
+      "options": {
+        "legendDisplay": "right",
+        "xAxisTitleVisibility": "hide",
+        "yAxisTitleText": "Table Version Delta / min",
+        "nullValueDisplay": "zero"
+      }
+    },
+    "viz_executive_overview_15": {
+      "type": "splunk.area",
+      "dataSources": {
+        "primary": "ds_executive_overview_15"
+      },
+      "title": "BGP Session Flaps \u2014 New Drops per Device Over Time",
+      "options": {
+        "legendDisplay": "right",
+        "xAxisTitleVisibility": "hide",
+        "yAxisTitleText": "New Session Drops / interval",
+        "nullValueDisplay": "zero",
+        "stackMode": "stacked"
+      }
+    },
+    "viz_executive_overview_16": {
+      "type": "splunk.table",
+      "dataSources": {
+        "primary": "ds_executive_overview_16"
+      },
+      "title": "Spine RR Path Redundancy \u2014 Paths vs Prefixes per Address-Family (ratio >1 = multipath redundancy, =1 = single path)",
+      "options": {
+        "columnFormat": {
+          "Redundancy": {
+            "color": "> table | seriesByName(\"Redundancy\") | matchValue(RedundancyColorConfig)"
+          }
+        }
+      },
+      "context": {
+        "RedundancyColorConfig": [
+          {
+            "match": "OK",
+            "value": "#53A051"
+          },
+          {
+            "match": "DEGRADED",
+            "value": "#F8BE34"
+          },
+          {
+            "match": "CRITICAL",
+            "value": "#DC4E41"
+          }
+        ]
+      }
+    },
+    "viz_executive_overview_17": {
+      "type": "splunk.line",
+      "dataSources": {
+        "primary": "ds_executive_overview_17"
+      },
+      "title": "BGP Update Rate \u2014 Messages Received per Device (Control-Plane Activity)",
+      "options": {
+        "legendDisplay": "right",
+        "xAxisTitleVisibility": "hide",
+        "yAxisTitleText": "Update Messages / min",
+        "nullValueDisplay": "zero"
+      }
+    }
+  },
+  "dataSources": {
+    "ds_executive_overview_input0": {
+      "type": "ds.search",
+      "options": {
+        "query": "| inputlookup evpn_device_inventory | stats count by site | fields site",
+        "queryParameters": {
+          "earliest": "0",
+          "latest": "now"
+        }
+      },
+      "name": "Site"
+    },
+    "ds_executive_overview_0": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.vni-oper-state_info\") AS _m WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | `evpn_lookup` | where site=\"$site$\" | sort 0 - _time | dedup hostname, \"vni-id\" | eval down=if(value=\"nve-vni-state-down\",1,0) | stats sum(down) AS Down count AS Total | eval Up=Total-Down | eval vni_state=\"\u25b2 \".Up.\"   \u25bc \".Down | fields vni_state",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "NVE VNIs \u25b2 Up / \u25bc Down (Fabric)"
+    },
+    "ds_executive_overview_1": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS hold_time WHERE `evpn_index` earliest=$timeRange.earliest$ BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | `evpn_lookup` | where site=\"$site$\" | stats count(eval(hold_time>0)) AS Up count(eval(hold_time==0)) AS Down | eval bgp_state=\"\u25b2 \".Up.\"   \u25bc \".Down | fields bgp_state",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "BGP Sessions \u25b2 Up / \u25bc Down"
+    },
+    "ds_executive_overview_2": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.cp-vnis.\") AS cp_vnis WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-peer-oper\" BY \"cisco.node_id\", \"peer-addr\" | rename \"peer-addr\" AS peer_addr | `evpn_lookup` | where site=\"$site$\" | stats dc(peer_addr) AS peers BY hostname | stats sum(peers) AS n | fields n",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "VTEP Tunnel Peers (Fabric)"
+    },
+    "ds_executive_overview_3": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.vni-type_info\") AS x WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | `evpn_lookup` | where site=\"$site$\" AND role=\"leaf\" AND value=\"nve-vni-type-l2\" | stats dc(\"vni-id\") AS n | fields n",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "Active L2 VNIs (Fabric)"
+    },
+    "ds_executive_overview_4": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.vni-type_info\") AS x WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | `evpn_lookup` | where site=\"$site$\" AND value=\"nve-vni-type-l3\" | stats dc(\"vni-id\") AS n | fields n",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "Active VRFs (L3 VNIs)"
+    },
+    "ds_executive_overview_5": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS val WHERE `evpn_index` earliest=$timeRange.earliest$ BY \"cisco.node_id\" | `evpn_lookup` | where site=\"$site$\" | where _time < (now()-300) | stats count AS n",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "Silent Devices (>5m)"
+    },
+    "ds_executive_overview_6": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS hold_time WHERE `evpn_index` earliest=$timeRange.earliest$ span=30s BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | `evpn_lookup` | where site=\"$site$\" | eval established=if(hold_time>0, 1, 0) | stats sum(established) AS established by _time, hostname | xyseries _time hostname established | sort _time",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Sessions Established \u2014 Per Device Over Time"
+    },
+    "ds_executive_overview_7": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.vni-type_info\") AS _t WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eval vni_type=value | fields \"cisco.node_id\", \"vni-id\", vni_type | append [ mstats latest(\"cisco.nve-vni-vrf_info\") AS _v WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eval vrf_name=value | fields \"cisco.node_id\", \"vni-id\", vrf_name ] | stats values(vni_type) AS vni_type values(vrf_name) AS vrf_name BY \"cisco.node_id\", \"vni-id\" | `evpn_lookup` | where site=\"$site$\" AND vni_type=\"nve-vni-type-l3\" | stats dc(hostname) AS value BY role, vrf_name | rename role AS from, vrf_name AS to | sort from, to",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "Device Role \u2192 Active Tenant VRF (L3 VNI Presence per Role)"
+    },
+    "ds_executive_overview_8": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.vni-type_info\") AS _t WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eval vni_type=value | fields \"cisco.node_id\", \"vni-id\", vni_type | append [ mstats latest(\"cisco.nve-vni-vrf_info\") AS _v WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eval vrf=value | fields \"cisco.node_id\", \"vni-id\", vrf ] | stats values(vni_type) AS vni_type values(vrf) AS vrf BY \"cisco.node_id\", \"vni-id\" | `evpn_lookup` | where site=\"$site$\" | where isnotnull(vrf) AND vrf!=\"\" | eval l2vni=if(vni_type=\"nve-vni-type-l2\", 'vni-id', null()), l3vni=if(vni_type=\"nve-vni-type-l3\", 'vni-id', null()) | stats dc(l2vni) AS \"L2 VNIs\" dc(l3vni) AS \"L3 VNIs\" BY vrf | rename vrf AS \"Tenant VRF\" | sort \"Tenant VRF\" | fields \"Tenant VRF\", \"L2 VNIs\", \"L3 VNIs\"",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "VNIs per Tenant (VRF) \u2014 Fabric-Wide Segment Inventory"
+    },
+    "ds_executive_overview_9": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.uc-output-bytes\") AS uc_out latest(\"cisco.mc-output-bytes\") AS mc_out latest(\"cisco.uc-input-bytes\") AS uc_in latest(\"cisco.mc-input-bytes\") AS mc_in WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper-counters/nve-vni-oper-counters\" BY \"cisco.node_id\", \"vni-id\" | `evpn_lookup` | where site=\"$site$\" | eval total=uc_out+mc_out+uc_in+mc_in, series=hostname.\"::\".'vni-id' | sort series _time | streamstats window=1 current=false last(total) AS _prev BY series | eval bytes_min=total-_prev | where isnotnull(bytes_min) AND bytes_min>=0 | stats sum(bytes_min) AS bytes BY hostname, \"vni-id\" | append [ mstats latest(\"cisco.vni-type_info\") AS _t WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | rename \"cisco.node_id\" AS hostname | eval vni_type=value | fields hostname, \"vni-id\", vni_type ] | append [ mstats latest(\"cisco.nve-vni-vrf_info\") AS _v WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | rename \"cisco.node_id\" AS hostname | eval vrf=value | fields hostname, \"vni-id\", vrf ] | stats sum(bytes) AS bytes values(vni_type) AS vni_type values(vrf) AS vrf BY hostname, \"vni-id\" | eval Type=case(vni_type=\"nve-vni-type-l2\",\"L2\",vni_type=\"nve-vni-type-l3\",\"L3\",true(),\"-\") | sort - bytes | head 3 | eval Segment=\"VNI \".'vni-id'.\" \".coalesce(vrf,\"-\").\"/\".Type.\" @ \".hostname | sort bytes | rename bytes AS \"VXLAN Bytes\" | table Segment, \"VXLAN Bytes\"",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "Top 15 Busiest VNIs Fabric-Wide \u2014 VXLAN Bytes in Selected Range (Sub 40115)"
+    },
+    "ds_executive_overview_10": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS hold_time WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor\" BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" | lookup evpn_device_inventory loopback AS neighbor_id OUTPUT hostname AS peer_hostname | eval peer_hostname=coalesce(peer_hostname, neighbor_id) | eval est=if(hold_time>0,1,0) | stats min(est) AS m BY hostname, peer_hostname | eval cell=if(m>0,\"\ud83d\udfe2\",\"\ud83d\udd34\") | xyseries hostname peer_hostname cell | rename hostname AS \"Device\" | sort \"Device\"",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Session Health Matrix \u2014 Device \u00d7 Peer"
+    },
+    "ds_executive_overview_11": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.l2cp-vni-num\") AS l2cp latest(\"cisco.l3cp-vni-num\") AS l3cp WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper\" BY \"cisco.node_id\" | `evpn_lookup` | where site=\"$site$\" | join type=left hostname [ | mstats latest(\"cisco.cp-vnis.\") AS cp_vnis WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-peer-oper\" BY \"cisco.node_id\", \"peer-addr\" | rename \"cisco.node_id\" AS hostname, \"peer-addr\" AS peer_addr | stats dc(peer_addr) AS vtep_peers BY hostname ] | eval l2cp=round(l2cp,0), l3cp=round(l3cp,0), vtep_peers=coalesce(vtep_peers,0) | eventstats dc(vtep_peers) AS _vtep_dc dc(l2cp) AS _l2_dc dc(l3cp) AS _l3_dc BY role | eval _col_vtep=if(vtep_peers=0,\"ZERO\",if(_vtep_dc=1,\"MATCH\",\"MISMATCH\")), _col_l2=if(l2cp=0,\"ZERO\",if(_l2_dc=1,\"MATCH\",\"MISMATCH\")), _col_l3=if(l3cp=0,\"ZERO\",if(_l3_dc=1,\"MATCH\",\"MISMATCH\")) | table hostname, role, vtep_peers, _col_vtep, l2cp, _col_l2, l3cp, _col_l3 | rename hostname AS \"Device\", role AS \"Role\", vtep_peers AS \"VTEP Peers\", l2cp AS \"L2 VNIs Active\", l3cp AS \"L3 VNIs / VRFs\" | sort Device",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "NVE Overlay Counts \u2014 Per Device"
+    },
+    "ds_executive_overview_12": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.local-add.mac-cnt\") AS mac_local_add\n                        latest(\"cisco.local-add.mac-ip-cnt\") AS macip_local_add\n                        latest(\"cisco.remote-add.mac-cnt\") AS mac_remote_add\n                        latest(\"cisco.remote-add.mac-ip-cnt\") AS macip_remote_add\n                        latest(\"cisco.local-add.ip-prefix-cnt\") AS t5_local_add\n                        latest(\"cisco.remote-add.ip-prefix-cnt\") AS t5_remote_add\n                        latest(\"cisco.local-add.imet-cnt\") AS imet_local_add\n                        latest(\"cisco.remote-add.imet-cnt\") AS imet_remote_add\n                  WHERE `evpn_index` earliest=$timeRange.earliest$ latest=$timeRange.latest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-evpn-oper:evpn-oper-data/evpn-stats/evpn-vni-rt-cnt\" BY \"cisco.node_id\", \"vni\"\n          | stats sum(mac_local_add) AS mac_local_add sum(macip_local_add) AS macip_local_add sum(mac_remote_add) AS mac_remote_add sum(macip_remote_add) AS macip_remote_add sum(t5_local_add) AS t5_local_add sum(t5_remote_add) AS t5_remote_add sum(imet_local_add) AS imet_local_add sum(imet_remote_add) AS imet_remote_add BY _time, \"cisco.node_id\"\n          | stats earliest(mac_local_add) AS mac_local_s latest(mac_local_add) AS mac_local_e earliest(macip_local_add) AS macip_local_s latest(macip_local_add) AS macip_local_e earliest(mac_remote_add) AS mac_remote_s latest(mac_remote_add) AS mac_remote_e earliest(macip_remote_add) AS macip_remote_s latest(macip_remote_add) AS macip_remote_e earliest(t5_local_add) AS t5_local_s latest(t5_local_add) AS t5_local_e earliest(t5_remote_add) AS t5_remote_s latest(t5_remote_add) AS t5_remote_e earliest(imet_local_add) AS imet_local_s latest(imet_local_add) AS imet_local_e earliest(imet_remote_add) AS imet_remote_s latest(imet_remote_add) AS imet_remote_e BY \"cisco.node_id\"\n          | eval mac_local_add=if(mac_local_e>=mac_local_s,mac_local_e-mac_local_s,mac_local_e), macip_local_add=if(macip_local_e>=macip_local_s,macip_local_e-macip_local_s,macip_local_e), mac_remote_add=if(mac_remote_e>=mac_remote_s,mac_remote_e-mac_remote_s,mac_remote_e), macip_remote_add=if(macip_remote_e>=macip_remote_s,macip_remote_e-macip_remote_s,macip_remote_e), t5_local_add=if(t5_local_e>=t5_local_s,t5_local_e-t5_local_s,t5_local_e), t5_remote_add=if(t5_remote_e>=t5_remote_s,t5_remote_e-t5_remote_s,t5_remote_e), imet_local_add=if(imet_local_e>=imet_local_s,imet_local_e-imet_local_s,imet_local_e), imet_remote_add=if(imet_remote_e>=imet_remote_s,imet_remote_e-imet_remote_s,imet_remote_e)\n          | `evpn_lookup` | where site=\"$site$\"\n          | eval \"T2 MAC Loc Upd\"=round(mac_local_add,0), \"T2 MAC/IP Loc Upd\"=round(macip_local_add,0)\n          | eval \"T2 MAC Rem Upd\"=round(mac_remote_add,0), \"T2 MAC/IP Rem Upd\"=round(macip_remote_add,0)\n          | eval \"T5 Loc Upd\"=round(t5_local_add,0), \"T5 Rem Upd\"=round(t5_remote_add,0)\n          | eval \"T3 IMET Loc Upd\"=round(imet_local_add,0), \"T3 IMET Rem Upd\"=round(imet_remote_add,0)\n          | rename hostname AS Device, role AS Role\n          | table Role, Device, \"T2 MAC Loc Upd\", \"T2 MAC/IP Loc Upd\", \"T2 MAC Rem Upd\", \"T2 MAC/IP Rem Upd\", \"T5 Loc Upd\", \"T5 Rem Upd\", \"T3 IMET Loc Upd\", \"T3 IMET Rem Upd\"\n          | sort Role Device",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "EVPN Route Advertisement Activity per Node \u2014 New Type-2/3/5 Updates in Selected Time Range (Sub 40113 \u2014 requires IOS-XE 26.2.1+)"
+    },
+    "ds_executive_overview_13": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.local-add.mac-cnt\") AS mac_local\n                        latest(\"cisco.remote-add.mac-cnt\") AS mac_remote\n                        latest(\"cisco.local-add.mac-ip-cnt\") AS macip_local\n                        latest(\"cisco.remote-add.mac-ip-cnt\") AS macip_remote\n                        latest(\"cisco.local-add.ip-prefix-cnt\") AS t5_local\n                        latest(\"cisco.remote-add.ip-prefix-cnt\") AS t5_remote\n                  WHERE `evpn_index` earliest=$timeRange.earliest$ latest=$timeRange.latest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-evpn-oper:evpn-oper-data/evpn-stats/evpn-vni-rt-cnt\" BY \"cisco.node_id\", \"vni\"\n          | stats sum(mac_local) AS mac_local sum(mac_remote) AS mac_remote sum(macip_local) AS macip_local sum(macip_remote) AS macip_remote sum(t5_local) AS t5_local sum(t5_remote) AS t5_remote BY _time, \"cisco.node_id\"\n          | stats earliest(mac_local) AS mac_local_s latest(mac_local) AS mac_local_e earliest(mac_remote) AS mac_remote_s latest(mac_remote) AS mac_remote_e earliest(macip_local) AS macip_local_s latest(macip_local) AS macip_local_e earliest(macip_remote) AS macip_remote_s latest(macip_remote) AS macip_remote_e earliest(t5_local) AS t5_local_s latest(t5_local) AS t5_local_e earliest(t5_remote) AS t5_remote_s latest(t5_remote) AS t5_remote_e BY \"cisco.node_id\"\n          | eval mac_local=if(mac_local_e>=mac_local_s,mac_local_e-mac_local_s,mac_local_e), mac_remote=if(mac_remote_e>=mac_remote_s,mac_remote_e-mac_remote_s,mac_remote_e), macip_local=if(macip_local_e>=macip_local_s,macip_local_e-macip_local_s,macip_local_e), macip_remote=if(macip_remote_e>=macip_remote_s,macip_remote_e-macip_remote_s,macip_remote_e), t5_local=if(t5_local_e>=t5_local_s,t5_local_e-t5_local_s,t5_local_e), t5_remote=if(t5_remote_e>=t5_remote_s,t5_remote_e-t5_remote_s,t5_remote_e)\n          | `evpn_lookup` | where site=\"$site$\"\n          | stats sum(mac_local) AS mac_local sum(mac_remote) AS mac_remote\n                  sum(macip_local) AS macip_local sum(macip_remote) AS macip_remote\n                  sum(t5_local) AS t5_local sum(t5_remote) AS t5_remote BY role\n          | eval \"T2 MAC (Local)\"=mac_local, \"T2 MAC (Remote)\"=mac_remote\n          | eval \"T2 MAC/IP (Local)\"=macip_local, \"T2 MAC/IP (Remote)\"=macip_remote\n          | eval \"T5 IP-Prefix (Local)\"=t5_local, \"T5 IP-Prefix (Remote)\"=t5_remote\n          | fields role, \"T2 MAC (Local)\", \"T2 MAC (Remote)\", \"T2 MAC/IP (Local)\", \"T2 MAC/IP (Remote)\", \"T5 IP-Prefix (Local)\", \"T5 IP-Prefix (Remote)\"\n          | fillnull value=0",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "EVPN Route Advertisement Updates by Node Role (Selected Time Range) \u2014 Type 2 (MAC/IP) vs Type 5 (IP-Prefix) (Sub 40113 \u2014 requires IOS-XE 26.2.1+)"
+    },
+    "ds_executive_overview_14": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.bgp-table-version\") AS tbl_ver WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m BY \"cisco.node_id\", \"afi-safi\" | rename \"afi-safi\" AS afi_safi | where afi_safi=\"l2vpn-e-vpn\" | `evpn_lookup` | where site=\"$site$\" | sort hostname _time | streamstats window=1 current=false last(tbl_ver) AS _prev_tbl_ver BY hostname | eval churn=tbl_ver-_prev_tbl_ver | where isnotnull(churn) AND churn>=0 | xyseries _time hostname churn | fillnull value=0 | sort _time",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Route Instability \u2014 EVPN Table Version Churn (Route Changes/min per Device)"
+    },
+    "ds_executive_overview_15": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.connection.total-dropped\") AS drops WHERE `evpn_index` earliest=$timeRange.earliest$ span=auto BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" | sort hostname vrf_name neighbor_id _time | streamstats window=1 current=false last(drops) AS _prev_drops BY hostname, vrf_name, neighbor_id | eval new_drops=drops-_prev_drops | eval new_drops=if(isnotnull(new_drops) AND new_drops>0, new_drops, 0) | stats sum(new_drops) AS new_drops by _time, hostname | xyseries _time hostname new_drops | fillnull value=0 | sort _time",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Session Flaps \u2014 New Drops per Device Over Time"
+    },
+    "ds_executive_overview_16": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.path.total-entries\") AS act_paths latest(\"cisco.prefixes.total-entries\") AS total_prefixes WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/address-families/address-family\" BY \"cisco.node_id\", \"vrf-name\", \"afi-safi\" | rename \"vrf-name\" AS vrf_name, \"afi-safi\" AS afi_safi | `evpn_lookup` | where site=\"$site$\" AND role=\"spine\" | where afi_safi IN (\"l2vpn-e-vpn\",\"ipv4-unicast\",\"vpnv4-unicast\") AND total_prefixes>0 | eval act_paths=round(act_paths,0), total_prefixes=round(total_prefixes,0) | eval ecmp_ratio=round(act_paths/total_prefixes,2) | eval health=case(ecmp_ratio>1,\"OK\",ecmp_ratio==1,\"DEGRADED\",true(),\"CRITICAL\") | table hostname, afi_safi, total_prefixes, act_paths, ecmp_ratio, health | rename hostname AS \"Spine\", afi_safi AS \"AF\", total_prefixes AS \"Prefixes\", act_paths AS \"Paths\", ecmp_ratio AS \"Path:Prefix Ratio\", health AS \"Redundancy\" | sort Spine, AF",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "Spine RR Path Redundancy \u2014 Paths vs Prefixes per Address-Family (ratio >1 = multipath redundancy, =1 = single path)"
+    },
+    "ds_executive_overview_17": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.bgp-neighbor-counters.received.updates\") AS upd_rcvd WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" | sort hostname vrf_name neighbor_id _time | streamstats window=1 current=false last(upd_rcvd) AS _prev_upd BY hostname, vrf_name, neighbor_id | eval new_upd=upd_rcvd-_prev_upd | where isnotnull(new_upd) AND new_upd>=0 | stats sum(new_upd) AS update_rate by _time, hostname | xyseries _time hostname update_rate | fillnull value=0 | sort _time",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Update Rate \u2014 Messages Received per Device (Control-Plane Activity)"
+    }
+  },
+  "inputs": {
+    "input_executive_overview_0": {
+      "type": "input.dropdown",
+      "dataSources": {
+        "primary": "ds_executive_overview_input0"
+      },
+      "title": "Site",
+      "options": {
+        "items": [],
+        "token": "site",
+        "defaultValue": "Ottawa"
+      },
+      "encoding": {
+        "value": "primary[0]",
+        "label": "primary[0]"
+      }
+    },
+    "input_executive_overview_1": {
+      "type": "input.timerange",
+      "title": "Time Range",
+      "options": {
+        "token": "timeRange",
+        "defaultValue": "-4h,now"
+      }
+    }
+  },
+  "layout": {
+    "type": "absolute",
+    "options": {
+      "width": 1440,
+      "height": 2920,
+      "display": "auto"
+    },
+    "structure": [
+      {
+        "item": "viz_executive_overview_0",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "w": 231,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_executive_overview_1",
+        "type": "block",
+        "position": {
+          "x": 241,
+          "y": 0,
+          "w": 231,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_executive_overview_2",
+        "type": "block",
+        "position": {
+          "x": 482,
+          "y": 0,
+          "w": 231,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_executive_overview_3",
+        "type": "block",
+        "position": {
+          "x": 723,
+          "y": 0,
+          "w": 231,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_executive_overview_4",
+        "type": "block",
+        "position": {
+          "x": 964,
+          "y": 0,
+          "w": 231,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_executive_overview_5",
+        "type": "block",
+        "position": {
+          "x": 1205,
+          "y": 0,
+          "w": 231,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_executive_overview_6",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 140,
+          "w": 715,
+          "h": 300
+        }
+      },
+      {
+        "item": "viz_executive_overview_7",
+        "type": "block",
+        "position": {
+          "x": 725,
+          "y": 140,
+          "w": 715,
+          "h": 420
+        }
+      },
+      {
+        "item": "viz_executive_overview_8",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 570,
+          "w": 1440,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_executive_overview_9",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 910,
+          "w": 1440,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_executive_overview_10",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 1250,
+          "w": 1440,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_executive_overview_11",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 1590,
+          "w": 1440,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_executive_overview_12",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 1930,
+          "w": 715,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_executive_overview_13",
+        "type": "block",
+        "position": {
+          "x": 725,
+          "y": 1930,
+          "w": 715,
+          "h": 300
+        }
+      },
+      {
+        "item": "viz_executive_overview_14",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 2270,
+          "w": 715,
+          "h": 300
+        }
+      },
+      {
+        "item": "viz_executive_overview_15",
+        "type": "block",
+        "position": {
+          "x": 725,
+          "y": 2270,
+          "w": 715,
+          "h": 300
+        }
+      },
+      {
+        "item": "viz_executive_overview_16",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 2580,
+          "w": 715,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_executive_overview_17",
+        "type": "block",
+        "position": {
+          "x": 725,
+          "y": 2580,
+          "w": 715,
+          "h": 300
+        }
+      }
+    ],
+    "globalInputs": [
+      "input_executive_overview_0",
+      "input_executive_overview_1"
+    ]
+  }
+}
+  ]]></definition>
+  <meta type="hiddenElements"><![CDATA[{"hideEdit":false,"hideOpenInSearch":false,"hideExport":false}]]></meta>
+</dashboard>
