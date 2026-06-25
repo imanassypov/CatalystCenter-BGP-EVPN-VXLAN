@@ -1,0 +1,50 @@
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# FABRIC-BORDER-DMZ-TUNNELS.j2 - GRE Tunnel + OSPF 100 Template    #}
+{# Generates GRE tunnel interfaces and OSPF 100 process for BORDER  #}
+{# nodes connecting to remote DMZ multi-cluster peers.               #}
+{#                                                                    #}
+{# Tunnel interfaces: one per (border × DMZ) entry in DEFN_TUNNELS   #}
+{# OSPF 100 process: emitted once per border (outside tunnel loop)   #}
+{#                                                                    #}
+{# Adding a new DMZ requires only DEFN file changes — this template  #}
+{# does not need modification.                                        #}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-BORDER-DMZ-TUNNELS.j2" %}
+{# Dereference Catalyst Center magic variable #}
+{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] %}
+{# ============================================= #}
+{# GRE TUNNEL INTERFACES                         #}
+{# One per (border × DMZ) entry in DEFN_TUNNELS  #}
+{# ============================================= #}
+{% for t in DEFN_TUNNELS %}
+{% if t.node == DEVICE_HOSTNAME %}
+interface {{t.ifname}}
+ description GRE TO {{t.remote}}
+ ip address {{t.addr}} {{t.mask}}
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ ip pim sparse-mode
+ ip ospf network point-to-point
+ ip ospf 100 area 0
+ tunnel source {{t.source}}
+ tunnel destination {{t.dest}}
+ tunnel path-mtu-discovery
+!
+{% endif %}
+{% endfor %}
+{# ============================================= #}
+{# OSPF 100 PROCESS                               #}
+{# Emitted once per border — shared by all GRE    #}
+{# tunnels. Router-ID = Loopback2 IP.             #}
+{# ============================================= #}
+router ospf 100
+ router-id {{DEFN_LOOP_GRE_PEER[DEVICE_HOSTNAME]}}
+ redistribute connected route-map LOOPBACK0-INTO-OSPF100
+!
+route-map LOOPBACK0-INTO-OSPF100 permit 10
+ match interface Loopback0
+!
+{% endif %}

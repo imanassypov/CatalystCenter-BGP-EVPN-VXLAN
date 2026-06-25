@@ -11,12 +11,14 @@ flowchart LR
     tenants["Tenants and placement\nDEFN-VRF"]:::intent
     services["Overlay services\nDEFN-OVERLAY"]:::intent
     edge["External and policy toggles\nDEFN-L3OUT, DEFN-MCAST, DEFN-NAC, DEFN-CLIENT-PORTS"]:::intent
+    tunnels["Border DMZ tunnels\nDEFN-BORDER-DMZ-TUNNELS"]:::intent
     vni["Numbering rules\nDEFN-VNIOFFSETS"]:::intent
   end
 
   subgraph render["Render Pipeline"]
     direction TB
     infra["Infrastructure layers\nFABRIC-VRF, LOOPBACKS, NVE, MCAST, EVPN"]:::pipeline
+    tunnelRender["Border tunnel layer\nFABRIC-BORDER-DMZ-TUNNELS"]:::pipeline
     edgeRender["Edge integration layers\nFABRIC-L3OUT, CLIENT-PORTS, NAC"]:::pipeline
     tenantRender["Tenant service layer\nFABRIC-OVERLAY"]:::pipeline
     composite["BGP-EVPN-BUILD composite\nserializes the render order"]:::output
@@ -33,9 +35,11 @@ flowchart LR
   tenants --> infra
   services --> tenantRender
   edge --> edgeRender
+  tunnels --> tunnelRender
   vni --> infra
 
   infra --> composite
+  tunnelRender --> composite
   tenantRender --> composite
   edgeRender --> composite
   composite --> roleAware

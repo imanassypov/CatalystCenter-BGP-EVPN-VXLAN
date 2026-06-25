@@ -16,10 +16,11 @@ flowchart TB
     ports["DEFN-CLIENT-PORTS.j2"]:::defn
     nac["DEFN-NAC.j2"]:::defn
     vni["DEFN-VNIOFFSETS.j2"]:::defn
+    tunnels["DEFN-BORDER-DMZ-TUNNELS.j2"]:::defn
   end
 
   roles --> rolesKey["Key structures\nDEFN_NODE_ROLES['SPINE'|'RR'|'CLIENT'|'BORDER'|'MCLUSTER']"]:::key
-  loopbacks --> loopKey["Key structures\nDEFN_LOOP_UNDERLAY\nDEFN_LOOP_MCLUSTER\nDEFN_LOOP_OVERLAY\nDEFN_LOOP_NAME"]:::key
+  loopbacks --> loopKey["Key structures\nDEFN_LOOP_UNDERLAY\nDEFN_LOOP_MCLUSTER\nDEFN_LOOP_OVERLAY\nDEFN_LOOP_NAME\nDEFN_LOOP_GRE_SRC\nDEFN_LOOP_GRE_PEER"]:::key
   vrf --> vrfKey["Key structures\nDEFN_VRF\nDEFN_VRF_TO_NODE"]:::key
   overlay --> overlayKey["Key structures\nFABRIC_BGP_ASN\nFABRIC_UNDERLAY\nDEFN_OVERLAY"]:::key
   l3out --> l3outKey["Key structures\nDEFN_L3OUT\nDEFN_L3OUT_AGGREGATES\nDEFN_L3OUT_NODES"]:::key
@@ -27,6 +28,7 @@ flowchart TB
   ports --> portsKey["Key structures\nDEFN_CLIENT_PORTS\nDEFN_CLIENT_PORT_DEVICES"]:::key
   nac --> nacKey["Key structures\nDEFN_NAC_IOT"]:::key
   vni --> vniKey["Key structures\nL2VNIOFFSET\nL3VNIOFFSET"]:::key
+  tunnels --> tunnelsKey["Key structures\nDEFN_TUNNELS"]:::key
 
   vrfKey --> vrfFunc
   subgraph logicLayer["Reusable Jinja Logic"]
@@ -39,7 +41,8 @@ flowchart TB
   subgraph renderLayer["Fabric Render Targets"]
     direction LR
     fabric1["FABRIC-VRF\nVRF definitions and RTs"]:::fabric
-    fabric2["FABRIC-LOOPBACKS\nLoopback0 and per-VRF Loopbacks"]:::fabric
+    fabric2["FABRIC-LOOPBACKS\nLoopback0, Loopback1/2 (Border), per-VRF Loopbacks"]:::fabric
+    fabric2a["FABRIC-BORDER-DMZ-TUNNELS\nGRE tunnels and OSPF 100"]:::fabric
     fabric3["FABRIC-L3OUT\nExternal interfaces and Null0 guards"]:::fabric
     fabric4["FABRIC-NVE\nL3VNI VLANs, SVIs, NVE1"]:::fabric
     fabric5["FABRIC-MCAST\nPIM, RP, MSDP"]:::fabric
@@ -56,6 +59,10 @@ flowchart TB
   vrfKey --> fabric2
   rolesKey --> fabric2
   loopKey --> fabric2
+
+  tunnelsKey --> fabric2a
+  rolesKey --> fabric2a
+  loopKey --> fabric2a
 
   vrfFunc --> fabric3
   l3outKey --> fabric3
@@ -93,6 +100,7 @@ flowchart TB
 
   fabric1 --> composite["BGP-EVPN-BUILD composite\nserializes the fabric templates into one deployment pipeline"]:::output
   fabric2 --> composite
+  fabric2a --> composite
   fabric3 --> composite
   fabric4 --> composite
   fabric5 --> composite
