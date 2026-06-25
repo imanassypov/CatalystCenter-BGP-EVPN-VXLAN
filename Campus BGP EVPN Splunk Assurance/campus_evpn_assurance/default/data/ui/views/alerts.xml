@@ -1,0 +1,326 @@
+<dashboard version="2" theme="dark">
+  <label>Alerts</label>
+  <definition><![CDATA[
+{
+  "title": "Alerts",
+  "visualizations": {
+    "viz_alerts_0": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_alerts_0"
+      },
+      "title": "BGP Sessions Not Established",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "backgroundColor": "> primary | seriesByIndex(0) | lastPoint() | rangeValue(singleValueColorConfig)"
+      },
+      "context": {
+        "singleValueColorConfig": [
+          {
+            "to": 1,
+            "value": "#53A051"
+          },
+          {
+            "from": 1,
+            "value": "#DC4E41"
+          }
+        ]
+      }
+    },
+    "viz_alerts_1": {
+      "type": "splunk.singlevalue",
+      "dataSources": {
+        "primary": "ds_alerts_1"
+      },
+      "title": "Telemetry Stale Devices (>5 min silent)",
+      "options": {
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "backgroundColor": "> primary | seriesByIndex(0) | lastPoint() | rangeValue(singleValueColorConfig)"
+      },
+      "context": {
+        "singleValueColorConfig": [
+          {
+            "to": 1,
+            "value": "#53A051"
+          },
+          {
+            "from": 1,
+            "value": "#DC4E41"
+          }
+        ]
+      }
+    },
+    "viz_alerts_2": {
+      "type": "splunk.line",
+      "dataSources": {
+        "primary": "ds_alerts_2"
+      },
+      "title": "NVE VNI Oper-State \u2014 Down VNIs per Node Over Time (0 = all VNIs up)",
+      "description": "Per-node time series of the count of operationally DOWN NVE VNIs (cisco.vni-oper-state_info, nve-vni-oper), one line per fabric node across all roles. A series rising above 0 flags a VNI going operationally down \u2014 e.g. shutting an L3VNI core SVI. See the Active Alerts table below for VRF/type detail.",
+      "options": {
+        "legendDisplay": "right",
+        "xAxisTitleVisibility": "hide",
+        "yAxisTitleText": "Down VNIs",
+        "nullValueDisplay": "zero"
+      }
+    },
+    "viz_alerts_3": {
+      "type": "splunk.table",
+      "dataSources": {
+        "primary": "ds_alerts_3"
+      },
+      "title": "Active Alerts \u2014 All Roles",
+      "options": {
+        "columnFormat": {
+          "severity": {
+            "color": "> table | seriesByName(\"severity\") | matchValue(severityColorConfig)"
+          }
+        }
+      },
+      "context": {
+        "severityColorConfig": [
+          {
+            "match": "CRITICAL",
+            "value": "#DC4E41"
+          },
+          {
+            "match": "HIGH",
+            "value": "#F8BE34"
+          },
+          {
+            "match": "MEDIUM",
+            "value": "#F1813F"
+          }
+        ]
+      }
+    },
+    "viz_alerts_4": {
+      "type": "splunk.table",
+      "dataSources": {
+        "primary": "ds_alerts_4"
+      },
+      "title": "BGP Sessions Not Established \u2014 Detail",
+      "options": {
+        "columnFormat": {
+          "session_state": {
+            "color": "> table | seriesByName(\"session_state\") | matchValue(sessionstateColorConfig)"
+          }
+        }
+      },
+      "context": {
+        "sessionstateColorConfig": [
+          {
+            "match": "DOWN",
+            "value": "#DC4E41"
+          },
+          {
+            "match": "IDLE",
+            "value": "#DC4E41"
+          },
+          {
+            "match": "ACTIVE",
+            "value": "#F8BE34"
+          },
+          {
+            "match": "CONNECT",
+            "value": "#F8BE34"
+          }
+        ]
+      }
+    },
+    "viz_alerts_5": {
+      "type": "splunk.line",
+      "dataSources": {
+        "primary": "ds_alerts_5"
+      },
+      "title": "BGP Session Trend",
+      "options": {
+        "legendDisplay": "bottom"
+      }
+    }
+  },
+  "dataSources": {
+    "ds_alerts_input0": {
+      "type": "ds.search",
+      "options": {
+        "query": "| inputlookup evpn_device_inventory | stats count by site | fields site",
+        "queryParameters": {
+          "earliest": "0",
+          "latest": "now"
+        }
+      },
+      "name": "Site"
+    },
+    "ds_alerts_0": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS hold_time WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor\" BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" | where hold_time==0 | stats count AS count",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Sessions Not Established"
+    },
+    "ds_alerts_1": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.l2cp-vni-num\") AS val WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper\" BY \"cisco.node_id\" | `evpn_lookup` | where site=\"$site$\" | where _time < (now()-300) | stats count AS count",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "Telemetry Stale Devices (>5 min silent)"
+    },
+    "ds_alerts_2": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.vni-oper-state_info\") AS v WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eval down=if(value==\"nve-vni-state-down\",1,0) | stats sum(down) AS down_vnis BY _time, \"cisco.node_id\" | `evpn_lookup` | where site=\"$site$\" | xyseries _time hostname down_vnis | fillnull value=0 | sort _time",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "NVE VNI Oper-State \u2014 Down VNIs per Node Over Time (0 = all VNIs up)"
+    },
+    "ds_alerts_3": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS hold_time WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor\" BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" | lookup evpn_device_inventory loopback AS neighbor_id OUTPUT hostname AS neighbor_hostname | eval neighbor_hostname=coalesce(neighbor_hostname, neighbor_id) | where hold_time==0 | eval severity=\"CRITICAL\", alert_type=\"BGP Session Down\" | eval detail=\"Peer: \".neighbor_hostname.\" VRF: \".vrf_name | table _time, severity, alert_type, hostname, role, ip_address, detail | append [| mstats latest(\"cisco.l2cp-vni-num\") AS val WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper\" BY \"cisco.node_id\" | `evpn_lookup` | where site=\"$site$\" | where _time < (now()-300) | eval severity=\"HIGH\", alert_type=\"Telemetry Stale\", detail=\"No data for >5 min\" | table _time, severity, alert_type, hostname, role, ip_address, detail] | append [| mstats latest(\"cisco.vni-oper-state_info\") AS v WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eventstats max(_time) AS _snap BY \"cisco.node_id\" | where _time=_snap | eval oper_state=value, vni_type=null(), vrf=null() | fields \"cisco.node_id\", \"vni-id\", _time, oper_state, vni_type, vrf | append [ mstats latest(\"cisco.vni-type_info\") AS _t WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eval vni_type=value | fields \"cisco.node_id\", \"vni-id\", vni_type ] | append [ mstats latest(\"cisco.nve-vni-vrf_info\") AS _r WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper\" BY \"cisco.node_id\", \"vni-id\", \"value\" | eval vrf=value | fields \"cisco.node_id\", \"vni-id\", vrf ] | stats max(_time) AS _time values(oper_state) AS oper_state values(vni_type) AS vni_type values(vrf) AS vrf BY \"cisco.node_id\", \"vni-id\" | where oper_state=\"nve-vni-state-down\" | `evpn_lookup` | where site=\"$site$\" | eval vt=if(vni_type==\"nve-vni-type-l3\",\"L3VNI\",\"L2VNI\"), severity=\"HIGH\", alert_type=\"VNI Oper-State Down\", detail=\"VNI \".'vni-id'.\" (\".vt.\", VRF: \".vrf.\")\" | table _time, severity, alert_type, hostname, role, ip_address, detail] | sort - severity, hostname",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "now"
+        }
+      },
+      "name": "Active Alerts \u2014 All Roles"
+    },
+    "ds_alerts_4": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS hold_time WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor\" BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" | lookup evpn_device_inventory loopback AS neighbor_id OUTPUT hostname AS neighbor_hostname | eval neighbor_hostname=coalesce(neighbor_hostname, neighbor_id) | where hold_time==0 | eval session_state=\"DOWN\" | table hostname, role, ip_address, neighbor_hostname, vrf_name, session_state | sort hostname",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Sessions Not Established \u2014 Detail"
+    },
+    "ds_alerts_5": {
+      "type": "ds.search",
+      "options": {
+        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS hold_time WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor\" BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" span=1m | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" | stats sum(eval(if(hold_time>0, 1, 0))) AS established_sessions sum(eval(if(hold_time==0, 1, 0))) AS down_sessions BY _time | sort _time",
+        "queryParameters": {
+          "earliest": "$timeRange.earliest$",
+          "latest": "$timeRange.latest$"
+        }
+      },
+      "name": "BGP Session Trend"
+    }
+  },
+  "inputs": {
+    "input_alerts_0": {
+      "type": "input.dropdown",
+      "dataSources": {
+        "primary": "ds_alerts_input0"
+      },
+      "title": "Site",
+      "options": {
+        "items": [],
+        "token": "site",
+        "defaultValue": "Ottawa"
+      },
+      "encoding": {
+        "value": "primary[0]",
+        "label": "primary[0]"
+      }
+    },
+    "input_alerts_1": {
+      "type": "input.timerange",
+      "title": "Time Range",
+      "options": {
+        "token": "timeRange",
+        "defaultValue": "-4h,now"
+      }
+    }
+  },
+  "layout": {
+    "type": "absolute",
+    "options": {
+      "width": 1440,
+      "height": 1130,
+      "display": "auto"
+    },
+    "structure": [
+      {
+        "item": "viz_alerts_0",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "w": 715,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_alerts_1",
+        "type": "block",
+        "position": {
+          "x": 725,
+          "y": 0,
+          "w": 715,
+          "h": 130
+        }
+      },
+      {
+        "item": "viz_alerts_2",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 140,
+          "w": 1440,
+          "h": 300
+        }
+      },
+      {
+        "item": "viz_alerts_3",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 450,
+          "w": 1440,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_alerts_4",
+        "type": "block",
+        "position": {
+          "x": 0,
+          "y": 790,
+          "w": 715,
+          "h": 330
+        }
+      },
+      {
+        "item": "viz_alerts_5",
+        "type": "block",
+        "position": {
+          "x": 725,
+          "y": 790,
+          "w": 715,
+          "h": 300
+        }
+      }
+    ],
+    "globalInputs": [
+      "input_alerts_0",
+      "input_alerts_1"
+    ]
+  }
+}
+  ]]></definition>
+  <meta type="hiddenElements"><![CDATA[{"hideEdit":false,"hideOpenInSearch":false,"hideExport":false}]]></meta>
+</dashboard>

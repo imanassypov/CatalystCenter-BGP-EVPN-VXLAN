@@ -48,42 +48,45 @@ The template collection delivers:
 
 ## Directory Structure
 
-This repository is organized into three sections:
+This repository spans the full fabric lifecycle and is organized into four areas: the **templates** that build the fabric (`Catalyst Center Templates/Site BGP EVPN Templates/`), the **CI/CD pipeline** that synchronizes them to Catalyst Center (`CICD Pipeline/`), the **Splunk assurance** suite that monitors the running fabric (`Campus BGP EVPN Splunk Assurance/`), and supporting **reference material** (`Node Configs/`, `DIAGRAMS/`, `Release Notes/`).
 
 ```
 README.md                            # This document
 CATC-JINJA-DICT-ITERATION-FIX.md    # Catalyst Center Jinja2 limitations and workarounds
 
-BGP EVPN/                            # Template source files (Jinja2)
-├── BGP-EVPN-BUILD.yml               # Ansible helper: defines composite template member list and order
-│
-├── DEFN-*.j2                        # Definition templates (data dictionaries only, no CLI output)
-│   ├── DEFN-ROLES.j2                # Device roles (spine, leaf, border, RR, client)
-│   ├── DEFN-LOOPBACKS.j2            # Loopback IP addresses per device and VRF
-│   ├── DEFN-VRF.j2                  # VRF definitions, RD/RT, node assignments
-│   ├── DEFN-OVERLAY.j2              # VLAN definitions, SVI addressing, DHCP/multicast
-│   ├── DEFN-L3OUT.j2                # L3OUT sub-interface definitions (optional)
-│   ├── DEFN-MCAST.j2                # Multicast RP scope definitions
-│   ├── DEFN-NAC.j2                  # NAC policy data structures
-│   ├── DEFN-CLIENT-PORTS.j2         # Access port definitions
-│   ├── DEFN-TELEMETRY-SPLUNK.j2     # MDT telemetry subscription + collector endpoint definitions
-│   └── DEFN-VNIOFFSETS.j2           # VNI numbering offsets (L2VNI, L3VNI)
-│
-├── FABRIC-*.j2                      # Fabric CLI generators (include DEFN/FUNC files)
-│   ├── FABRIC-VRF.j2                # VRF configuration with RD/RT
-│   ├── FABRIC-LOOPBACKS.j2          # Loopback interface configuration
-│   ├── FABRIC-L3OUT.j2              # L3OUT sub-interfaces + east-west Null0 routes
-│   ├── FABRIC-NVE.j2                # NVE interface + L3VNI VLANs/SVIs + EVPN statistics enablement
-│   ├── FABRIC-MCAST.j2              # Multicast RP, MSDP, VRF multicast setup
-│   ├── FABRIC-EVPN.j2               # BGP EVPN peering, address-families, L3OUT BGP
-│   ├── FABRIC-OVERLAY.j2            # L2VNI overlay services, L2VPN instances
-│   ├── FABRIC-NAC.j2                # NAC access control policies
-│   ├── FABRIC-TELEMETRY-SPLUNK.j2   # IOS-XE MDT telemetry subscriptions
-│   └── FABRIC-CLIENT-PORTS.j2       # Access port configuration
-│
-└── FUNC-*.j2                        # Reusable Jinja macros (auxiliary functions)
-    ├── FUNC-VRF-LOOKUP.j2           # Macro: resolve VRF parameters by device hostname
-    └── FUNC-CLIENT-PORTS.j2         # Macro: render access port configurations
+Catalyst Center Templates/           # Catalyst Center template source
+└── Site BGP EVPN Templates/         # Template source files (Jinja2)
+    ├── BGP-EVPN-BUILD.yml           # Ansible helper: defines composite template member list and order
+    │
+    ├── DEFN-*.j2                    # Definition templates (data dictionaries only, no CLI output)
+    │   ├── DEFN-ROLES.j2            # Device roles (spine, leaf, border, RR, client)
+    │   ├── DEFN-LOOPBACKS.j2        # Loopback IP addresses per device and VRF (incl. border GRE Lo1/Lo2)
+    │   ├── DEFN-BORDER-DMZ-TUNNELS.j2 # GRE tunnel definitions (border → DMZ underlay)
+    │   ├── DEFN-VRF.j2              # VRF definitions, RD/RT, node assignments
+    │   ├── DEFN-OVERLAY.j2          # VLAN definitions, SVI addressing, DHCP/multicast
+    │   ├── DEFN-L3OUT.j2            # L3OUT sub-interface definitions (optional)
+    │   ├── DEFN-MCAST.j2            # Multicast RP scope definitions
+    │   ├── DEFN-NAC.j2              # NAC policy data structures
+    │   ├── DEFN-CLIENT-PORTS.j2     # Access port definitions
+    │   ├── DEFN-TELEMETRY-SPLUNK.j2 # MDT telemetry subscription + collector endpoint definitions
+    │   └── DEFN-VNIOFFSETS.j2       # VNI numbering offsets (L2VNI, L3VNI)
+    │
+    ├── FABRIC-*.j2                  # Fabric CLI generators (include DEFN/FUNC files)
+    │   ├── FABRIC-VRF.j2            # VRF configuration with RD/RT
+    │   ├── FABRIC-LOOPBACKS.j2      # Loopback interface configuration
+    │   ├── FABRIC-BORDER-DMZ-TUNNELS.j2 # GRE tunnels + OSPF 100 underlay (border → DMZ)
+    │   ├── FABRIC-L3OUT.j2          # L3OUT sub-interfaces + east-west Null0 routes
+    │   ├── FABRIC-NVE.j2            # NVE interface + L3VNI VLANs/SVIs + EVPN statistics enablement
+    │   ├── FABRIC-MCAST.j2          # Multicast RP, MSDP, VRF multicast setup
+    │   ├── FABRIC-EVPN.j2           # BGP EVPN peering, address-families, L3OUT BGP
+    │   ├── FABRIC-OVERLAY.j2        # L2VNI overlay services, L2VPN instances
+    │   ├── FABRIC-NAC.j2            # NAC access control policies
+    │   ├── FABRIC-TELEMETRY-SPLUNK.j2 # IOS-XE MDT telemetry subscriptions
+    │   └── FABRIC-CLIENT-PORTS.j2   # Access port configuration
+    │
+    └── FUNC-*.j2                    # Reusable Jinja macros (auxiliary functions)
+        ├── FUNC-VRF-LOOKUP.j2       # Macro: resolve VRF parameters by device hostname
+        └── FUNC-CLIENT-PORTS.j2     # Macro: render access port configurations
 
 Node Configs/                        # Reference device configurations (lab output)
 ├── Config-Backup-032626/            # Current validation baseline (March 26, 2026)
@@ -114,6 +117,30 @@ DIAGRAMS/                            # Architecture and topology diagrams
 ├── cisco_evpn_ASN.png               # BGP ASN relationships
 ├── cisco_evpn_core_interface.png    # Spine-to-Core interface topology
 └── cisco_evpn_CLI_hierarchy.png     # CLI configuration dependency hierarchy
+
+CICD Pipeline/                       # GitOps CI/CD: sync templates to Catalyst Center
+└── Cisco-Catalyst-Center-Templates-Github-integration/
+    ├── ansible-git-catc.yml         # Main playbook: fetch templates from Git → sync to CatC
+    ├── process-subfolder.yml        # Task file: sync one subfolder into its own CatC project
+    ├── process-template.yml         # Task file: per-template sync (commit metadata, diff headers)
+    ├── process-composite.yml        # Task file: build ordered composite templates
+    ├── inventory.yml                # CatC host, Git repo, subfolders, and run options
+    ├── vault.yml / vault.yml.example # Encrypted CatC + Git credentials (Ansible Vault)
+    ├── requirements.yml / .txt       # cisco.dnac collection + Python dependencies
+    └── README.md                    # Full playbook documentation
+
+Campus BGP EVPN Splunk Assurance/    # Operational assurance: role-aware Splunk dashboards
+├── campus_evpn_assurance/           # Packaged Splunk app (dashboards, lookups, metadata)
+├── otel-collector/                  # OpenTelemetry collector config (YANG gRPC → splunk_hec)
+├── telegraf/                        # Alternate telemetry collector config
+├── mcp-ssh-server/                  # MCP stdio server for device CLI verification
+├── Model Maps/                      # YANG → Splunk metric model mappings
+├── model-config-snippets/           # IOS-XE MDT telemetry subscription snippets
+├── tools/                           # Splunk Studio dashboard validation/conversion utilities
+├── test-cases/                      # Assurance validation scenarios
+└── README.md                       # Full assurance suite documentation
+
+Release Notes/                       # Dated feature and behavior change notes
 ```
 
 **Key Points:**
@@ -142,15 +169,16 @@ The `BGP-EVPN-BUILD.yml` file is an Ansible helper that defines the ordered memb
 ```yaml
 templates:
   - name: "FABRIC-VRF.j2"           # Step 1: Role-based VRF definitions (per DEFN_VRF_TO_NODE)
-  - name: "FABRIC-LOOPBACKS.j2"     # Step 2: Underlay + role-based overlay loopbacks
-  - name: "FABRIC-L3OUT.j2"         # Step 3: Spine L3OUT interfaces to IP Core (conditional)
-  - name: "FABRIC-NVE.j2"           # Step 4: NVE + L3VNI/L2VNI membership
-  - name: "FABRIC-MCAST.j2"         # Step 5: PIM RP/Anycast RP + MSDP
-  - name: "FABRIC-EVPN.j2"          # Step 6: BGP EVPN control plane + L3OUT BGP AF
-  - name: "FABRIC-OVERLAY.j2"       # Step 7: Overlay VLANs/EVPN instances (101,102,201,221)
-  - name: "FABRIC-CLIENT-PORTS.j2"  # Step 8: Client-facing interface provisioning
-  - name: "FABRIC-NAC.j2"           # Step 9: Access control policy on client-facing ports
-  - name: "FABRIC-TELEMETRY-SPLUNK.j2"  # Step 10: MDT telemetry subscriptions for Splunk/OpenTelemetry
+  - name: "FABRIC-LOOPBACKS.j2"     # Step 2: Underlay + role-based overlay loopbacks (border GRE Lo1/Lo2)
+  - name: "FABRIC-BORDER-DMZ-TUNNELS.j2"  # Step 3: Border→DMZ GRE tunnels + OSPF 100 underlay
+  - name: "FABRIC-L3OUT.j2"         # Step 4: Spine L3OUT interfaces to IP Core (conditional)
+  - name: "FABRIC-NVE.j2"           # Step 5: NVE + L3VNI/L2VNI membership
+  - name: "FABRIC-MCAST.j2"         # Step 6: PIM RP/Anycast RP + MSDP
+  - name: "FABRIC-EVPN.j2"          # Step 7: BGP EVPN control plane + L3OUT BGP AF
+  - name: "FABRIC-OVERLAY.j2"       # Step 8: Overlay VLANs/EVPN instances (101,102,201,221)
+  - name: "FABRIC-CLIENT-PORTS.j2"  # Step 9: Client-facing interface provisioning
+  - name: "FABRIC-NAC.j2"           # Step 10: Access control policy on client-facing ports
+  - name: "FABRIC-TELEMETRY-SPLUNK.j2"  # Step 11: MDT telemetry subscriptions for Splunk/OpenTelemetry
 ```
 
 **Build Order Rationale**: Each template layer depends on the ones above it. VRFs must be created before loopbacks, loopbacks before NVE, NVE before EVPN, etc. This strict ordering ensures the final configuration is applied without dependency violations.
@@ -230,6 +258,10 @@ This simplified view highlights four architectural facts:
 
 This project integrates with Red Hat Ansible for **GitOps-style synchronization** of templates between Git repositories and Cisco Catalyst Center.
 
+### Local Automation Project
+
+A copy of the sync automation is vendored under [`CICD Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/) so the templates and the automation that publishes them live together. The `ansible-git-catc.yml` playbook fetches the `.j2` templates from a Git repository, enriches each one with Git commit metadata, reads `BGP-EVPN-BUILD.yml` to determine composite ordering, and syncs everything to a Catalyst Center Template Project via the `cisco.dnac.template_workflow_manager` module. The playbook supports a **list of subfolders** (`git_repo_subfolders` in `inventory.yml`) — each subfolder is synced into its own Catalyst Center project, so a single run can publish, for example, `Site BGP EVPN Templates` and `DMZ BGP EVPN Templates` into separate projects. See [`CICD Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/README.md`](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/README.md) for full setup, configuration, and run instructions.
+
 ### Companion Repository
 [Cisco-Catalyst-Center-Templates-Github-integration](https://github.com/imanassypov/Cisco-Catalyst-Center-Templates-Github-integration)
 
@@ -246,6 +278,42 @@ Every `.j2` file must begin with a device targeting comment on line 1:
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 ```
 This hint informs Catalyst Center's template engine which device families can use this template.
+
+---
+
+## Splunk Assurance Integration
+
+Building the fabric is only half of the lifecycle. The [`Campus BGP EVPN Splunk Assurance/`](Campus%20BGP%20EVPN%20Splunk%20Assurance/) folder provides the **assurance** half: a packaged Splunk application, `campus_evpn_assurance`, that turns streaming telemetry from the running BGP EVPN VXLAN fabric into a role-aware, at-a-glance health picture for the operator on shift.
+
+### Build vs. Assure
+
+| Phase | Component | Question it answers |
+|-------|-----------|---------------------|
+| **Build** | `Catalyst Center Templates/Site BGP EVPN Templates/` templates + `CICD Pipeline/` sync | "How do I provision a correct, consistent fabric from declarative intent?" |
+| **Assure** | `Campus BGP EVPN Splunk Assurance/` | "Now that the fabric is live, is it healthy — and if not, what broke, where, and when?" |
+
+The two halves share the same fabric model (roles, tenants, VNIs, loopbacks), so the dashboards' device inventory and expected-state logic map directly onto what the templates provisioned.
+
+### Telemetry Pipeline
+
+The `FABRIC-TELEMETRY-SPLUNK.j2` template provisions IOS-XE Model-Driven Telemetry (MDT) subscriptions on each fabric node. Those subscriptions stream native YANG data via gRPC dial-out to an OpenTelemetry collector, which translates the metrics and forwards them to a Splunk HEC endpoint feeding the `evpn_assurance` metrics index:
+
+```
+Fabric nodes (MDT/YANG, gRPC dial-out) → OpenTelemetry collector → splunk_hec → Splunk index=evpn_assurance → campus_evpn_assurance dashboards
+```
+
+### Key Components
+
+| Subfolder | Purpose |
+|-----------|---------|
+| `campus_evpn_assurance/` | Packaged Splunk app: executive, Leaf, Spine, Border, and Alerts dashboards |
+| `otel-collector/` | OpenTelemetry collector configuration (YANG gRPC → `splunk_hec`) |
+| `telegraf/` | Alternate telemetry collector configuration |
+| `mcp-ssh-server/` | MCP stdio server for live device CLI verification during triage |
+| `Model Maps/` | YANG → Splunk metric model mappings |
+| `model-config-snippets/` | Reference IOS-XE MDT telemetry subscription CLI |
+
+See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md) for architecture, deployment, and the operator's guide to reading the dashboards.
 
 ## Operator Notes
 
@@ -417,7 +485,7 @@ Use this as the standard operator runbook for Catalyst Center provisioning.
 
 - Navigate to **Tools > Template Editor**
 - Create a new **Template Project** for your target site
-- Import all `.j2` files from the `BGP EVPN/` folder
+- Import all `.j2` files from the `Catalyst Center Templates/Site BGP EVPN Templates/` folder
 
 #### Step 2: Customize Data Definitions
 
@@ -459,6 +527,32 @@ The **Border Leaf role and Multi-Cluster BGP configurations are optional**—dep
 | Border Leaf | Add FQDNs to `DEFN_NODE_ROLES['BORDER']` in DEFN-ROLES.j2 | Leave `DEFN_NODE_ROLES['BORDER'] = []` | Multi-cluster eBGP features are auto-skipped during rendering |
 | L3OUT to IP Core | Add interfaces to `DEFN_L3OUT_NODES` in DEFN-L3OUT.j2 | Set `DEFN_L3OUT_NODES = []` | All L3OUT interface config and BGP L3OUT blocks are auto-skipped |
 
+#### Border-to-DMZ EVPN Peering Model (GRE Overlay)
+
+Border switches peer with the remote DMZ gateway over a **GRE underlay** so that the
+EVPN session rides a stable, decoupled overlay identity rather than the physical
+underlay loopback:
+
+- **Underlay vs. overlay separation**: each border carries `Loopback1` (GRE tunnel source)
+  and `Loopback2` (overlay EVPN identity / OSPF 100 router-id). `Loopback0` remains the
+  fabric underlay/NVE identity. See `DEFN_LOOP_GRE_SRC` and `DEFN_LOOP_GRE_PEER` in
+  DEFN-LOOPBACKS.j2.
+- **GRE tunnels + OSPF 100**: `FABRIC-BORDER-DMZ-TUNNELS.j2` builds the per-border GRE
+  tunnels (`DEFN_TUNNELS`) and the OSPF 100 underlay that carries reachability to the DMZ
+  overlay peer (`198.19.1.200`).
+- **EVPN session sourcing**: the border-DMZ EVPN session is sourced from `Loopback2`
+  (`DEFN_LOOP_NAME['DMZ_OVERLAY']`) with `ebgp-multihop 255`, using the
+  `OVERLAY-DMZ-EVPN-PEER-SESSION-POLICY` / `OVERLAY-DMZ-EVPN-PEER-POLICY` peer templates
+  in FABRIC-EVPN.j2.
+- **EVPN-only peer**: the DMZ peer is activated only under `address-family l2vpn evpn`
+  (with `rewrite-evpn-rt-asn`). It is intentionally **not** activated in IPv4 unicast
+  (`no bgp default ipv4-unicast` keeps it EVPN-only on greenfield devices).
+
+> The DMZ gateway (`dmz1`) is not rendered by this repository—it is managed manually.
+> On the DMZ side, repoint its EVPN neighbors to the border `Loopback2` addresses
+> (`10.101.1.2` / `10.101.2.2`) and set its OSPF 100 `router-id` to the overlay identity
+> `198.19.1.200`.
+
 ### Tenant Definitions
 
 **RED Tenant** (vrf red, ID 901):
@@ -496,7 +590,7 @@ The **Border Leaf role and Multi-Cluster BGP configurations are optional**—dep
 **High-level BGP control plane**: Three discrete ASN domains:
 - Campus fabric (ASN 65001): Spines as RR, Leaves/Borders as clients
 - Enterprise IP Core (ASN 65002): Upstream eBGP peering from Spines
-- DMZ fabric (ASN 65003): Multi-cluster eBGP peering from Borders
+- DMZ fabric (ASN 65003): EVPN eBGP peering from Borders over the GRE overlay (border `Loopback2`, `ebgp-multihop 255`)
 
 ### Spine-to-Core Interface Architecture
 
@@ -516,9 +610,9 @@ The **Border Leaf role and Multi-Cluster BGP configurations are optional**—dep
 | Spine-02 | Route Reflector | 65001 | 198.19.1.2/32 | Loopback2 = 198.19.1.100/32 | Secondary spine RR + Anycast RP |
 | Leaf-01 | BGP Client | 65001 | 198.19.1.3/32 | — | Access leaf |
 | Leaf-02 | BGP Client | 65001 | 198.19.1.4/32 | — | Access leaf |
-| Border-01 | Border Client | 65001 | 198.19.1.5/32 | — | Multi-cluster gateway |
-| Border-02 | Border Client | 65001 | 198.19.1.6/32 | — | Multi-cluster gateway |
-| dmz1 | DMZ Gateway | 65003 | 198.19.1.200/32 | — | Centralized DMZ fabric (optional) |
+| Border-01 | Border Client | 65001 | 198.19.1.5/32 | — | DMZ gateway (GRE: Lo1 198.19.1.7, Lo2 10.101.1.2) |
+| Border-02 | Border Client | 65001 | 198.19.1.6/32 | — | DMZ gateway (GRE: Lo1 198.19.1.8, Lo2 10.101.2.2) |
+| dmz1 | DMZ Gateway | 65003 | 198.19.1.200/32 | — | Centralized DMZ fabric (optional, EVPN peer identity) |
 | core1 | Core Router | 65002 | — | — | Enterprise IP Core (reference) |
 | core2 | Core Router | 65002 | — | — | Enterprise IP Core (reference) |
 
@@ -878,7 +972,7 @@ EVPN Instance: 101
 
 ## Deployment Sequence
 
-This execution order mirrors `BGP EVPN/BGP-EVPN-BUILD.yml` and should be used for rollout validation and troubleshooting.
+This execution order mirrors `Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml` and should be used for rollout validation and troubleshooting.
 
 ### Phase 1: Preparation
 1. Validate all DEFN-*.j2 files contain accurate device FQDNs, IPs, and VRF assignments

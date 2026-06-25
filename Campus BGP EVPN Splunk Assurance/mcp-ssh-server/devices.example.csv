@@ -1,0 +1,13 @@
+name,host,port,username,password,platform,role,tags,key_path,proxy_jump
+spine01,198.18.128.101,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|spine
+spine02,198.18.128.102,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|spine
+leaf01,198.18.128.103,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|leaf
+leaf02,198.18.128.104,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|leaf
+border01,198.18.128.105,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|border
+border02,198.18.128.106,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|border
+dmz1,198.18.128.107,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|dmz
+core01,198.18.128.108,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|core
+core02,198.18.128.109,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|core
+dhcp-server,198.18.128.110,22,net-admin,env:IOSXE_PASS,iosxe,router,infra|dhcp
+fw-shared-services,198.18.134.200,22,net-admin,env:IOSXE_PASS,iosxe,router,infra|firewall
+splunk-hf,10.0.10.104,22,cisco,env:HF_PASS,linux,hf,splunk|telegraf
