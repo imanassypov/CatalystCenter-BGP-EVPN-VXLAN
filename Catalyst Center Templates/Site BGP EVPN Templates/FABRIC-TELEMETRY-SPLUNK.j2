@@ -34,7 +34,11 @@ telemetry ietf subscription {{ subscription['id'] }}
  encoding encode-kvgpb
  filter xpath {{ section['xpath'] }}
  stream yang-push
- update-policy {{ subscription['policy'] }}{% if subscription['policy'] == 'periodic' %} {{ subscription['period'] }}{% endif %}
+{% if subscription['policy'] == 'periodic' %}
+ update-policy periodic {{ subscription['period'] }}
+{% else %}
+ update-policy {{ subscription['policy'] }}
+{% endif %}
  source-vrf Mgmt-vrf
  receiver ip address {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_IP }} {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_PORT }} protocol grpc-tcp
 !
