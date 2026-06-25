@@ -1,0 +1,52 @@
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+{# FABRIC-TELEMETRY-SPLUNK.j2 - IOS-XE MDT Telemetry subscriptions for Splunk/OpenTelemetry collection #}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
+{% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-TELEMETRY-SPLUNK.j2" %}
+{% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
+{% set TELEMETRY_TARGET_DEVICES = [] %}
+{% set TELEMETRY_TARGET_SEEN = {} %}
+{% for role in DEFN_TELEMETRY_SPLUNK_ROLES %}
+{% for node in DEFN_NODE_ROLES[role] %}
+{% if TELEMETRY_TARGET_SEEN[node] is not defined %}
+{% set _ = TELEMETRY_TARGET_DEVICES.append(node) %}
+{% set _ = TELEMETRY_TARGET_SEEN.update({node: true}) %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% if DEVICE_HOSTNAME in TELEMETRY_TARGET_DEVICES %}
+! =============================================================================
+! IOS-XE MDT Telemetry Subscriptions — Campus BGP EVPN VXLAN Fabric
+! =============================================================================
+! Collector : {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_IP }} (cloud EC2 OTel collector), port {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_PORT }} (yang_grpc)
+! Protocol  : gRPC dial-out (receiver ip address format)
+! Encoding  : encode-kvgpb
+! Source VRF: Mgmt-vrf (all devices)
+! IOS-XE    : Validated on 17.18.02 (Cisco CAT9k)
+! =============================================================================
+!
+{% for section in DEFN_TELEMETRY_SPLUNK %}
+! -----------------------------------------------------------------------------
+! Sub {{ section['subscriptions'][0]['id'] }}{% if section['subscriptions'] | length > 1 %}-{{ section['subscriptions'][-1]['id'] }}{% endif %} — {{ section['section'] }}
+! XPath : {{ section['xpath'] }}
+! -----------------------------------------------------------------------------
+{% for subscription in section['subscriptions'] %}
+telemetry ietf subscription {{ subscription['id'] }}
+ encoding encode-kvgpb
+ filter xpath {{ section['xpath'] }}
+ stream yang-push
+ update-policy {{ subscription['policy'] }}{% if subscription['policy'] == 'periodic' %} {{ subscription['period'] }}{% endif %}
+ source-vrf Mgmt-vrf
+ receiver ip address {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_IP }} {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_PORT }} protocol grpc-tcp
+!
+{% endfor %}
+{% endfor %}
+! =============================================================================
+! Verification commands
+! =============================================================================
+! show telemetry ietf subscription all
+! show telemetry ietf subscription 40114 detail
+! show telemetry ietf subscription 40119 detail
+! show telemetry connection all
+! =============================================================================
+!
+{% endif %}

@@ -66,6 +66,7 @@ BGP EVPN/                            # Template source files (Jinja2)
 │   ├── DEFN-MCAST.j2                # Multicast RP scope definitions
 │   ├── DEFN-NAC.j2                  # NAC policy data structures
 │   ├── DEFN-CLIENT-PORTS.j2         # Access port definitions
+│   ├── DEFN-TELEMETRY-SPLUNK.j2     # MDT telemetry subscription + collector endpoint definitions
 │   └── DEFN-VNIOFFSETS.j2           # VNI numbering offsets (L2VNI, L3VNI)
 │
 ├── FABRIC-*.j2                      # Fabric CLI generators (include DEFN/FUNC files)
@@ -77,6 +78,7 @@ BGP EVPN/                            # Template source files (Jinja2)
 │   ├── FABRIC-EVPN.j2               # BGP EVPN peering, address-families, L3OUT BGP
 │   ├── FABRIC-OVERLAY.j2            # L2VNI overlay services, L2VPN instances
 │   ├── FABRIC-NAC.j2                # NAC access control policies
+│   ├── FABRIC-TELEMETRY-SPLUNK.j2   # IOS-XE MDT telemetry subscriptions
 │   └── FABRIC-CLIENT-PORTS.j2       # Access port configuration
 │
 └── FUNC-*.j2                        # Reusable Jinja macros (auxiliary functions)
@@ -148,6 +150,7 @@ templates:
   - name: "FABRIC-OVERLAY.j2"       # Step 7: Overlay VLANs/EVPN instances (101,102,201,221)
   - name: "FABRIC-CLIENT-PORTS.j2"  # Step 8: Client-facing interface provisioning
   - name: "FABRIC-NAC.j2"           # Step 9: Access control policy on client-facing ports
+  - name: "FABRIC-TELEMETRY-SPLUNK.j2"  # Step 10: MDT telemetry subscriptions for Splunk/OpenTelemetry
 ```
 
 **Build Order Rationale**: Each template layer depends on the ones above it. VRFs must be created before loopbacks, loopbacks before NVE, NVE before EVPN, etc. This strict ordering ensures the final configuration is applied without dependency violations.
@@ -896,6 +899,7 @@ This execution order mirrors `BGP EVPN/BGP-EVPN-BUILD.yml` and should be used fo
 7. Deploy `FABRIC-OVERLAY.j2` → L2VNI overlay services
 8. Deploy `FABRIC-CLIENT-PORTS.j2` → Client-facing interface configuration
 9. Deploy `FABRIC-NAC.j2` → Network Access Control policies
+10. Deploy `FABRIC-TELEMETRY-SPLUNK.j2` → MDT telemetry subscriptions for Splunk/OpenTelemetry collection
 
 ### Post-Deployment Validation
 - Verify BGP EVPN sessions (Status = **Established**)
