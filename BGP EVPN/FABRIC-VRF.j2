@@ -18,6 +18,13 @@ description VRF {{ vrf.name }} definition
 rd {{ DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] }}:{{ vrf.id }}
 !
 address-family ipv4
+{% if vrf.mdt_default %}
+mdt auto-discovery vxlan
+mdt default vxlan {{ vrf.mdt_default }}
+mdt data vxlan {{ vrf.mdt_data }} 0.0.0.255
+mdt data threshold 1
+mdt overlay use-bgp
+{% endif %}
 route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }}
 route-target import {{ FABRIC_BGP_ASN }}:{{ vrf.id }}
 route-target export {{ FABRIC_BGP_ASN }}:{{ vrf.id }} stitching
