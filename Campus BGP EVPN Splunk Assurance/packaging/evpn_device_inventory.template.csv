@@ -1,0 +1,20 @@
+source,hostname,ip_address,loopback,site,role,description
+# Replace the example rows below with YOUR fabric devices, then upload this file
+# in Splunk as: campus_evpn_assurance/lookups/evpn_device_inventory.csv
+#
+# Column reference:
+#   source       Device FQDN as known to Catalyst Center
+#   hostname     MUST equal the cisco.node_id dimension emitted by the collector (e.g. Spine-01)
+#   ip_address   Management IP
+#   loopback     Underlay loopback / router-id
+#   site         Site name shown in dashboards
+#   role         spine | leaf | border
+#   description  Free-text label
+#
+# --- example rows (delete these) ---
+spine-01.example.com,spine-01,10.0.0.101,10.255.0.1,SiteA,spine,Campus Spine 01
+spine-02.example.com,spine-02,10.0.0.102,10.255.0.2,SiteA,spine,Campus Spine 02
+leaf-01.example.com,leaf-01,10.0.0.103,10.255.0.3,SiteA,leaf,Campus Leaf 01
+leaf-02.example.com,leaf-02,10.0.0.104,10.255.0.4,SiteA,leaf,Campus Leaf 02
+border-01.example.com,border-01,10.0.0.105,10.255.0.5,SiteA,border,Campus Border 01
+border-02.example.com,border-02,10.0.0.106,10.255.0.6,SiteA,border,Campus Border 02

@@ -17,6 +17,10 @@ __pycache__/
 *.tar.gz
 *.spl
 
+# ...but DO commit the patched receiver SOURCE bundle — it is required to build
+# the custom otelcol-yangfix collector and is shipped inside the handoff bundle.
+!otel-collector/receiver_yang_26_05_27.tar.gz
+
 # Temp files
 /tmp/
 

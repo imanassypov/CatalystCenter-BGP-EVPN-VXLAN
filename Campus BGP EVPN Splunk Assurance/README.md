@@ -534,26 +534,24 @@ for context.
 
 ## Deployment
 
-The app is packaged as source under [`campus_evpn_assurance/`](campus_evpn_assurance/) and
-deployed to `/opt/splunk/etc/apps/` on the Splunk host.
+Use the packaging scripts in [`packaging/`](packaging/) to produce either:
+
+- a clean Splunk app package (`campus_evpn_assurance-<version>.spl`), or
+- a customer handoff bundle that includes the app package, the OTel collector files,
+  and the patched receiver source tarball `receiver_yang_26_05_27.tar.gz`.
 
 ```bash
-# 1. Package (exclude macOS cruft)
-COPYFILE_DISABLE=1 tar --exclude='.DS_Store' --exclude='._*' \
-  -czf /tmp/campus_evpn_assurance.tar.gz campus_evpn_assurance
+cd "Campus BGP EVPN Splunk Assurance"
 
-# 2. Copy to the Splunk host, then extract and set ownership
-sudo tar -xzf /tmp/campus_evpn_assurance.tar.gz -C /opt/splunk/etc/apps/
-sudo chown -R splunk:splunk /opt/splunk/etc/apps/campus_evpn_assurance
+# Build only the Splunk app package.
+./packaging/build-app.sh
 
-# 3. Register live without a restart (Dashboard Studio needs no new config to register)
-curl -sk -u "$SPLUNK_USER:$SPLUNK_PASS" -X POST \
-  'https://localhost:8089/services/apps/local/_reload'
+# Build the full handoff bundle (.spl + SETUP_GUIDE + otel-collector/).
+./packaging/build-handoff-bundle.sh
 ```
 
-> Credentials are sourced from the gitignored `.envrc` (`SPLUNK_USER` / `SPLUNK_PASS`), never
-> hardcoded. `app.conf` must live in `campus_evpn_assurance/default/` — Splunk ignores it at the
-> app root.
+The generated files land in `packaging/dist/`. For end-to-end customer installation,
+follow [`SETUP_GUIDE.md`](SETUP_GUIDE.md).
 
 A repeatable validator, [`tools/validate_studio.py`](tools/validate_studio.py), runs three tiers
 of checks against the live instance — server‑side fetch, internal structure, and **execution of
@@ -565,10 +563,13 @@ every panel's SPL** — and reports per‑panel results.
 
 ```text
 campus_evpn_assurance/            # The Splunk app (deployable source)
+  app.manifest                    # Modern Splunk packaging manifest (AppInspect)
+  README.md                       # In-app documentation shown to installers
   default/
-    app.conf                      # App metadata (version, label, visibility)
+    app.conf                      # App metadata (version 1.5.0, label, visibility)
     macros.conf                   # evpn_index, evpn_lookup, evpn_lb macros
     transforms.conf               # evpn_device_inventory lookup definition
+    ui-prefs.conf                 # enable_javascript = true
     data/ui/
       nav/default.xml             # Tab navigation (5 views)
       views/                      # Dashboard Studio version-2 views:
@@ -577,8 +578,22 @@ campus_evpn_assurance/            # The Splunk app (deployable source)
         alerts.xml                #   Triage landing pad
   lookups/evpn_device_inventory.csv   # Source of truth: hostname → site/role/loopback
   metadata/default.meta
+  static/                         # Launcher icons (appIcon[_2x], appIconAlt[_2x])
+
+packaging/                        # Build scripts for the .spl and handoff bundle
+  build-app.sh                    # Builds campus_evpn_assurance-<version>.spl
+  build-handoff-bundle.sh         # Builds the full customer handoff bundle
+  make_icons.py                   # Regenerates the launcher icons
+  evpn_device_inventory.template.csv  # Blank inventory template for customers
+  dist/                           # Build output (gitignored)
+
+SETUP_GUIDE.md                    # Customer install guide for Splunk + OTel collector
 
 otel-collector/                   # OpenTelemetry Collector config + notes
+  builder.yaml                    # OCB manifest for the patched otelcol-yangfix build
+  receiver_yang_26_05_27.tar.gz   # Patched yang_grpc receiver source bundle
+  systemd/override.conf.example   # Reversible ExecStart override for the custom binary
+
 model-config-snippets/            # IOS-XE telemetry subscription CLI
 Model Maps/                       # YANG model reference (NVE, EVPN, route stats)
 telegraf/                         # Alternative collector reference

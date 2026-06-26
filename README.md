@@ -131,6 +131,8 @@ CICD Pipeline/                       # GitOps CI/CD: sync templates to Catalyst 
 
 Campus BGP EVPN Splunk Assurance/    # Operational assurance: role-aware Splunk dashboards
 ├── campus_evpn_assurance/           # Packaged Splunk app (dashboards, lookups, metadata)
+├── packaging/                       # Builds the .spl and the customer handoff bundle
+├── SETUP_GUIDE.md                   # Splunk + patched OTel collector install guide
 ├── otel-collector/                  # OpenTelemetry collector config (YANG gRPC → splunk_hec)
 ├── telegraf/                        # Alternate telemetry collector config
 ├── mcp-ssh-server/                  # MCP stdio server for device CLI verification
@@ -310,13 +312,16 @@ Fabric nodes (MDT/YANG, gRPC dial-out) → OpenTelemetry collector → splunk_he
 | Subfolder | Purpose |
 |-----------|---------|
 | `campus_evpn_assurance/` | Packaged Splunk app: executive, Leaf, Spine, Border, and Alerts dashboards |
+| `packaging/` | Repeatable build scripts for the `.spl` package and customer handoff bundle |
+| `SETUP_GUIDE.md` | Customer install workflow for the Splunk app and patched `otelcol-yangfix` collector |
 | `otel-collector/` | OpenTelemetry collector configuration (YANG gRPC → `splunk_hec`) |
 | `telegraf/` | Alternate telemetry collector configuration |
 | `mcp-ssh-server/` | MCP stdio server for live device CLI verification during triage |
 | `Model Maps/` | YANG → Splunk metric model mappings |
 | `model-config-snippets/` | Reference IOS-XE MDT telemetry subscription CLI |
 
-See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md) for architecture, deployment, and the operator's guide to reading the dashboards.
+See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md) for architecture and dashboard usage, and
+[`Campus BGP EVPN Splunk Assurance/SETUP_GUIDE.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/SETUP_GUIDE.md) for the installable handoff bundle and patched OTel collector procedure.
 
 ## Operator Notes
 
