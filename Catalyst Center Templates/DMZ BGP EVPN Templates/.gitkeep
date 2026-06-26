@@ -1,0 +1,4 @@
+# Placeholder so Git tracks this otherwise-empty directory.
+# Add the DMZ fabric templates here (DEFN-*.j2, FABRIC-*.j2, FUNC-*.j2, BGP-EVPN-BUILD.yml).
+# The CICD sync playbook filters for *.j2 files, so this folder will be
+# skipped until real templates are committed. Remove this file once they exist.

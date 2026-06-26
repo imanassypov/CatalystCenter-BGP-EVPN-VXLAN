@@ -26,8 +26,13 @@ ip pim spt-threshold 0
 {# Fabric-wide anycast RP address (global routing table) #}
 ip pim rp-address {{FABRIC_RP_ADDR}}
 {# Per-VRF enterprise RP address #}
+{# register-source pins PIM Register packets to the routable per-VRF overlay #}
+{# loopback (Loopback<vrf.id>). Without it the FHR registers from the anycast #}
+{# SVI, which the core cannot return-route, so PIM Register never completes #}
+{# and no MVPN Type-5 Source-Active is originated. #}
 {% for vrf in vrf_objs %}
 ip pim vrf {{vrf.name}} rp-address {{ENTERPRISE_RP_ADDR}}
+ip pim vrf {{vrf.name}} register-source Loopback{{vrf.id}}
 {% endfor %}
 !
 {# CONFIGURE ANYCAST RP INTERFACE ON SPINES ONLY #}

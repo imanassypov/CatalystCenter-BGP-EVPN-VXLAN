@@ -137,8 +137,11 @@ Campus BGP EVPN Splunk Assurance/    # Operational assurance: role-aware Splunk 
 ├── Model Maps/                      # YANG → Splunk metric model mappings
 ├── model-config-snippets/           # IOS-XE MDT telemetry subscription snippets
 ├── tools/                           # Splunk Studio dashboard validation/conversion utilities
-├── test-cases/                      # Assurance validation scenarios
 └── README.md                       # Full assurance suite documentation
+
+test-cases/                          # Fabric validation scenarios and topologies
+├── README-MCAST-TCASE.md           # Tenant Routable Multicast test case
+└── images/                          # Test case topology diagrams
 
 Release Notes/                       # Dated feature and behavior change notes
 ```

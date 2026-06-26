@@ -31,11 +31,11 @@ interface Loopback{{vrf_entry.id}}
 {% endfor %}
 {% endif %}
 {# ================================================================== #}
-{# BORDER GRE LOOPBACKS — Loopback1 (tunnel source) + Loopback2       #}
+{# BORDER GRE LOOPBACKS - Loopback1 (tunnel source) + Loopback2       #}
 {# (OSPF 100 RID / GRE EVPN peer network). One of each per border.    #}
 {# No Loopback2 conflict: Spines use Lo2 for Anycast RP (MCAST,       #}
 {# SPINE-guarded); Borders use Lo2 for GRE peer (BORDER-guarded).     #}
-{# Gated on DEFN_TUNNELS — skipped when the Border↔DMZ interconnect is  #}
+{# Gated on DEFN_TUNNELS - skipped when the Border<->DMZ interconnect is  #}
 {# disabled (DEFN_TUNNELS undefined or empty).                        #}
 {# ================================================================== #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}

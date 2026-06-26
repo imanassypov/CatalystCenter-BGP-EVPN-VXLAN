@@ -3,22 +3,22 @@
 {# Generates GRE tunnel interfaces and OSPF 100 process for BORDER  #}
 {# nodes connecting to remote DMZ multi-cluster peers.               #}
 {#                                                                    #}
-{# Tunnel interfaces: one per (border × DMZ) entry in DEFN_TUNNELS   #}
+{# Tunnel interfaces: one per (border x DMZ) entry in DEFN_TUNNELS   #}
 {# OSPF 100 process: emitted once per border (outside tunnel loop)   #}
 {#                                                                    #}
-{# Adding a new DMZ requires only DEFN file changes — this template  #}
+{# Adding a new DMZ requires only DEFN file changes - this template  #}
 {# does not need modification.                                        #}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-LOOPBACKS.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-BORDER-DMZ-TUNNELS.j2" %}
 {# Dereference Catalyst Center magic variable #}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
-{# Master gate: only build the Border↔DMZ interconnect when at least one GRE   #}
+{# Master gate: only build the Border<->DMZ interconnect when at least one GRE   #}
 {# tunnel is defined. Set DEFN_TUNNELS = [] (or remove it) to disable entirely. #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
 {# ============================================= #}
 {# GRE TUNNEL INTERFACES                         #}
-{# One per (border × DMZ) entry in DEFN_TUNNELS  #}
+{# One per (border x DMZ) entry in DEFN_TUNNELS  #}
 {# ============================================= #}
 {% for t in DEFN_TUNNELS %}
 {% if t.node == DEVICE_HOSTNAME %}
@@ -39,7 +39,7 @@ interface {{t.ifname}}
 {% endfor %}
 {# ============================================= #}
 {# OSPF 100 PROCESS                               #}
-{# Emitted once per border — shared by all GRE    #}
+{# Emitted once per border - shared by all GRE    #}
 {# tunnels. Router-ID = Loopback2 IP.             #}
 {# ============================================= #}
 router ospf 100

@@ -1,21 +1,21 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {# ============================================================ #}
-{# DEFN_TUNNELS — GRE TUNNEL DEFINITIONS (BORDER → DMZ)        #}
+{# DEFN_TUNNELS - GRE TUNNEL DEFINITIONS (BORDER -> DMZ)        #}
 {#                                                              #}
-{# Flat list of dicts — one entry per (border × DMZ) pair.      #}
+{# Flat list of dicts - one entry per (border x DMZ) pair.      #}
 {# FABRIC-BORDER-DMZ-TUNNELS.j2 iterates this list and matches  #}
 {# on t.node == DEVICE_HOSTNAME.                                #}
 {#                                                              #}
 {# Fields:                                                      #}
-{#   node    — FQDN of the border switch (CatC inventory)       #}
-{#   remote  — FQDN of the remote DMZ peer (informational)      #}
-{#   ifname  — GRE tunnel interface name (must be unique)        #}
-{#   addr    — local tunnel IP address                           #}
-{#   mask    — tunnel subnet mask                                #}
-{#   source  — tunnel source interface (Loopback1 for all)       #}
-{#   dest    — remote tunnel endpoint IP                         #}
+{#   node    - FQDN of the border switch (CatC inventory)       #}
+{#   remote  - FQDN of the remote DMZ peer (informational)      #}
+{#   ifname  - GRE tunnel interface name (must be unique)        #}
+{#   addr    - local tunnel IP address                           #}
+{#   mask    - tunnel subnet mask                                #}
+{#   source  - tunnel source interface (Loopback1 for all)       #}
+{#   dest    - remote tunnel endpoint IP                         #}
 {#                                                              #}
-{# ospf_rid is NOT stored here — derived at render time from     #}
+{# ospf_rid is NOT stored here - derived at render time from     #}
 {# DEFN_LOOP_GRE_PEER[DEVICE_HOSTNAME] (per-border, not         #}
 {# per-tunnel).                                                  #}
 {#                                                              #}

@@ -15,7 +15,7 @@
 {% endfor %}
 {% if DEVICE_HOSTNAME in TELEMETRY_TARGET_DEVICES %}
 ! =============================================================================
-! IOS-XE MDT Telemetry Subscriptions — Campus BGP EVPN VXLAN Fabric
+! IOS-XE MDT Telemetry Subscriptions - Campus BGP EVPN VXLAN Fabric
 ! =============================================================================
 ! Collector : {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_IP }} (cloud EC2 OTel collector), port {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_PORT }} (yang_grpc)
 ! Protocol  : gRPC dial-out (receiver ip address format)
@@ -26,7 +26,7 @@
 !
 {% for section in DEFN_TELEMETRY_SPLUNK %}
 ! -----------------------------------------------------------------------------
-! Sub {{ section['subscriptions'][0]['id'] }}{% if section['subscriptions'] | length > 1 %}-{{ section['subscriptions'][-1]['id'] }}{% endif %} — {{ section['section'] }}
+! Sub {{ section['subscriptions'][0]['id'] }}{% if section['subscriptions'] | length > 1 %}-{{ section['subscriptions'][-1]['id'] }}{% endif %} - {{ section['section'] }}
 ! XPath : {{ section['xpath'] }}
 ! -----------------------------------------------------------------------------
 {% for subscription in section['subscriptions'] %}
@@ -34,7 +34,11 @@ telemetry ietf subscription {{ subscription['id'] }}
  encoding encode-kvgpb
  filter xpath {{ section['xpath'] }}
  stream yang-push
- update-policy {{ subscription['policy'] }}{% if subscription['policy'] == 'periodic' %} {{ subscription['period'] }}{% endif %}
+{% if subscription['policy'] == 'periodic' %}
+ update-policy periodic {{ subscription['period'] }}
+{% else %}
+ update-policy {{ subscription['policy'] }}
+{% endif %}
  source-vrf Mgmt-vrf
  receiver ip address {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_IP }} {{ DEFN_TELEMETRY_SPLUNK_RECEIVER_PORT }} protocol grpc-tcp
 !

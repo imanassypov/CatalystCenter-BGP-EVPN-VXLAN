@@ -12,7 +12,7 @@
 {# DEFN_LOOP_MCLUSTER: remote DMZ EVPN peers reached over the GRE/OSPF 100 underlay #}
 {# Keys = remote DMZ hostnames; values = overlay EVPN identity (Loopback2) and ASN   #}
 {# The 'ip' is the remote overlay loopback (EVPN peer identity), reachable via OSPF  #}
-{# 100 over the GRE tunnels — NOT a directly-connected Loopback0.                    #}
+{# 100 over the GRE tunnels - NOT a directly-connected Loopback0.                    #}
 {# Iterate via DEFN_NODE_ROLES['MCLUSTER'] list in FABRIC templates                 #}
 {% set DEFN_LOOP_MCLUSTER =
     {
@@ -33,9 +33,9 @@
         'DMZ_OVERLAY':  'Loopback2'
     }
 %}
-{# DEFN_LOOP_GRE_SRC: per-border Loopback1 IP — GRE tunnel source for all DMZ tunnels      #}
-{# DEFN_LOOP_GRE_PEER: per-border Loopback2 IP — OSPF 100 router-id and GRE peer network   #}
-{# Lookup by DEVICE_HOSTNAME only; never iterated — no companion list needed                 #}
+{# DEFN_LOOP_GRE_SRC: per-border Loopback1 IP - GRE tunnel source for all DMZ tunnels      #}
+{# DEFN_LOOP_GRE_PEER: per-border Loopback2 IP - OSPF 100 router-id and GRE peer network   #}
+{# Lookup by DEVICE_HOSTNAME only; never iterated - no companion list needed                 #}
 {% set DEFN_LOOP_GRE_SRC =
     {
       'Border-01.dcloud.cisco.com':  '198.19.1.7',
