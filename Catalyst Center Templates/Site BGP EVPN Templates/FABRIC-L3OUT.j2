@@ -37,6 +37,7 @@ interface {{iface.ifname}}
  encapsulation dot1Q {{iface.vlan}}
  vrf forwarding {{vrf.name}}
  ip address {{iface.ipaddr}}
+ ip pim sparse-mode
 !
 {% endfor %}
 {% endif %}
