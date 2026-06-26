@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "2.0.0",
+  "info": {
+    "title": "Campus EVPN Assurance",
+    "id": {
+      "group": null,
+      "name": "campus_evpn_assurance",
+      "version": "1.5.0"
+    },
+    "author": [
+      {
+        "name": "Network Operations",
+        "email": null,
+        "company": null
+      }
+    ],
+    "releaseDate": null,
+    "description": "BGP EVPN VXLAN Fabric Operational Health — Cisco Catalyst Campus. Dashboard Studio assurance views fed by Model-Driven Telemetry over an OpenTelemetry Collector pipeline into the evpn_assurance metrics index.",
+    "classification": {
+      "intendedAudience": "IT",
+      "categories": ["Network Monitoring", "Performance Monitoring"],
+      "developmentStatus": "Production/Stable"
+    },
+    "commonInformationModels": null,
+    "license": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "privacyPolicy": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "releaseNotes": {
+      "name": null,
+      "text": "./README.md",
+      "uri": null
+    }
+  },
+  "dependencies": null,
+  "tasks": null,
+  "inputGroups": null,
+  "incompatibleApps": null,
+  "platformRequirements": {
+    "splunk": {
+      "Enterprise": "8.0"
+    }
+  },
+  "supportedDeployments": ["_standalone", "_distributed", "_search_head_clustering"],
+  "targetWorkloads": ["_search_heads"]
+}

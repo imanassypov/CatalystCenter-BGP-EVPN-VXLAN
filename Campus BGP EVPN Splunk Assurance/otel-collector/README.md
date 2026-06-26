@@ -9,7 +9,10 @@ with EC2 host metrics, to the co-located Splunk HEC.
 
 | File | Purpose |
 |---|---|
-| [`agent_config.running.yaml`](agent_config.running.yaml) | Mirror of the live collector config. Edit here, then deploy to the host (see [Installation](#installation)). |
+| [`agent_config.running.yaml`](agent_config.running.yaml) | Mirror of the live collector config. Edit here, then deploy to the host as described in [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md). |
+| [`builder.yaml`](builder.yaml) | OpenTelemetry Collector Builder manifest for the custom `otelcol-yangfix` build. |
+| [`receiver_yang_26_05_27.tar.gz`](receiver_yang_26_05_27.tar.gz) | Bundled patched `yang_grpc` receiver source used to build `otelcol-yangfix`. |
+| [`systemd/override.conf.example`](systemd/override.conf.example) | Sample reversible systemd drop-in that switches the service to the custom binary. |
 | `README.md` | This document. |
 
 ## Overview
@@ -106,9 +109,11 @@ is **left untouched**, so rollback is a one-liner.
 ### How it was built (on the host)
 
 The tarball [`receiver_yang_26_05_27.tar.gz`](receiver_yang_26_05_27.tar.gz) is
-receiver **source only** (no binary), and the receiver requires Go 1.25+, so it
-was compiled natively on the host (Amazon Linux 2023, x86_64) with the
-OpenTelemetry Collector Builder:
+bundled in this repo as receiver **source only** (no binary). The supported path is
+to build `otelcol-yangfix` from that source with Go 1.25+ and the
+OpenTelemetry Collector Builder. The exact staged install procedure is documented
+in [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md); the live host was originally compiled
+natively on Amazon Linux 2023 (x86_64) with:
 
 - Toolchain: Go 1.26.4 at `/usr/local/go`, `ocb` (collector builder) v0.150.0.
 - Build workspace `/tmp/otelbuild`: `builder.yaml` manifest, `src/` (the patched
@@ -133,7 +138,10 @@ ExecStart=/usr/local/bin/otelcol-yangfix --config=${SPLUNK_CONFIG}
 ```
 
 Everything else (User `splunk-otel-collector`, `EnvironmentFile`) is unchanged.
-Apply with `sudo systemctl daemon-reload && sudo systemctl restart splunk-otel-collector.service`.
+This repo ships the sample as
+[`systemd/override.conf.example`](systemd/override.conf.example); install it as
+`override.conf`, then apply with
+`sudo systemctl daemon-reload && sudo systemctl restart splunk-otel-collector.service`.
 
 ### Backups (on host) — `/opt/otel-backup/2026-06-23/`
 
