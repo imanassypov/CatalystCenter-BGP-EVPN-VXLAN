@@ -1,4 +1,4 @@
-# Cisco Catalyst Center BGP EVPN VXLAN Campus Fabric Templates
+# Cisco Catalyst Center BGP EVPN VXLAN Campus Fabric — Automation and Assurance
 
 **Copyright © 2024-2026 Cisco Systems, Inc. All rights reserved.**
 
@@ -6,895 +6,332 @@
 |------|------|---------|
 | Igor Manassypov | Systems Engineer | imanassy@cisco.com |
 
-## Project Overview
-
-This repository contains a comprehensive collection of Cisco Catalyst Center CLI templates for provisioning Campus BGP EVPN VXLAN fabric infrastructure on Cisco Catalyst 9000 series switches running IOS-XE. The templates automate configuration of modern spine-leaf campus networks with multi-tenant overlay services, supporting both corporate and IoT traffic segmentation with optional encryption and centralized gateway connectivity.
-
-### Modern Campus Architecture Requirements
-
-Organizations deploying BGP EVPN VXLAN campus fabrics typically face these requirements:
-- **Scale and Control**: Controller-driven segment programming for large numbers of tenants and segments
-- **Segmentation**: Clear isolation between corporate (routed through IP Core) and IoT (isolated to DMZ) traffic classes
-- **Services**: DHCP, DNS, NAC (Network Access Control) per tenant with multi-cluster connectivity options
-- **Optimization**: Tenant Routable Multicast (TRM) for corporate multicast applications
-- **Infrastructure-as-Code**: GitOps-ready declarative templates with automated synchronization to Catalyst Center
-
-### Solution Scope
-
-The template collection delivers:
-- **Spine-Leaf Fabrics**: Fully automated provisioning of scalable fabric topologies with role-based configuration
-- **Multi-Tenancy**: VRF isolation with per-tenant overlay services (red, blue, green in this lab)
-- **L2/L3 Overlays**: VXLAN-encapsulated Layer 2 and Layer 3 overlay services with EVPN control plane
-- **Multicast Services**: Fabric-local BUM replication and enterprise-wide Tenant Routable Multicast
-- **Border Gateway Integration**: Optional multi-cluster BGP EVPN and DMZ integration via Border Leaf nodes
-- **External L3 Connectivity**: Spine-to-Core handoff with per-VRF routing to enterprise services
-
-## Architecture Support
-
-**Supported Platforms:**
-- Cisco Catalyst 9500 Series Switches
-- Cisco Catalyst 9400 Series Switches  
-- Cisco Catalyst 9300 Series Switches
-- Cisco Catalyst 9000 Series Virtual Switches
-
-**Software Requirements:**
-- **IOS-XE**: 17.15.3 recommended; 17.12.x supported (except Multi-Cluster BGP on earlier versions)
-- **Catalyst Center**: 2.3.7.9 or later
-- **Cisco Modeling Labs**: 2.9 (for lab topology emulation)
-
-> Validation baseline for all operational examples and reference tables in this README: `Node Configs/Config-Backup-032626` (March 26, 2026).
-
 ---
 
-## Directory Structure
+## 1. Introduction
 
-This repository spans the full fabric lifecycle and is organized into four areas: the **templates** that build the fabric (`Catalyst Center Templates/Site BGP EVPN Templates/`), the **CI/CD pipeline** that synchronizes them to Catalyst Center (`CICD Pipeline/`), the **Splunk assurance** suite that monitors the running fabric (`Campus BGP EVPN Splunk Assurance/`), and supporting **reference material** (`Node Configs/`, `DIAGRAMS/`, `Release Notes/`).
+This repository implements a controller-managed BGP EVPN VXLAN campus fabric on Cisco IOS-XE Catalyst 9000 platforms via Cisco Catalyst Center CLI templates. The solution covers the full operational lifecycle: declarative intent definition, GitOps-driven template synchronization, role-aware device provisioning, and streaming telemetry assurance through Splunk.
 
-```
-README.md                            # This document
-CATC-JINJA-DICT-ITERATION-FIX.md    # Catalyst Center Jinja2 limitations and workarounds
+### 1.1 Reference Topology
 
-Catalyst Center Templates/           # Catalyst Center template source
-└── Site BGP EVPN Templates/         # Template source files (Jinja2)
-    ├── BGP-EVPN-BUILD.yml           # Ansible helper: defines composite template member list and order
-    │
-    ├── DEFN-*.j2                    # Definition templates (data dictionaries only, no CLI output)
-    │   ├── DEFN-ROLES.j2            # Device roles (spine, leaf, border, RR, client)
-    │   ├── DEFN-LOOPBACKS.j2        # Loopback IP addresses per device and VRF (incl. border GRE Lo1/Lo2)
-    │   ├── DEFN-BORDER-DMZ-TUNNELS.j2 # GRE tunnel definitions (border → DMZ underlay)
-    │   ├── DEFN-VRF.j2              # VRF definitions, RD/RT, node assignments
-    │   ├── DEFN-OVERLAY.j2          # VLAN definitions, SVI addressing, DHCP/multicast
-    │   ├── DEFN-L3OUT.j2            # L3OUT sub-interface definitions (optional)
-    │   ├── DEFN-MCAST.j2            # Multicast RP scope definitions
-    │   ├── DEFN-NAC.j2              # NAC policy data structures
-    │   ├── DEFN-CLIENT-PORTS.j2     # Access port definitions
-    │   ├── DEFN-TELEMETRY-SPLUNK.j2 # MDT telemetry subscription + collector endpoint definitions
-    │   └── DEFN-VNIOFFSETS.j2       # VNI numbering offsets (L2VNI, L3VNI)
-    │
-    ├── FABRIC-*.j2                  # Fabric CLI generators (include DEFN/FUNC files)
-    │   ├── FABRIC-VRF.j2            # VRF configuration with RD/RT
-    │   ├── FABRIC-LOOPBACKS.j2      # Loopback interface configuration
-    │   ├── FABRIC-BORDER-DMZ-TUNNELS.j2 # GRE tunnels + OSPF 100 underlay (border → DMZ)
-    │   ├── FABRIC-L3OUT.j2          # L3OUT sub-interfaces + east-west Null0 routes
-    │   ├── FABRIC-NVE.j2            # NVE interface + L3VNI VLANs/SVIs + EVPN statistics enablement
-    │   ├── FABRIC-MCAST.j2          # Multicast RP, MSDP, VRF multicast setup
-    │   ├── FABRIC-EVPN.j2           # BGP EVPN peering, address-families, L3OUT BGP
-    │   ├── FABRIC-OVERLAY.j2        # L2VNI overlay services, L2VPN instances
-    │   ├── FABRIC-NAC.j2            # NAC access control policies
-    │   ├── FABRIC-TELEMETRY-SPLUNK.j2 # IOS-XE MDT telemetry subscriptions
-    │   └── FABRIC-CLIENT-PORTS.j2   # Access port configuration
-    │
-    └── FUNC-*.j2                    # Reusable Jinja macros (auxiliary functions)
-        ├── FUNC-VRF-LOOKUP.j2       # Macro: resolve VRF parameters by device hostname
-        └── FUNC-CLIENT-PORTS.j2     # Macro: render access port configurations
+The lab validates a **three-tenant, multi-cluster spine-leaf fabric** with the following topology:
 
-Node Configs/                        # Reference device configurations (lab output)
-├── Config-Backup-032626/            # Current validation baseline (March 26, 2026)
-│   ├── Spine01.cfg, Spine02.cfg     # Route reflector devices
-│   ├── Leaf01.cfg, Leaf02.cfg       # Access leaf devices
-│   ├── Border01.cfg, Border02.cfg   # Border gateway devices
-│   ├── Core-01.cfg, Core-02.cfg     # Enterprise IP Core (reference)
-│   ├── dhcp-server.cfg              # DHCP server reference
-│   └── dmz1.cfg                     # DMZ gateway reference
-├── fabric-site1/                    # Per-template rendered configs
-│   ├── spine01.cfg, spine02.cfg
-│   ├── leaf01.cfg, leaf02.cfg
-│   ├── border01.cfg, border02.cfg
-│   └── *_startup.cfg
-├── fabric-dmz/
-│   └── dmz01.cfg, dhcp.cfg
-└── cores/
-    └── core01.cfg, core02.cfg
+| Node | Platform | Role | ASN | Loopback0 | Additional Identities |
+|------|----------|------|-----|-----------|----------------------|
+| Spine-01 | C9000v | Route Reflector | 65001 | 198.19.1.1/32 | Lo2 = 198.19.1.100/32 (Anycast RP) |
+| Spine-02 | C9000v | Route Reflector | 65001 | 198.19.1.2/32 | Lo2 = 198.19.1.100/32 (Anycast RP) |
+| Leaf-01 | C9000v | BGP Client | 65001 | 198.19.1.3/32 | — |
+| Leaf-02 | C9000v | BGP Client | 65001 | 198.19.1.4/32 | — |
+| Border-01 | C9000v | Border Client | 65001 | 198.19.1.5/32 | Lo1 = 10.100.2.5 (GRE src), Lo2 = 10.101.1.2 (EVPN overlay) |
+| Border-02 | C9000v | Border Client | 65001 | 198.19.1.6/32 | Lo1 = 10.100.2.6 (GRE src), Lo2 = 10.101.2.2 (EVPN overlay) |
+| dmz1 | C9000v | DMZ Gateway | 65003 | 198.19.1.200/32 | Lo1 = 10.100.2.1 (GRE hub src) |
+| Core-01 | NX-OSv | Core Router | 65002 | — | Enterprise IP Core |
+| Core-02 | NX-OSv | Core Router | 65002 | — | Enterprise IP Core |
 
-DIAGRAMS/                            # Architecture and topology diagrams
-├── bgp-evpn-template-relationships.png/mmd   # Template dependency and data flow
-├── bgp-evpn-role-behavior.png/mmd            # Per-role render behavior
-├── bgp-evpn-data-model.png/mmd               # Data model relationships
-├── bgp-evpn-catalyst-center-lifecycle.png/mmd # Operational lifecycle
-├── bgp-evpn-data-model-presentation.png/mmd  # Simplified presentation view
-├── cisco_evpn_topology.png          # Logical fabric topology
-├── cisco_evpn_cml.png               # CML lab topology
-├── cisco_evpn_ASN.png               # BGP ASN relationships
-├── cisco_evpn_core_interface.png    # Spine-to-Core interface topology
-└── cisco_evpn_CLI_hierarchy.png     # CLI configuration dependency hierarchy
+**Three ASN domains** define the BGP control plane:
 
-CICD Pipeline/                       # GitOps CI/CD: sync templates to Catalyst Center
-└── Cisco-Catalyst-Center-Templates-Github-integration/
-    ├── ansible-git-catc.yml         # Main playbook: fetch templates from Git → sync to CatC
-    ├── process-subfolder.yml        # Task file: sync one subfolder into its own CatC project
-    ├── process-template.yml         # Task file: per-template sync (commit metadata, diff headers)
-    ├── process-composite.yml        # Task file: build ordered composite templates
-    ├── inventory.yml                # CatC host, Git repo, subfolders, and run options
-    ├── vault.yml / vault.yml.example # Encrypted CatC + Git credentials (Ansible Vault)
-    ├── requirements.yml / .txt       # cisco.dnac collection + Python dependencies
-    └── README.md                    # Full playbook documentation
+- **ASN 65001** — Campus fabric: Spines as iBGP route reflectors, Leaves/Borders as clients
+- **ASN 65002** — Enterprise IP Core: eBGP peering from Spines via L3OUT sub-interfaces
+- **ASN 65003** — DMZ fabric: eBGP EVPN peering from Borders over GRE overlay (`ebgp-multihop 255`)
 
-Campus BGP EVPN Splunk Assurance/    # Operational assurance: role-aware Splunk dashboards
-├── campus_evpn_assurance/           # Packaged Splunk app (dashboards, lookups, metadata)
-├── packaging/                       # Builds the .spl and the customer handoff bundle
-├── SETUP_GUIDE.md                   # Splunk + patched OTel collector install guide
-├── otel-collector/                  # OpenTelemetry collector config (YANG gRPC → splunk_hec)
-├── telegraf/                        # Alternate telemetry collector config
-├── mcp-ssh-server/                  # MCP stdio server for device CLI verification
-├── Model Maps/                      # YANG → Splunk metric model mappings
-├── model-config-snippets/           # IOS-XE MDT telemetry subscription snippets
-├── tools/                           # Splunk Studio dashboard validation/conversion utilities
-└── README.md                       # Full assurance suite documentation
+**Three tenants** provide traffic segmentation:
 
-test-cases/                          # Fabric validation scenarios and topologies
-├── README-MCAST-TCASE.md           # Tenant Routable Multicast test case
-└── images/                          # Test case topology diagrams
+| VRF | ID | L3VNI | Transit VLAN | Segment VLANs | Deployment Scope |
+|-----|----|-------|-------------|---------------|-----------------|
+| red | 901 | 50901 | 901 | 101, 102 | Spine + Leaf |
+| blue | 902 | 50902 | 902 | 201 | Leaf + Border + DMZ |
+| green | 903 | 50903 | 903 | 221 | Leaf + Border + DMZ |
 
-Release Notes/                       # Dated feature and behavior change notes
-```
-
-**Key Points:**
-- **DEFN files**: Pure data structures (sets and dicts); never generate CLI output
-- **FABRIC files**: CLI generators; included DEFN and FUNC files are resolved at render time
-- **FUNC files**: Reusable Jinja macros for parameterized CLI generation; included internally by FABRIC templates
-- **BGP-EVPN-BUILD.yml**: Ansible helper that defines the composite template member list and deployment order; consumed by the sync playbook to create the `BGP-EVPN-BUILD` composite in Catalyst Center
-- **Reference Configs**: Pre-rendered device configurations in `Node Configs/` for validation and troubleshooting
-
-## Template Architecture and Execution Model
-
-### Three Template Categories: DEFN, FABRIC, FUNC
-
-BGP EVPN templates are organized into three complementary categories:
-
-| Category | Purpose | Output | Notes |
-|----------|---------|--------|-------|
-| **DEFN-*.j2** | Data dictionaries | No CLI output | Only `{% set %}` blocks with fabric parameters |
-| **FABRIC-*.j2** | CLI generators | IOS-XE configuration | Includes DEFN and FUNC files at render time; generates device configs |
-| **FUNC-*.j2** | Reusable macros | Macro definitions | Parameterized Jinja macros for shared lookup and rendering logic |
-
-### Composite Template Build Sequence
-
-The `BGP-EVPN-BUILD.yml` file is an Ansible helper that defines the ordered member list for composite template creation in Catalyst Center. The Ansible sync playbook reads this file and dynamically creates the `BGP-EVPN-BUILD` composite template, then attaches it to the CLI Network Profile. Only **FABRIC-*.j2** templates appear in this file; DEFN and FUNC templates are resolved internally via Jinja2 `{% include %}` statements:
-
-```yaml
-templates:
-  - name: "FABRIC-VRF.j2"           # Step 1: Role-based VRF definitions (per DEFN_VRF_TO_NODE)
-  - name: "FABRIC-LOOPBACKS.j2"     # Step 2: Underlay + role-based overlay loopbacks (border GRE Lo1/Lo2)
-  - name: "FABRIC-BORDER-DMZ-TUNNELS.j2"  # Step 3: Border→DMZ GRE tunnels + OSPF 100 underlay
-  - name: "FABRIC-L3OUT.j2"         # Step 4: Spine L3OUT interfaces to IP Core (conditional)
-  - name: "FABRIC-NVE.j2"           # Step 5: NVE + L3VNI/L2VNI membership
-  - name: "FABRIC-MCAST.j2"         # Step 6: PIM RP/Anycast RP + MSDP
-  - name: "FABRIC-EVPN.j2"          # Step 7: BGP EVPN control plane + L3OUT BGP AF
-  - name: "FABRIC-OVERLAY.j2"       # Step 8: Overlay VLANs/EVPN instances (101,102,201,221)
-  - name: "FABRIC-CLIENT-PORTS.j2"  # Step 9: Client-facing interface provisioning
-  - name: "FABRIC-NAC.j2"           # Step 10: Access control policy on client-facing ports
-  - name: "FABRIC-TELEMETRY-SPLUNK.j2"  # Step 11: MDT telemetry subscriptions for Splunk/OpenTelemetry
-```
-
-**Build Order Rationale**: Each template layer depends on the ones above it. VRFs must be created before loopbacks, loopbacks before NVE, NVE before EVPN, etc. This strict ordering ensures the final configuration is applied without dependency violations.
-
-### Template Relationship Diagram
-
-The Ansible sync playbook reads `BGP-EVPN-BUILD.yml` to create the `BGP-EVPN-BUILD` composite template in Catalyst Center and attaches it to the CLI Network Profile. That profile is then bound to the building-level site hierarchy, and Catalyst Center renders each `FABRIC-*.j2` template in sequence for the target device by evaluating `__device.hostname` while resolving `DEFN-*.j2` and `FUNC-*.j2` files through Jinja includes.
-
-![BGP EVPN Template Relationships](DIAGRAMS/bgp-evpn-template-relationships.png)
-
-Editable Mermaid source: `DIAGRAMS/bgp-evpn-template-relationships.mmd`
-
-This diagram highlights four operational facts:
-- The `BGP-EVPN-BUILD` composite is created in Catalyst Center by the Ansible sync playbook from `BGP-EVPN-BUILD.yml` and is the artifact attached to the Network Profile.
-- `FABRIC-*.j2` templates are the execution pipeline; each one generates a specific configuration layer in dependency order.
-- `DEFN-*.j2` templates hold deployment intent and topology data; `FUNC-*.j2` templates provide reusable lookup and rendering logic included by FABRIC templates.
-- Role-based conditionals and optional toggles such as `BORDER`, `MCLUSTER`, `L3OUT`, and NAC determine which configuration blocks are rendered per device.
-
-### Per-Role Render Behavior Diagram
-
-The same composite template behaves differently for Spines, Leafs, and Borders because each `FABRIC-*.j2` file evaluates role membership from `DEFN_NODE_ROLES` before rendering configuration. This role-focused view is useful when validating which templates should or should not generate CLI on a given node type.
-
-![BGP EVPN Per-Role Render Behavior](DIAGRAMS/bgp-evpn-role-behavior.png)
-
-Editable Mermaid source: `DIAGRAMS/bgp-evpn-role-behavior.mmd`
-
-This diagram highlights three operational facts:
-- Spines and route reflectors render the control-plane and infrastructure layers, including optional L3OUT when the node is listed in `DEFN_L3OUT_NODES`.
-- Leafs render the full tenant service stack, including L2VNI overlays, client-facing ports, and NAC when a local VRF has NAC data.
-- Borders render tenant VRF and EVPN edge policy but intentionally skip leaf-only L2 access and NAC functions.
-
-### Data Model Relationship Diagram
-
-The template repository is fundamentally data-driven. The `DEFN-*.j2` files act as the source of truth, the `FUNC-*.j2` files convert that data into device-local working objects, and the `FABRIC-*.j2` files emit IOS-XE configuration in the composite execution order.
-
-![BGP EVPN Data Model Relationships](DIAGRAMS/bgp-evpn-data-model.png)
-
-Editable Mermaid source: `DIAGRAMS/bgp-evpn-data-model.mmd`
-
-This diagram highlights four engineering facts:
-- `DEFN-VRF.j2` and `FUNC-VRF-LOOKUP.j2` are the core binding layer between intent data and per-device rendering.
-- `DEFN-OVERLAY.j2`, `DEFN-VNIOFFSETS.j2`, and `DEFN-LOOPBACKS.j2` provide the numeric and addressing context consumed repeatedly across multiple FABRIC templates.
-- Optional behaviors such as L3OUT, multicast RP policy, client port provisioning, and NAC are each activated by dedicated DEFN structures rather than hardcoded logic.
-- `BGP-EVPN-BUILD.yml` is an Ansible helper, not a Catalyst Center artifact; the sync playbook uses it to serialize the fabric render stages into the `BGP-EVPN-BUILD` composite that Catalyst Center executes during provisioning.
-
-### Catalyst Center Operational Lifecycle Diagram
-
-From an operator perspective, the most important workflow is not only template structure but how those templates move through Catalyst Center from import to day-2 re-provisioning. The lifecycle view below shows the exact operating sequence for this repository.
-
-![BGP EVPN Catalyst Center Lifecycle](DIAGRAMS/bgp-evpn-catalyst-center-lifecycle.png)
-
-Editable Mermaid source: `DIAGRAMS/bgp-evpn-catalyst-center-lifecycle.mmd`
-
-This diagram highlights four operational facts:
-- The full template set is first synced to Template Editor by the Ansible playbook, which also reads `BGP-EVPN-BUILD.yml` to create the `BGP-EVPN-BUILD` composite and bind it to the CLI Network Profile.
-- The Network Profile is attached at the building level in the site hierarchy, which determines where Catalyst Center applies the rendered composite.
-- Provisioning renders device-specific CLI by combining `__device.hostname` with the DEFN and FABRIC template logic.
-- Day-2 changes are handled by updating templates or DEFN data, resyncing them into Catalyst Center, and then re-provisioning the site or selected devices.
-
-### Presentation-Style Data Model Diagram
-
-The detailed engineering diagram above is useful for implementation work, but for design reviews and presentations a simpler story is often better: intent data flows into Jinja logic, Jinja logic feeds the render pipeline, and the composite delivers role-aware CLI to the site.
-
-![BGP EVPN Presentation Data Model](DIAGRAMS/bgp-evpn-data-model-presentation.png)
-
-Editable Mermaid source: `DIAGRAMS/bgp-evpn-data-model-presentation.mmd`
-
-This simplified view highlights four architectural facts:
-- The DEFN templates are the intent layer and carry role, addressing, tenant, policy, and numbering decisions.
-- The FUNC templates are the transformation layer that converts repository intent into device-local working objects.
-- The FABRIC templates are the rendering layer that emits infrastructure, edge, and tenant service CLI in a controlled order.
-- The composite ties that render pipeline to Catalyst Center provisioning at the building site level.
-
----
-
-## Ansible Automation Integration
-
-This project integrates with Red Hat Ansible for **GitOps-style synchronization** of templates between Git repositories and Cisco Catalyst Center.
-
-### Local Automation Project
-
-A copy of the sync automation is vendored under [`CICD Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/) so the templates and the automation that publishes them live together. The `ansible-git-catc.yml` playbook fetches the `.j2` templates from a Git repository, enriches each one with Git commit metadata, reads `BGP-EVPN-BUILD.yml` to determine composite ordering, and syncs everything to a Catalyst Center Template Project via the `cisco.dnac.template_workflow_manager` module. The playbook supports a **list of subfolders** (`git_repo_subfolders` in `inventory.yml`) — each subfolder is synced into its own Catalyst Center project, so a single run can publish, for example, `Site BGP EVPN Templates` and `DMZ BGP EVPN Templates` into separate projects. See [`CICD Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/README.md`](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/README.md) for full setup, configuration, and run instructions.
-
-### Companion Repository
-[Cisco-Catalyst-Center-Templates-Github-integration](https://github.com/imanassypov/Cisco-Catalyst-Center-Templates-Github-integration)
-
-### Key Capabilities
-- Automated sync of Git-hosted templates to Catalyst Center Template Projects
-- Leverages the official [Cisco DNA Center Ansible Collection](https://galaxy.ansible.com/cisco/dnac) (`cisco.dnac`)
-- Git commit messages automatically appended to template version descriptions
-- Git diff information embedded as Jinja2 comments for change traceability
-
-### Device Targeting Hint
-
-Every `.j2` file must begin with a device targeting comment on line 1:
-```jinja
-{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
-```
-This hint informs Catalyst Center's template engine which device families can use this template.
-
----
-
-## Splunk Assurance Integration
-
-Building the fabric is only half of the lifecycle. The [`Campus BGP EVPN Splunk Assurance/`](Campus%20BGP%20EVPN%20Splunk%20Assurance/) folder provides the **assurance** half: a packaged Splunk application, `campus_evpn_assurance`, that turns streaming telemetry from the running BGP EVPN VXLAN fabric into a role-aware, at-a-glance health picture for the operator on shift.
-
-### Build vs. Assure
-
-| Phase | Component | Question it answers |
-|-------|-----------|---------------------|
-| **Build** | `Catalyst Center Templates/Site BGP EVPN Templates/` templates + `CICD Pipeline/` sync | "How do I provision a correct, consistent fabric from declarative intent?" |
-| **Assure** | `Campus BGP EVPN Splunk Assurance/` | "Now that the fabric is live, is it healthy — and if not, what broke, where, and when?" |
-
-The two halves share the same fabric model (roles, tenants, VNIs, loopbacks), so the dashboards' device inventory and expected-state logic map directly onto what the templates provisioned.
-
-### Telemetry Pipeline
-
-The `FABRIC-TELEMETRY-SPLUNK.j2` template provisions IOS-XE Model-Driven Telemetry (MDT) subscriptions on each fabric node. Those subscriptions stream native YANG data via gRPC dial-out to an OpenTelemetry collector, which translates the metrics and forwards them to a Splunk HEC endpoint feeding the `evpn_assurance` metrics index:
-
-```
-Fabric nodes (MDT/YANG, gRPC dial-out) → OpenTelemetry collector → splunk_hec → Splunk index=evpn_assurance → campus_evpn_assurance dashboards
-```
-
-### Key Components
-
-| Subfolder | Purpose |
-|-----------|---------|
-| `campus_evpn_assurance/` | Packaged Splunk app: executive, Leaf, Spine, Border, and Alerts dashboards |
-| `packaging/` | Repeatable build scripts for the `.spl` package and customer handoff bundle |
-| `SETUP_GUIDE.md` | Customer install workflow for the Splunk app and patched `otelcol-yangfix` collector |
-| `otel-collector/` | OpenTelemetry collector configuration (YANG gRPC → `splunk_hec`) |
-| `telegraf/` | Alternate telemetry collector configuration |
-| `mcp-ssh-server/` | MCP stdio server for live device CLI verification during triage |
-| `Model Maps/` | YANG → Splunk metric model mappings |
-| `model-config-snippets/` | Reference IOS-XE MDT telemetry subscription CLI |
-
-See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md) for architecture and dashboard usage, and
-[`Campus BGP EVPN Splunk Assurance/SETUP_GUIDE.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/SETUP_GUIDE.md) for the installable handoff bundle and patched OTel collector procedure.
-
-## Operator Notes
-
-This document is structured for day-0/day-1 operations first, then deep troubleshooting.
-Parser and template-engine caveats are consolidated in **Appendix A** so deployment procedures stay concise.
-
----
-
-Catalyst Center uses a restricted Jinja2 engine. The following constructs are **not supported**:
-
-| Unsupported | Workaround |
-|-------------|------------|
-| `not in` operator | Use `is not defined`: `{% if dict[key] is not defined %}` |
-| `.keys()` method | Not supported on dictionaries |
-| Two-variable `for` loop: `{% for k, v in dict.items() %}` | Single-variable: `{% for k in dict %}` then `{% set v = dict[k] %}` |
-| Literal dot in `.split()`: `.split('.')` | Escape the dot: `.split('\\.')` — CatC treats `.` as a regex wildcard |
-| Intermediate variables in conditionals | May cause false-positive "undefined variable" detection; inline expressions where possible |
-| Complex nested expressions | Restructure into simpler steps |
-
-**Example - Checking if key exists in dictionary:**
-```jinja
-{# WRONG - 'not in' not supported #}
-{% if DEVICE_HOSTNAME not in DEFN_LOOP_UNDERLAY %}
-
-{# CORRECT - use 'is not defined' #}
-{% if DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME] is not defined %}
-```
-
-### Known Bug: Non-Deterministic Dict-Key Iteration
-
-#### Symptom
-
-Templates that iterate over a dictionary and use the loop variable as a bracket-lookup key (`dict[key]`) render correctly in most Jinja2 engines, but produce **intermittent, non-reproducible failures** in Catalyst Center. The failure manifests as broken IOS-XE CLI — for example, a Spine receiving this during provisioning:
-
-```
-interface {parent=GigabitEthernet1/0/5, name=uplink1, vlan=2, ipaddr=198.19.2.50...}
-interface
-% Incomplete command.
-```
-
-Instead of the expected:
-
-```
-interface GigabitEthernet1/0/5
- no switchport
-!
-interface GigabitEthernet1/0/5.2
- encapsulation dot1Q 2
- vrf forwarding red
- ip address 198.19.2.50 255.255.255.252
-!
-```
-
-#### Root Cause
-
-Standard Jinja2 yields the **key** (a string) when iterating a dict: `{% for k in some_dict %}`. CatC's Jinja2 engine has a non-deterministic inconsistency: on some renders — typically in templates loaded via `{% include %}` from a composite template — it yields the **value object** instead of the key string.
-
-When this happens:
-
-| What CatC yields | Downstream effect |
-|---|---|
-| `interface` = the value dict itself | Printed as Java-style `{k=v,...}` notation — invalid CLI |
-| `dict[<value dict>]` | Lookup fails → variable undefined → empty string |
-
-The failure is **intermittent** because it is tied to CatC's internal template-caching and include-order resolution, which is non-deterministic across re-renders and CatC version upgrades. A template can render correctly dozens of times before failing.
-
-This bug affects **any dict defined in an included `DEFN-*.j2` file** when the iteration pattern is:
-
-```jinja
-{# BROKEN — yields value-objects unpredictably in CatC's include scope #}
-{% for key in some_dict %}
-{% set params = some_dict[key] %}
-  ... {{ params.field }} ...
-{% endfor %}
-```
-
-#### Fix: Dict-of-Dicts → List-of-Dicts
-
-The solution is to eliminate dict-key iteration entirely by converting `dict-of-dicts` data structures to **flat lists of dicts**. The former dict key (e.g., the sub-interface name) is promoted to a named field (`ifname`) inside each list entry. CatC iterates lists without ambiguity.
-
-**Before (dict-of-dicts — broken):**
-
-```jinja
-{# DEFN-L3OUT.j2 #}
-'interfaces': {
-  'GigabitEthernet1/0/5.2': {'parent': 'GigabitEthernet1/0/5', 'vlan': '2', 'ipaddr': '198.19.2.50 255.255.255.252', 'neighbour': '198.19.2.49'},
-  'GigabitEthernet1/0/6.2': {'parent': 'GigabitEthernet1/0/6', 'vlan': '2', 'ipaddr': '198.19.2.54 255.255.255.252', 'neighbour': '198.19.2.53'}
-}
-
-{# FABRIC-L3OUT.j2 — non-deterministically broken #}
-{% for interface in l3out.interfaces %}
-{% set params = l3out.interfaces[interface] %}
-interface {{params.parent}}
- no switchport
-!
-interface {{interface}}
- encapsulation dot1Q {{params.vlan}}
- ...
-{% endfor %}
-```
-
-**After (list-of-dicts — safe):**
-
-```jinja
-{# DEFN-L3OUT.j2 #}
-'interfaces': [
-  {'ifname': 'GigabitEthernet1/0/5.2', 'parent': 'GigabitEthernet1/0/5', 'vlan': '2', 'ipaddr': '198.19.2.50 255.255.255.252', 'neighbour': '198.19.2.49'},
-  {'ifname': 'GigabitEthernet1/0/6.2', 'parent': 'GigabitEthernet1/0/6', 'vlan': '2', 'ipaddr': '198.19.2.54 255.255.255.252', 'neighbour': '198.19.2.53'}
-]
-
-{# FABRIC-L3OUT.j2 — deterministic #}
-{% for iface in l3out.interfaces %}
-interface {{iface.parent}}
- no switchport
-!
-interface {{iface.ifname}}
- encapsulation dot1Q {{iface.vlan}}
- ...
-{% endfor %}
-```
-
-#### Companion List Pattern for Dict Lookups
-
-When a dict must be **kept** for O(1) key-based lookup (e.g., `DEFN_OVERLAY.vlans`), but also needs to be **iterated**, always define a parallel companion list that holds the keys in order. Iterate the companion list; use the resulting string as a safe bracket-lookup key into the dict.
-
-```jinja
-{# DEFN-OVERLAY.j2 — companion list alongside the dict #}
-{
-  'vrf': 'red',
-  'vlan_ids': ['101', '102'],          {# companion list — iterate this #}
-  'vlans': {
-    '101': {'name': 'corp-101', 'network': '10.1.101.0 255.255.255.0', ...},
-    '102': {'name': 'corp-102', 'network': '10.1.102.0 255.255.255.0', ...}
-  }
-}
-
-{# FABRIC-L3OUT.j2 — iterate companion list; bracket lookup is safe #}
-{% for vlan_id in overlay.vlan_ids %}
-ip route vrf {{vrf.name}} {{overlay.vlans[vlan_id].network}} Null0
-{% endfor %}
-```
-
-#### Files Changed
-
-| File | Change |
-|---|---|
-| `DEFN-L3OUT.j2` | `interfaces` converted from dict-of-dicts to list-of-dicts; `ifname` field added to each entry |
-| `DEFN-OVERLAY.j2` | `vlan_ids` companion list added to each overlay entry |
-| `FABRIC-L3OUT.j2` | Interface config loop and null-route loop updated to use list iteration |
-| `FABRIC-EVPN.j2` | BGP neighbor loop (ipv4 vrf / L3OUT block) updated to use list iteration |
-
-> See `CATC-JINJA-DICT-ITERATION-FIX.md` for the full companion-list pattern reference, including all existing companion lists in this project.
-
-## Deploying Templates to Catalyst Center
-
-### Prerequisites
-
-Before deploying, ensure:
-
-1. **Site Hierarchy**: Target site exists in Catalyst Center (for example `Global/Campus/Building1`)
-2. **Discovered Devices**: Spine, Leaf, and Border devices are discovered, managed, and assigned to the target site
-3. **Underlay Operational**: Loopback reachability and IGP adjacencies are established between fabric nodes
-
-### Deployment Workflow
-
-Use this as the standard operator runbook for Catalyst Center provisioning.
-
-#### Step 1: Import Template Project
-
-- Navigate to **Tools > Template Editor**
-- Create a new **Template Project** for your target site
-- Import all `.j2` files from the `Catalyst Center Templates/Site BGP EVPN Templates/` folder
-
-#### Step 2: Customize Data Definitions
-
-- Update `DEFN-*.j2` files for hostnames, loopbacks, VRF mappings, VLANs, and L3OUT values
-- Confirm hostnames match Catalyst Center inventory FQDNs exactly
-
-#### Step 3: Create Network Profile
-
-- Navigate to **Design > Network Profiles**
-- Create a new **CLI Network Profile**
-- Attach the `BGP-EVPN-BUILD` composite template (created by the Ansible sync playbook from `BGP-EVPN-BUILD.yml`)
-
-#### Step 4: Associate Profile and Provision
-
-- Assign the Network Profile to your target site
-- Navigate to **Provision > Inventory**
-- Select fabric devices and trigger provisioning
-- Catalyst Center renders device-specific CLI based on `__device.hostname`
-
----
-
-## Lab Topology: Three-Tenant Multi-Cluster Campus Fabric
-
-### Reference Architecture
-
-This template collection is designed for a **two-tier spine-leaf fabric** with optional **Border Leaf nodes** for multi-cluster connectivity:
-
-- **2 Spine switches** (route reflectors, L3OUT gateways)
-- **2 Leaf switches** (edge access points)
-- **2 Border switches** (optional, multi-cluster/DMZ gateway)
-- **3 Tenants**: red (corporate), blue (IoT), green (IoT)
-
-### Optional Components: Border Leaf and Multi-Cluster BGP
-
-The **Border Leaf role and Multi-Cluster BGP configurations are optional**—deployments requiring only a single-site VXLAN fabric can omit these entirely.
-
-| Feature | Enabled By | Disabled By | Effect |
-|---------|------------|------------|--------|
-| Border Leaf | Add FQDNs to `DEFN_NODE_ROLES['BORDER']` in DEFN-ROLES.j2 | Leave `DEFN_NODE_ROLES['BORDER'] = []` | Multi-cluster eBGP features are auto-skipped during rendering |
-| L3OUT to IP Core | Add interfaces to `DEFN_L3OUT_NODES` in DEFN-L3OUT.j2 | Set `DEFN_L3OUT_NODES = []` | All L3OUT interface config and BGP L3OUT blocks are auto-skipped |
-
-#### Border-to-DMZ EVPN Peering Model (GRE Overlay)
-
-Border switches peer with the remote DMZ gateway over a **GRE underlay** so that the
-EVPN session rides a stable, decoupled overlay identity rather than the physical
-underlay loopback:
-
-- **Underlay vs. overlay separation**: each border carries `Loopback1` (GRE tunnel source)
-  and `Loopback2` (overlay EVPN identity / OSPF 100 router-id). `Loopback0` remains the
-  fabric underlay/NVE identity. See `DEFN_LOOP_GRE_SRC` and `DEFN_LOOP_GRE_PEER` in
-  DEFN-LOOPBACKS.j2.
-- **GRE tunnels + OSPF 100**: `FABRIC-BORDER-DMZ-TUNNELS.j2` builds the per-border GRE
-  tunnels (`DEFN_TUNNELS`) and the OSPF 100 underlay that carries reachability to the DMZ
-  overlay peer (`198.19.1.200`).
-- **EVPN session sourcing**: the border-DMZ EVPN session is sourced from `Loopback2`
-  (`DEFN_LOOP_NAME['DMZ_OVERLAY']`) with `ebgp-multihop 255`, using the
-  `OVERLAY-DMZ-EVPN-PEER-SESSION-POLICY` / `OVERLAY-DMZ-EVPN-PEER-POLICY` peer templates
-  in FABRIC-EVPN.j2.
-- **EVPN-only peer**: the DMZ peer is activated only under `address-family l2vpn evpn`
-  (with `rewrite-evpn-rt-asn`). It is intentionally **not** activated in IPv4 unicast
-  (`no bgp default ipv4-unicast` keeps it EVPN-only on greenfield devices).
-
-> The DMZ gateway (`dmz1`) is not rendered by this repository—it is managed manually.
-> On the DMZ side, repoint its EVPN neighbors to the border `Loopback2` addresses
-> (`10.101.1.2` / `10.101.2.2`) and set its OSPF 100 `router-id` to the overlay identity
-> `198.19.1.200`.
-
-### Tenant Definitions
-
-**RED Tenant** (vrf red, ID 901):
-- Enterprise user subnets with L3OUT handoff to IP Core
-- Deployed on Spines and Leafs in the current backup snapshot
-- L3VNI: 50901; transit VLAN: 901
-
-**BLUE Tenant** (vrf blue, ID 902):
-- IoT traffic segment, segregated at fabric edge
-- Deployed on Leafs, Borders, and DMZ gateway in the current snapshot
-- L3VNI: 50902; transit VLAN: 902
-- Segment VLAN: 201 (`iot-blue-201`)
-
-**GREEN Tenant** (vrf green, ID 903):
-- IoT traffic segment, segregated at fabric edge
-- Deployed on Leafs, Borders, and DMZ gateway in the current snapshot
-- L3VNI: 50903; transit VLAN: 903
-- Segment VLAN: 221 (`iot-green-221`)
-
-**Multicast RP in deployed snapshot**:
-- Fabric Anycast RP: `198.19.1.100` on `Loopback2` of both `Spine-01` and `Spine-02`
-
-### Lab Topology Diagrams
+### 1.2 Topology Diagrams
 
 ![Logical EVPN Topology](DIAGRAMS/cisco_evpn_topology.png)
 
-**Logical fabric topology** showing spine-leaf architecture, border connections, and three tenant VRFs.
+Logical spine-leaf architecture with border connections and three tenant VRFs.
 
 ![CML Lab Topology](DIAGRAMS/cisco_evpn_cml.png)
 
-**Cisco Modeling Labs emulation** of the above using virtual Catalyst 9000 instances.
+Cisco Modeling Labs emulation using virtual Catalyst 9000 instances.
 
 ![BGP ASN Relationships](DIAGRAMS/cisco_evpn_ASN.png)
 
-**High-level BGP control plane**: Three discrete ASN domains:
-- Campus fabric (ASN 65001): Spines as RR, Leaves/Borders as clients
-- Enterprise IP Core (ASN 65002): Upstream eBGP peering from Spines
-- DMZ fabric (ASN 65003): EVPN eBGP peering from Borders over the GRE overlay (border `Loopback2`, `ebgp-multihop 255`)
+BGP control plane: three ASN domains (campus, core, DMZ) and their peering relationships.
 
-### Spine-to-Core Interface Architecture
+### 1.3 Border-to-DMZ EVPN Peering (GRE Overlay)
+
+Borders peer with the DMZ gateway over a **GRE underlay** to decouple EVPN session stability from physical path topology:
+
+- **GRE source addressing**: All GRE tunnel sources are allocated from `10.100.2.0/29`, intentionally outside the `198.19.1.0/24` fabric loopback space to avoid conflicts with core router Loopback0 addresses. See `DEFN_LOOP_GRE_SRC` and `DEFN_LOOP_GRE_PEER` in `DEFN-LOOPBACKS.j2`.
+- **Tunnel underlay (OSPF 100)**: `FABRIC-BORDER-DMZ-TUNNELS.j2` renders per-border GRE tunnels and OSPF 100 adjacencies. The DMZ OSPF 100 router-id is `198.19.1.200` (Lo0), redistributed into OSPF 100 locally by the DMZ — never injected into OSPF 1 from the spine side.
+- **Spine MCLUSTER-LOOPBACKS**: Only the DMZ `Loopback1` (`10.100.2.1/32`) is redistributed into OSPF 1 via `ip prefix-list MCLUSTER-LOOPBACKS` on spines. This ensures borders have a specific route to the GRE hub. Injecting `198.19.1.200` into OSPF 1 would decouple `fall-over` detection from tunnel state.
+- **EVPN session sourcing**: Borders source from `Loopback2` (DEFN_LOOP_NAME `DMZ_OVERLAY`) with `ebgp-multihop 255`. DMZ peers to border Lo2 addresses (`10.101.1.2` / `10.101.2.2`).
+- **EVPN-only peer**: The DMZ neighbor is activated only under `address-family l2vpn evpn` with `rewrite-evpn-rt-asn`; it is not activated in IPv4 unicast.
+
+> **Operator note**: The DMZ gateway is not provisioned by this template set. On the DMZ side: configure Lo0 = 198.19.1.200/32 (OSPF 100 RID, EVPN update-source), Lo1 = 10.100.2.1/32 (GRE hub source), tunnel destinations = 10.100.2.5 / 10.100.2.6, and EVPN neighbors = 10.101.1.2 / 10.101.2.2.
+
+### 1.4 Platform and Software Requirements
+
+| Component | Version |
+|-----------|---------|
+| IOS-XE | 17.15.3 recommended; 17.12.x minimum (Multi-Cluster BGP requires 17.15+) |
+| Catalyst Center | 2.3.7.9 or later |
+| Cisco Modeling Labs | 2.9+ (lab emulation) |
+| Ansible | 2.15+ with `cisco.dnac` collection |
+
+**Supported hardware**: Catalyst 9500, 9400, 9300, and 9000v (virtual).
+
+> Validation baseline: `Node Configs/Config-Backup-032626` (March 26, 2026).
+
+---
+
+## 2. Repository Structure
+
+```
+Catalyst Center Templates/
+└── Site BGP EVPN Templates/       # Jinja2 template source (DEFN/FABRIC/FUNC)
+    ├── BGP-EVPN-BUILD.yml         # Composite member list and execution order
+    ├── DEFN-*.j2                  # Data dictionaries ({% set %} only, no CLI)
+    ├── FABRIC-*.j2                # CLI generators (include DEFN + FUNC)
+    └── FUNC-*.j2                  # Reusable Jinja macros
+
+Node Configs/                      # Reference device configs (lab output)
+├── Config-Backup-032626/          # Current validation baseline
+├── fabric-site1/                  # Per-template rendered configs
+├── fabric-dmz/                    # DMZ rendered configs
+└── cores/                         # Core router configs
+
+CICD Pipeline/
+└── Cisco-Catalyst-Center-Templates-Github-integration/
+    ├── ansible-git-catc.yml       # GitOps sync: Git → Catalyst Center
+    └── README.md                  # Pipeline documentation
+
+Campus BGP EVPN Splunk Assurance/  # Streaming telemetry assurance
+├── campus_evpn_assurance/         # Packaged Splunk app
+├── otel-collector/                # OpenTelemetry collector config
+├── packaging/                     # Build scripts (.spl + handoff bundle)
+├── mcp-ssh-server/                # MCP stdio server for CLI verification
+├── Model Maps/                    # YANG → Splunk metric mappings
+└── SETUP_GUIDE.md                 # Install procedure
+
+DIAGRAMS/                          # Architecture diagrams (.mmd + .png)
+Release Notes/                     # Dated feature and behavior change notes
+test-cases/                        # Fabric validation scenarios
+```
+
+---
+
+## 3. Template Architecture
+
+### 3.1 Three Template Categories
+
+| Category | Purpose | Output |
+|----------|---------|--------|
+| `DEFN-*.j2` | Data dictionaries — roles, loopbacks, VRFs, VLANs, L3OUT, NAC, telemetry | No CLI (only `{% set %}` blocks) |
+| `FABRIC-*.j2` | CLI generators — include DEFN/FUNC, emit IOS-XE configuration | Role-aware IOS-XE CLI |
+| `FUNC-*.j2` | Reusable Jinja macros for shared lookup/rendering logic | Macro definitions |
+
+Every `.j2` file must begin with the device targeting header:
+```jinja
+{## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
+```
+
+### 3.2 Composite Build Order (BGP-EVPN-BUILD.yml)
+
+Only FABRIC templates appear in the composite; DEFN/FUNC files are resolved internally via `{% include %}`:
+
+| Step | Template | Function | Depends On |
+|------|----------|----------|-----------|
+| 1 | `FABRIC-VRF.j2` | VRF definitions with RD/RT | — |
+| 2 | `FABRIC-LOOPBACKS.j2` | Underlay + overlay loopbacks | VRF |
+| 3 | `FABRIC-BORDER-DMZ-TUNNELS.j2` | GRE tunnels + OSPF 100 (borders only) | Loopbacks |
+| 4 | `FABRIC-L3OUT.j2` | Spine-to-Core sub-interfaces | Loopbacks |
+| 5 | `FABRIC-NVE.j2` | NVE + L3VNI/L2VNI membership | VRF, Loopbacks |
+| 6 | `FABRIC-MCAST.j2` | PIM RP, MSDP, VRF MDT | NVE |
+| 7 | `FABRIC-EVPN.j2` | BGP EVPN control plane + L3OUT BGP | All above |
+| 8 | `FABRIC-OVERLAY.j2` | L2VNI overlay VLANs/EVPN instances | NVE, EVPN |
+| 9 | `FABRIC-CLIENT-PORTS.j2` | Client-facing port provisioning | Overlay |
+| 10 | `FABRIC-NAC.j2` | 802.1X/MAB access control | Client Ports |
+| 11 | `FABRIC-TELEMETRY-SPLUNK.j2` | MDT telemetry subscriptions | NVE |
+
+### 3.3 Per-Role Render Behavior
+
+The same composite renders differently per device role based on `DEFN_NODE_ROLES` membership:
+
+| Template | Spine/RR | Leaf | Border |
+|----------|----------|------|--------|
+| FABRIC-VRF | ✓ | ✓ | ✓ |
+| FABRIC-LOOPBACKS | ✓ | ✓ | ✓ |
+| FABRIC-BORDER-DMZ-TUNNELS | — | — | ✓ |
+| FABRIC-L3OUT | ✓ (if in `DEFN_L3OUT_NODES`) | — | — |
+| FABRIC-NVE | ✓ (L3VNI only, for route leaking) | ✓ | ✓ |
+| FABRIC-MCAST | ✓ | ✓ | ✓ |
+| FABRIC-EVPN | ✓ (RR config) | ✓ (client) | ✓ (client + DMZ eBGP) |
+| FABRIC-OVERLAY | — | ✓ | ✓ |
+| FABRIC-CLIENT-PORTS | — | ✓ | ✓ |
+| FABRIC-NAC | — | ✓ | — |
+| FABRIC-TELEMETRY-SPLUNK | ✓ | ✓ | ✓ |
+
+> **Spine NVE/L3VNI is intentional**: Spines terminate L3VNI for VRF route leaking to the upstream IP Core via L3OUT sub-interfaces. Do not treat Spine NVE config as a bug.
+
+### 3.4 Optional Components
+
+| Feature | Enabled By | Disabled By |
+|---------|------------|-------------|
+| Border Leaf / Multi-Cluster | Add FQDNs to `DEFN_NODE_ROLES['BORDER']` | Leave `BORDER = []` |
+| L3OUT to IP Core | Add nodes to `DEFN_L3OUT_NODES` | Set `DEFN_L3OUT_NODES = []` |
+| GRE/DMZ Tunnels | Define entries in `DEFN_TUNNELS` | Omit `DEFN_TUNNELS` |
+| Telemetry | Populate `DEFN_TELEMETRY_SPLUNK_ROLES` | Leave role list empty |
+
+---
+
+## 4. Architecture Diagrams
+
+### 4.1 Conceptual Data Model
+
+![BGP EVPN Presentation Data Model](DIAGRAMS/bgp-evpn-data-model-presentation.png)
+
+> Source: `DIAGRAMS/bgp-evpn-data-model-presentation.mmd`
+
+- DEFN templates are the **intent layer** (roles, addressing, tenants, policy, numbering)
+- FUNC templates are the **transformation layer** (intent → device-local objects)
+- FABRIC templates are the **rendering layer** (emit IOS-XE CLI in dependency order)
+- The composite binds the render pipeline to Catalyst Center provisioning at the site level
+
+### 4.2 Detailed Data Model
+
+![BGP EVPN Data Model Relationships](DIAGRAMS/bgp-evpn-data-model.png)
+
+> Source: `DIAGRAMS/bgp-evpn-data-model.mmd`
+
+Key relationships:
+- `DEFN-VRF.j2` + `FUNC-VRF-LOOKUP.j2` form the core binding between intent and per-device rendering
+- `DEFN-OVERLAY.j2`, `DEFN-VNIOFFSETS.j2`, and `DEFN-LOOPBACKS.j2` provide numeric/addressing context consumed by multiple FABRIC templates
+- Optional behaviors (L3OUT, multicast RP, client ports, NAC, telemetry) are each activated by dedicated DEFN structures
+
+### 4.3 Template Dependency Flow
+
+![BGP EVPN Template Relationships](DIAGRAMS/bgp-evpn-template-relationships.png)
+
+> Source: `DIAGRAMS/bgp-evpn-template-relationships.mmd`
+
+### 4.4 Per-Role Render Behavior
+
+![BGP EVPN Per-Role Render Behavior](DIAGRAMS/bgp-evpn-role-behavior.png)
+
+> Source: `DIAGRAMS/bgp-evpn-role-behavior.mmd`
+
+### 4.5 Catalyst Center Operational Lifecycle
+
+![BGP EVPN Catalyst Center Lifecycle](DIAGRAMS/bgp-evpn-catalyst-center-lifecycle.png)
+
+> Source: `DIAGRAMS/bgp-evpn-catalyst-center-lifecycle.mmd`
+
+Lifecycle phases:
+1. **Template Preparation**: Populate DEFN intent → Git → Ansible sync to CatC Template Editor
+2. **Template Binding**: Attach composite to CLI Network Profile → assign to building site
+3. **Provisioning**: CatC renders per-device CLI using `__device.hostname` → pushes to fabric nodes
+4. **Assurance**: Fabric nodes stream YANG telemetry (gRPC/MDT) → OTel collector → Splunk dashboards
+5. **Day-2 Change**: Update DEFN data → resync → re-provision
+
+---
+
+## 5. Data Model Reference
+
+### 5.1 Key Data Structures
+
+| Variable | Source | Structure |
+|----------|--------|-----------|
+| `DEFN_NODE_ROLES` | DEFN-ROLES.j2 | `{'SPINE':[], 'RR':[], 'CLIENT':[], 'BORDER':[], 'MCLUSTER':[]}` |
+| `DEFN_VRF` | DEFN-VRF.j2 | List of `{'id':'901','name':'red','mdt_default':'...','mdt_data':'...'}` |
+| `DEFN_VRF_TO_NODE` | DEFN-VRF.j2 | `{'hostname.fqdn': ['901','902']}` |
+| `DEFN_LOOP_UNDERLAY` | DEFN-LOOPBACKS.j2 | `{'hostname.fqdn': '198.19.1.x'}` |
+| `DEFN_LOOP_GRE_SRC` | DEFN-LOOPBACKS.j2 | `{'hostname.fqdn': '10.100.2.x'}` |
+| `DEFN_LOOP_GRE_PEER` | DEFN-LOOPBACKS.j2 | `{'hostname.fqdn': '10.101.x.2'}` |
+| `DEFN_LOOP_MCLUSTER` | DEFN-LOOPBACKS.j2 | `{'hostname.fqdn': {'ip':'...','asn':'...','gre_src':'...'}}` |
+| `DEFN_OVERLAY` | DEFN-OVERLAY.j2 | VLANs per VRF with SVI params |
+| `FABRIC_BGP_ASN` | DEFN-OVERLAY.j2 | Fabric ASN string (e.g., `'65001'`) |
+
+### 5.2 VNI Numbering Convention
+
+| Component | Formula | Example (VRF red, VLAN 101) |
+|-----------|---------|----------------------------|
+| L3VNI | `50 + VRF_ID` | 50 + 901 = **50901** |
+| L2VNI | `50000 + VLAN_ID` | 50000 + 101 = **50101** |
+| RD | `{loopback_ip}:{vrf_id}` | `198.19.1.3:901` |
+| RT | `{fabric_asn}:{vrf_id}` | `65001:901` |
+
+Offsets defined in `DEFN-VNIOFFSETS.j2`:
+```jinja
+{% set L2VNIOFFSET = 50000 %}
+{% set L3VNIOFFSET = 50 %}
+```
+
+### 5.3 VLAN-to-VNI Mapping
+
+| VLAN | Name | L2VNI | VRF | BUM Multicast |
+|------|------|-------|-----|---------------|
+| 101 | corp-101 | 50101 | red | 239.190.100.101 |
+| 102 | corp-102 | 50102 | red | 239.190.100.102 |
+| 201 | iot-blue-201 | 50201 | blue | 239.190.100.201 |
+| 221 | iot-green-221 | 50221 | green | 239.190.100.221 |
+| 901 | L3-VRF-CORE-901 | 50901 | red | — (transit) |
+| 902 | L3-VRF-CORE-902 | 50902 | blue | — (transit) |
+| 903 | L3-VRF-CORE-903 | 50903 | green | — (transit) |
+
+### 5.4 VRF Overlay Loopback Addressing
+
+| VRF | Loopback | Leaf-01 | Leaf-02 | Border-01 | Border-02 |
+|-----|----------|---------|---------|-----------|-----------|
+| red | Lo901 | 10.1.100.3/32 | 10.1.100.4/32 | — | — |
+| blue | Lo902 | 10.1.200.3/32 | 10.1.200.4/32 | 10.1.200.5/32 | 10.1.200.6/32 |
+| green | Lo903 | 10.1.220.3/32 | 10.1.220.4/32 | 10.1.220.5/32 | 10.1.220.6/32 |
+
+Spines do **not** receive overlay loopbacks — they function as control-plane RRs and L3OUT termination points, not edge forwarding nodes.
+
+---
+
+## 6. BGP EVPN Control Plane
+
+### 6.1 Address Families
+
+| Address Family | Purpose | Spine Behavior | Leaf/Border Behavior |
+|----------------|---------|----------------|---------------------|
+| `l2vpn evpn` | MAC/IP distribution (RT-2, RT-3) | `additional-paths send receive` | `additional-paths receive` |
+| `ipv4 mvpn` | Multicast VPN signaling (TRM) | Reflect to clients | Signal RP reachability |
+| `ipv4 vrf <name>` | Per-tenant L3 unicast | L3OUT eBGP to Core (if enabled) | `redistribute connected` |
+
+### 6.2 Convergence Optimization
+
+| Knob | Scope | Effect |
+|------|-------|--------|
+| `bgp additional-paths send receive` | Spine RRs | Advertise multiple paths for fabric-wide diversity |
+| `bgp additional-paths receive` | Leaf/Border | Store alternate paths for sub-second failover |
+| `bgp nexthop trigger delay 0` | All nodes | Immediate next-hop reachability processing |
+| `fall-over route-map NODE-LOOPBACKS` | EVPN peers | Tear down session when peer loopback unreachable |
+
+### 6.3 L3OUT BGP (Spine-to-Core)
+
+Spine nodes configured in `DEFN_L3OUT_NODES` render per-VRF eBGP sessions to the IP Core over dot1Q sub-interfaces:
+
+```
+address-family ipv4 vrf red
+ advertise l2vpn evpn
+ neighbor <CORE-IP> remote-as 65002
+```
+
+East-west protection via Null0 routes prevents cross-tenant leakage through the L3OUT path.
 
 ![Spine-to-Core Connectivity](DIAGRAMS/cisco_evpn_core_interface.png)
 
-**L3OUT Architecture**: Spines interface the IP Core redundantly over dot1Q sub-interfaces, one per VRF. Each sub-interface carries iBGP (for default VRF underlay) and eBGP (for tenant VRF routes) sessions. East-West traffic protection is enforced via static Null0 routes for non-local VRF subnets, preventing accidental routing between tenants through the L3OUT path.
-
 ---
 
-## Reference Configuration Tables
+## 7. Underlay Services
 
-### Node Loopback and Role Mapping
+### 7.1 OSPF IGP (Unicast Reachability)
 
-| Hostname | Role | ASN | Loopback0 | Anycast RP Interface | Description |
-|----------|------|-----|-----------|----------------------|-------------|
-| Spine-01 | Route Reflector | 65001 | 198.19.1.1/32 | Loopback2 = 198.19.1.100/32 | Primary spine RR + Anycast RP |
-| Spine-02 | Route Reflector | 65001 | 198.19.1.2/32 | Loopback2 = 198.19.1.100/32 | Secondary spine RR + Anycast RP |
-| Leaf-01 | BGP Client | 65001 | 198.19.1.3/32 | — | Access leaf |
-| Leaf-02 | BGP Client | 65001 | 198.19.1.4/32 | — | Access leaf |
-| Border-01 | Border Client | 65001 | 198.19.1.5/32 | — | DMZ gateway (GRE: Lo1 198.19.1.7, Lo2 10.101.1.2) |
-| Border-02 | Border Client | 65001 | 198.19.1.6/32 | — | DMZ gateway (GRE: Lo1 198.19.1.8, Lo2 10.101.2.2) |
-| dmz1 | DMZ Gateway | 65003 | 198.19.1.200/32 | — | Centralized DMZ fabric (optional, EVPN peer identity) |
-| core1 | Core Router | 65002 | — | — | Enterprise IP Core (reference) |
-| core2 | Core Router | 65002 | — | — | Enterprise IP Core (reference) |
-
-### VRF Definitions
-
-| VRF | ID | RD Pattern | L3VNI | L3VNI VLAN | Deployed On |
-|-----|----|------------|-------|------------|-------------|
-| red | 901 | 198.19.1.x:901 | 50901 | 901 | Spine + Leaf |
-| blue | 902 | 198.19.1.x:902 | 50902 | 902 | Leaf + Border + DMZ |
-| green | 903 | 198.19.1.x:903 | 50903 | 903 | Leaf + Border + DMZ |
-
-### VLAN to VNI to EVPN Mapping
-
-| VLAN | Segment Name | L2VNI | EVPN Inst | VRF | Description | BUM Multicast |
-|------|--------------|-------|-----------|-----|-------------|---------------|
-| 101 | corp-101 | 50101 | 101 | red | Corporate subnet 1 | 239.190.100.101 |
-| 102 | corp-102 | 50102 | 102 | red | Corporate subnet 2 | 239.190.100.102 |
-| 201 | iot-blue-201 | 50201 | 201 | blue | IoT blue segment | 239.190.100.201 |
-| 221 | iot-green-221 | 50221 | 221 | green | IoT green segment | 239.190.100.221 |
-| 901 | L3-VRF-CORE-901 | 50901 | — | red | Transit VLAN (L3VNI) | — |
-| 902 | L3-VRF-CORE-902 | 50902 | — | blue | Transit VLAN (L3VNI) | — |
-| 903 | L3-VRF-CORE-903 | 50903 | — | green | Transit VLAN (L3VNI) | — |
-
-### VRF Overlay Loopback Addressing (Leaf Switches)
-
-| VRF | Loopback Name | Leaf-01 IP | Leaf-02 IP | Border-01 IP | Border-02 IP |
-|-----|---------------|------------|------------|--------------|--------------|
-| red | Loopback901 | 10.1.100.3/32 | 10.1.100.4/32 | — | — |
-| blue | Loopback902 | 10.1.200.3/32 | 10.1.200.4/32 | 10.1.200.5/32 | 10.1.200.6/32 |
-| green | Loopback903 | 10.1.220.3/32 | 10.1.220.4/32 | 10.1.220.5/32 | 10.1.220.6/32 |
-
-**Note**: Spine switches do NOT receive overlay loopbacks (Loopback901-903). Spines function as control-plane route reflectors and L3OUT termination points, not edge forwarding nodes. Only Leaf and Border switches receive per-VRF overlay loopbacks for L3VNI termination.
-
----
-
-## IOS-XE CLI Configuration Architecture
-
-### CLI Dependency Hierarchy
-
-Configuration components must be provisioned in strict order to respect feature dependencies. Spines (route reflectors) focus on control plane functions while leaves (edge forwarding) deliver overlay services.
-
-![IOS-XE BGP EVPN CLI Hierarchy](DIAGRAMS/cisco_evpn_CLI_hierarchy.png)
-
-The above diagram illustrates the component taxonomy and provisioning dependency order:
-
-| Component | Role | Example CLI |
-|-----------|------|-------------|
-| VRF Definitions | Tenant isolation containers | `vrf definition red` |
-| Loopback Interfaces | Underlay/overlay addressing | `interface Loopback0`, `Loopback901` |
-| VLAN/SVI Definitions | L2VNI VLANs and L3VNI transit VLANs | `vlan 101`, `interface Vlan901` |
-| NVE Interface | VXLAN tunnel endpoint | `interface nve1` |
-| BGP EVPN Control Plane | Route reflection, EVPN peering | `router bgp 65001` |
-| L2VPN EVPN Instances | L2 service binding | `l2vpn evpn instance 101` |
-| Global L2VPN EVPN | Global EVPN activation | `l2vpn evpn` → `replication-type static` |
-
-### Template-to-Component Mapping
-
-| Template | Components Delivered |
-|----------|----------------------|
-| `FABRIC-VRF.j2` | VRF definitions with RD/RT |
-| `FABRIC-LOOPBACKS.j2` | Loopback0 and per-VRF overlay loopbacks |
-| `FABRIC-L3OUT.j2` | Spine-to-Core sub-interfaces (external only) |
-| `FABRIC-NVE.j2` | L3VNI VLANs, SVIs, NVE member VNIs |
-| `FABRIC-MCAST.j2` | Multicast RP, MSDP, VRF MDT |
-| `FABRIC-EVPN.j2` | BGP router, neighbors, address-families |
-| `FABRIC-OVERLAY.j2` | L2VNI VLANs, L2VPN instances, overlay SVIs |
-
-### Provisioning Sequence (Strict Dependency Order)
-
-```
-Step 1: VRF DEFINITION
-├─ Creates tenant isolation containers
-└─ Required before: Any feature referencing VRF
-
-Step 2: LOOPBACK INTERFACES
-├─ Loopback0: Underlay addressing, BGP router-ID, OSPF router-ID, NVE source
-├─ Loopback901-903: Per-VRF overlay addressing
-└─ Required before: NVE, BGP neighbors
-
-Step 3: VLAN + L3VNI SVI
-├─ L3VNI VLANs (901-903): Transit space for inter-subnet routing
-├─ L2VNI VLANs (101, 201...): Tenant segments
-└─ Required before: NVE membership, EVPN instances
-
-Step 4: NVE INTERFACE
-├─ source-interface Loopback0
-├─ member vni <L2VNI> mcast-group <group>
-├─ member vni <L3VNI> vrf <name>
-└─ Required before: L2VPN instance activation
-
-Step 5: BGP EVPN CONTROL PLANE
-├─ iBGP to Spine RRs via Loopback0
-├─ address-family l2vpn evpn: MAC/IP distribution
-├─ address-family ipv4 mvpn: Multicast signaling
-└─ Required before: Overlay traffic forwarding
-
-Step 6: L2VPN EVPN INSTANCES
-├─ Binds VLAN to EVPN instance with encapsulation vxlan
-├─ Defines replication-type (static = multicast)
-└─ Final step: Activates L2 extension across fabric
-
-Step 7: GLOBAL L2VPN EVPN
-├─ l2vpn evpn block with replication-type, router-id, default-gateway
-└─ Activates EVPN subsystem fabric-wide
-```
-
-### Global L2VPN EVPN Configuration (Leaf Switches Only)
-
-The global `l2vpn evpn` block is **required on Leaf switches** to activate Layer 2 overlay services:
-
-```
-l2vpn evpn
- replication-type static        ← Use multicast for BUM replication
- router-id Loopback0            ← EVPN router-ID source
- default-gateway advertise      ← Enable anycast gateway advertisements
-```
-
-| Command | Purpose |
-|---------|---------|
-| `l2vpn evpn` | Activates EVPN subsystem globally |
-| `replication-type static` | BUM traffic uses underlay multicast (alternative: ingress for headend replication) |
-| `router-id Loopback0` | Specifies source for EVPN route-id origination |
-| `default-gateway advertise` | Advertises anycast gateway MAC in Type-2 routes; enables L2/L3 seamless handoff |
-
-> **Note**: Spine switches (route reflectors) do NOT configure this block—they don't participate in L2 forwarding.
-
----
-
-## VNI and VLAN Numbering Convention
-
-A consistent numbering scheme across all tenants (red, blue, green) ensures predictable configuration and simplified troubleshooting.
-
-### Numbering Pattern
-
-| Component | Pattern | Meaning | Variable | Example (red VRF 901, VLAN 101) |
-|-----------|---------|---------|----------|--------------------------------|
-| **L3VNI** | `50 + VRF_ID` | Prefix `50` + VRF ID | `VRF_ID` = 901/902/903 | 50901 (red) |
-| **L2VNI** | `50000 + VLAN_ID` | Offset-based from VLAN ID | `VLAN_ID` = 101/102/201/221 | 50101 (VLAN 101) |
-| **EVPN Instance** | `yyy` | Matches segment | `yyy` = Segment/VLAN ID | 101 |
-| **L3VNI VLAN** | `xxx` | Matches VRF ID | `xxx` = VRF ID | 901 |
-| **L3VNI SVI** | `Vlanxxx` | SVI for VRF transit | `xxx` = VRF ID | Vlan901 |
-| **L2VNI SVI (Anycast GW)** | `Vlanyyy` | SVI for tenant segment | `yyy` = Segment/VLAN ID | Vlan101 |
-
-### Per-Tenant Examples
-
-| Tenant | VRF ID | L3VNI | L3VNI VLAN | Segments | L2VNI IDs | EVPN Instances | L2 SVI List |
-|--------|--------|-------|-----------|----------|-----------|----------------|------------|
-| **red** | 901 | 50901 | 901 | 101, 102 | 50101, 50102 | 101, 102 | Vlan101, Vlan102 |
-| **blue** | 902 | 50902 | 902 | 201 | 50201 | 201 | Vlan201 |
-| **green** | 903 | 50903 | 903 | 221 | 50221 | 221 | Vlan221 |
-
-### CLI Configuration Examples
-
-**L3VNI Configuration** (Transit):
-```
-vlan 901
- name L3-CORE-red
-!
-interface Vlan901
- vrf forwarding red
- ip unnumbered Loopback0
-!
-interface nve1
- member vni 50901 vrf red        ← L3VNI = 50 + VRF ID (901)
-```
-
-**L2VNI Configuration** (Tenant Segment):
-```
-vlan 101
- name DAG-corp-101
-!
-l2vpn evpn instance 101 vlan-based      ← Instance = Segment ID
- encapsulation vxlan
-!
-interface nve1
- member vni 50101 mcast-group 239.190.100.101  ← L2VNI = 50000 + VLAN ID
-!
-interface Vlan101
- vrf forwarding red
- ip address 10.1.101.1 255.255.255.0    ← Anycast Gateway SVI
-```
-
-**VNI Offset Definitions** (from `DEFN-VNIOFFSETS.j2`):
-```jinja
-{% set L2VNIOFFSET = 50000 %}    {# L2VNI = 50000 + VLAN ID #}
-{% set L3VNIOFFSET = 50 %}       {# L3VNI = 50 + VRF ID #}
-```
-
----
-
-## BGP EVPN Control Plane Architecture
-
-### Address Families and Their Roles
-
-#### L2VPN EVPN (MAC/IP Distribution)
-
-The L2VPN EVPN address family enables BGP to distribute MAC addresses and IP reachability information across the fabric:
-
-- **Route Type 2** (MAC/IP): Distributed by leaf switches to advertise locally-learned unicast endpoints
-- **Route Type 3** (Inclusive Multicast Ethernet Tag): Signals multicast-capable egress points for BUM replication
-- **Route Reflector Role**: Spine nodes with `bgp additional-paths send receive` advertise multiple paths to maximize diversity; leaf clients use `receive` only to store multiple paths locally
-
-```
-address-family l2vpn evpn
- bgp additional-paths receive
- bgp nexthop trigger delay 0
- neighbor <RR-IP> activate         ← Advertise/receive MAC/IP routes
-```
-
-**On Route Reflector Spines**, extend to include path propagation:
-```
-address-family l2vpn evpn
- bgp additional-paths select all
- bgp additional-paths send receive  ← Reflect multiple paths to all clients
- bgp nexthop trigger delay 0
-```
-
-#### MPVN (Multicast VPN Signaling)
-
-MPVN enables BGP to carry multicast routing information for VRF-aware multicast across the overlay:
-
-```
-address-family ipv4 mvpn
- bgp nexthop trigger delay 0
- neighbor <RR-IP> activate         ← Signal multicast reachability
-```
-
-#### IPv4 VRF (Per-Tenant L3 Routes)
-
-Each VRF has its own iBGP IPv4 address-family for inter-subnet routing within the tenant domain:
-
-```
-address-family ipv4 vrf red
- maximum-paths ebgp 2
- redistribute connected              ← Include locally-attached subnets
- neighbor <RR-IP> activate
-```
-
-**For L3OUT (Spine-to-Core)**, replace `neighbor` with external eBGP peers:
-```
-address-family ipv4 vrf red
- advertise l2vpn evpn                ← Export VRF routes to EVPN
- neighbor <CORE-IP> remote-as 65002  ← eBGP to enterprise core
-```
-
-### BGP Additional-Paths and Convergence Optimization
-
-**`bgp additional-paths receive`** (All Leaf/Border Clients):
-- Allows storing multiple paths for the same destination
-- Enables fast failover when primary path fails
-- Does not advertise multiple paths to neighbors (single best path only)
-
-**`bgp additional-paths send receive`** (Spine Route Reflectors Only):
-- Stores multiple paths locally
-- **Advertises multiple paths** to route reflector clients
-- Enables fabric-wide path diversity
-- Critical for multi-homing and load balancing in the overlay
-
-**`bgp nexthop trigger delay 0`** (All Devices):
-- Immediately processes next-hop reachability changes
-- Sub-second convergence vs. standard BGP multi-second delays
-- Essential in campus fabrics where application tolerances are tight
-
----
-
-## Building Blocks: Underlay and Overlay Services
-
-### Underlay Routing - Unicast (OSPF IGP)
-
-OSPF provides loopback reachability across all fabric nodes. Loopback0 serves as the BGP router-ID, NVE tunnel source, and OSPF router-ID:
+OSPF area 0 provides loopback reachability across all fabric nodes. Loopback0 serves as BGP router-ID, NVE source, and OSPF router-ID:
 
 ```
 interface Loopback0
- description UNDERLAY-NVE-INTERFACE
  ip address 198.19.1.X 255.255.255.255
  ip pim sparse-mode
  ip ospf 1 area 0
@@ -903,277 +340,254 @@ router ospf 1
  router-id 198.19.1.X
 ```
 
-Fabric uplink interfaces (toward other fabric nodes) are also enabled with OSPF for full reachability.
+### 7.2 PIM + MSDP (Multicast for BUM Replication)
 
-### Underlay Routing - Multicast (PIM + MSDP)
+| Component | Value | Function |
+|-----------|-------|----------|
+| Fabric Anycast RP | 198.19.1.100 | Shared on Lo2 of both Spines |
+| MSDP peering | Spine-01 ↔ Spine-02 via Lo0 | RP redundancy and source sync |
+| PIM mode | Sparse | All fabric interfaces |
 
-BGP EVPN requires underlay multicast for BUM (Broadcast, Unknown Unicast, Multicast) traffic replication.
-
-In the `Config-Backup-032626` snapshot, devices render a global RP model:
-
-| Mode | RP | Scope |
-|------|----|-------|
-| Fabric BUM RP | 198.19.1.100 | Global PIM RP |
-
-**Rendered Configuration Pattern**:
 ```
 ip pim spt-threshold 0
 ip pim rp-address 198.19.1.100
-```
-
-**Spine Anycast RP with MSDP Peering** (Redundancy):
-Both spines share `198.19.1.100` on `Loopback2`; MSDP synchronizes multicast source information:
-```
 ip msdp peer 198.19.1.X connect-source Loopback0 remote-as 65001
-ip msdp originator-id Loopback0
 ```
 
 ---
 
-## Verification and Troubleshooting
+## 8. Deployment Operations
 
-### Post-Deployment Verification
+### 8.1 GitOps Workflow (Ansible)
 
-After templates are provisioned, verify core fabric health:
+The vendored pipeline at [`CICD Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/) performs:
 
-**OSPF Adjacencies**:
-```
-device#show ip ospf neighbor
-Neighbor ID     Pri   State           Dead Time   Address         Interface
-198.19.1.2       0   FULL/  -        00:00:31    198.19.2.17    Gi1/0/1
-```
+1. Fetch `.j2` templates from Git repository
+2. Enrich each template with Git commit metadata (version description + diff header)
+3. Read `BGP-EVPN-BUILD.yml` to determine composite ordering
+4. Sync to Catalyst Center Template Project via `cisco.dnac.template_workflow_manager`
+5. Create/update `BGP-EVPN-BUILD` composite and bind to CLI Network Profile
 
-**BGP EVPN Summary**:
-```
-device#show bgp summary
-Neighbor        V   AS  MsgRcvd MsgSent  TblVer  InQ OutQ Up/Down   State
-198.19.1.1      4 65001   50     48      100     0   0  00:45:12   Established
-```
+The playbook supports **multiple subfolders** (`git_repo_subfolders` in `inventory.yml`), each synced to its own CatC project. See the [pipeline README](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/README.md) for configuration details.
 
-**VXLAN NVE Status**:
-```
-device#show nve interface
-Interface: nve1
-  VNI number      : 50101, 50102, 50201, 50221, 50901, 50902, 50903
-  Multicast group : 239.190.100.101, 239.190.100.102, 239.190.100.201, 239.190.100.221
-```
+### 8.2 Provisioning Workflow
 
-**L2VNI Verification**:
-```
-device#show l2vpn evpn summary
-EVPN Instance: 101
-  Encapsulation: VXLAN
-  Route Distinguisher: 198.19.1.3:101
-```
+| Step | Action | Where |
+|------|--------|-------|
+| 1 | Verify site hierarchy exists | CatC: Design > Network Hierarchy |
+| 2 | Verify devices discovered + assigned to site | CatC: Provision > Inventory |
+| 3 | Verify underlay OSPF operational | Device CLI: `show ip ospf neighbor` |
+| 4 | Import/sync templates | Ansible `ansible-git-catc.yml` |
+| 5 | Attach composite to CLI Network Profile | CatC: Design > Network Profiles |
+| 6 | Assign profile to building site | CatC: Design > Network Profiles |
+| 7 | Provision devices | CatC: Provision > Inventory (or Ansible playbook) |
 
-### Common Troubleshooting Scenarios
+### 8.3 Deployment Phases
 
-| Symptom | Likely Cause | Resolution |
-|---------|--------------|-----------|
-| BGP EVPN neighbors stuck in "Active" | Hostname mismatch between template and inventory | Verify FQDNs match exactly: `show inv \| include NAME` |
-| VXLAN tunnel down | Underlay loopback reachability issue | Verify: `ping 198.19.1.X`, confirm OSPF adjacencies |
-| L2VPN instances not activating | L3VNI VLAN/SVI missing | Verify FABRIC-NVE.j2 output includes `interface Vlan901` |
-| BUM traffic not replicating | Multicast RP unreachable | Confirm: `ping 198.19.1.100`, verify `show ip msdp` |
-| MAC learning incomplete | BGP EVPN address-family not active | Check: `show bgp l2vpn evpn summary` |
+**Phase 1 — Foundation** (Steps 1-2): VRF isolation + loopback addressing
+**Phase 2 — Transport** (Steps 3-5): GRE tunnels, L3OUT, NVE, Multicast
+**Phase 3 — Control Plane** (Steps 6-7): BGP EVPN peering, L2VNI overlay
+**Phase 4 — Services** (Steps 8-11): Client ports, NAC, telemetry
 
 ---
 
-## Deployment Sequence
+## 9. Splunk Assurance Integration
 
-This execution order mirrors `Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml` and should be used for rollout validation and troubleshooting.
+### 9.1 Telemetry Pipeline
 
-### Phase 1: Preparation
-1. Validate all DEFN-*.j2 files contain accurate device FQDNs, IPs, and VRF assignments
-2. Confirm underlay (OSPF) is operational with full loopback reachability
-3. Test template rendering in Catalyst Center lab environment
+`FABRIC-TELEMETRY-SPLUNK.j2` provisions IOS-XE Model-Driven Telemetry (MDT) subscriptions on each fabric node:
 
-### Phase 2: Foundation (Steps 1-2)
-1. Deploy `FABRIC-VRF.j2` → Creates VRF isolation (red, blue, green)
-2. Deploy `FABRIC-LOOPBACKS.j2` → Establishes overlay loopback addressing
+```
+Fabric nodes (MDT/YANG, gRPC dial-out) → OpenTelemetry collector → splunk_hec → index=evpn_assurance → campus_evpn_assurance dashboards
+```
 
-### Phase 3: Transport (Steps 3-5)
-3. Deploy `FABRIC-L3OUT.j2` → L3OUT sub-interfaces on Spines (if L3OUT enabled)
-4. Deploy `FABRIC-NVE.j2` → VXLAN NVE tunnel endpoint and L3VNI infrastructure
-5. Deploy `FABRIC-MCAST.j2` → Multicast RP, MSDP, VRF MDT configuration
+### 9.2 Components
 
-### Phase 4: Control Plane & Services (Steps 6-9)
-6. Deploy `FABRIC-EVPN.j2` → BGP EVPN peering, address-families
-7. Deploy `FABRIC-OVERLAY.j2` → L2VNI overlay services
-8. Deploy `FABRIC-CLIENT-PORTS.j2` → Client-facing interface configuration
-9. Deploy `FABRIC-NAC.j2` → Network Access Control policies
-10. Deploy `FABRIC-TELEMETRY-SPLUNK.j2` → MDT telemetry subscriptions and EVPN statistics enablement for Splunk/OpenTelemetry collection
+| Component | Purpose |
+|-----------|---------|
+| `campus_evpn_assurance/` | Packaged Splunk app (executive, Spine, Leaf, Border, Alerts dashboards) |
+| `otel-collector/` | OpenTelemetry config: YANG gRPC → `splunk_hec` |
+| `packaging/` | Build scripts for `.spl` package and customer handoff bundle |
+| `SETUP_GUIDE.md` | Install workflow for Splunk app + patched `otelcol-yangfix` |
+| `Model Maps/` | YANG → Splunk metric model mappings |
+| `mcp-ssh-server/` | MCP stdio server for live device CLI verification during triage |
 
-### Post-Deployment Validation
-- Verify BGP EVPN sessions (Status = **Established**)
-- Confirm NVE tunnel status and VNI membership
-- Test L2 extension: ping across segment VLANs
-- Monitor MAC learning via `show mac address-table dynamic`
+The assurance suite shares the same fabric model (roles, tenants, VNIs, loopbacks) as the provisioning templates, so dashboard logic maps directly onto what was provisioned.
+
+See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md) and [`SETUP_GUIDE.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/SETUP_GUIDE.md) for details.
 
 ---
 
-## Template-to-Config Mapping
+## 10. IOS-XE Configuration Architecture
 
-| Template | Spine | Leaf | Border | Function |
-|----------|-------|------|--------|----------|
-| FABRIC-VRF | ✓ | ✓ | ✓ | VRF + RD/RT |
-| FABRIC-LOOPBACKS | ✓ | ✓ | ✓ | Underlay + overlay loopbacks |
-| FABRIC-L3OUT | ✓ | — | — | L3OUT sub-interfaces + Null0 routes |
-| FABRIC-NVE | ✓ | ✓ | ✓ | NVE + L3VNI VLAN/SVI |
-| FABRIC-MCAST | ✓ | ✓ | ✓ | Multicast RP, MSDP, VRF MDT |
-| FABRIC-EVPN | ✓ | ✓ | ✓ | BGP EVPN AF (including L3OUT BGP) |
-| FABRIC-OVERLAY | — | ✓ | ✓ | L2VNI + L2VPN instances |
-| FABRIC-CLIENT-PORTS | — | ✓ | ✓ | Client-facing interface/port provisioning |
-| FABRIC-NAC | — | ✓ | — | Access control policies |
+### 10.1 CLI Dependency Hierarchy
 
----
+![IOS-XE BGP EVPN CLI Hierarchy](DIAGRAMS/cisco_evpn_CLI_hierarchy.png)
 
-## Advanced Topics and Considerations
+Configuration must be applied in strict dependency order:
 
-### NVE and L3VNI on Spine Switches
+```
+VRF DEFINITION
+ └─ LOOPBACK INTERFACES (Lo0 underlay, Lo901+ overlay)
+     └─ VLAN + L3VNI SVI (transit VLANs 901-903)
+         └─ NVE INTERFACE (source Lo0, member VNIs)
+             └─ BGP EVPN CONTROL PLANE (iBGP to RRs, EVPN/MVPN AFs)
+                 └─ L2VPN EVPN INSTANCES (per-VLAN EVPN binding)
+                     └─ GLOBAL L2VPN EVPN (replication-type, default-gateway advertise)
+```
 
-Spine switches receive L3VNI VLAN and NVE member configurations for VRFs listed in their `DEFN_VRF_TO_NODE` mapping. **This is intentional**—Spines terminate L3VNI traffic for route leaking to the upstream IP Core via L3OUT sub-interfaces. The L3VNI VLAN provides the transit space for inter-subnet routing. This behavior is **not a bug** and is required for Spine-to-Core L3VPN connectivity.
+### 10.2 Template-to-Component Mapping
 
-### Device Role Assignments
+| Template | CLI Deliverables |
+|----------|-----------------|
+| `FABRIC-VRF.j2` | `vrf definition`, RD/RT |
+| `FABRIC-LOOPBACKS.j2` | `interface Loopback0/901-903`, PIM, OSPF |
+| `FABRIC-BORDER-DMZ-TUNNELS.j2` | `interface Tunnel10/11`, `router ospf 100` |
+| `FABRIC-L3OUT.j2` | Dot1Q sub-interfaces, Null0 routes |
+| `FABRIC-NVE.j2` | `interface nve1`, L3VNI VLANs/SVIs, `vlan configuration` |
+| `FABRIC-MCAST.j2` | `ip pim`, `ip msdp`, VRF MDT |
+| `FABRIC-EVPN.j2` | `router bgp`, peer templates, all AFs |
+| `FABRIC-OVERLAY.j2` | L2VNI VLANs, `l2vpn evpn instance`, anycast GW SVIs |
+| `FABRIC-CLIENT-PORTS.j2` | Access port config, trunk/access modes |
+| `FABRIC-NAC.j2` | 802.1X/MAB policies |
+| `FABRIC-TELEMETRY-SPLUNK.j2` | `telemetry ietf subscription`, `receiver` |
 
-VRF routing logic is determined  by device role, not topology position:
-- **RR (Route Reflector)**: Always spines; configure with `bgp additional-paths send receive`
-- **CLIENT**: Leaf and Border switches; configure with `bgp additional-paths receive` only
-- **BORDER**: Optional; controls multi-cluster eBGP features; when list is empty, multi-cluster config skipped
+### 10.3 Global L2VPN EVPN (Leaf Only)
 
-### Multi-Cluster and Border Leaf
+```
+l2vpn evpn
+ replication-type static
+ router-id Loopback0
+ default-gateway advertise
+```
 
-Border Leaf switches peer with external EVPN fabrics (e.g., DMZ fabric) via eBGP. When `DEFN_NODE_ROLES['BORDER']` is empty, all Border-specific configuration (multi-cluster eBGP neighbors, border-specific route-maps) is automatically skipped during rendering.
-
-### L3OUT and Optional Components
-
-If L3OUT is not required (single-site fabric with no IP Core handoff):
-- Set `DEFN_L3OUT_NODES = []` in DEFN-L3OUT.j2
-- FABRIC-L3OUT.j2 renders zero output
-- FABRIC-EVPN.j2 skips the `address-family ipv4 vrf` (L3OUT BGP block)
-
-
----
-
-## Template Deep Dive: FABRIC-*.j2 Walkthrough
-
-Each FABRIC template contributes specific building blocks to the fabric architecture:
-
-### FABRIC-VRF.j2 — Tenant Isolation Foundation
-- Creates isolated VRF containers for each tenant (red, blue, green)
-- Assigns unique Route Distinguisher (RD) per device per VRF: `loopback_ip:vrf_id`
-- Configures Route Target (RT) import/export: `asn:vrf_id`
-- Applied to ALL fabric nodes (spines, leaves, borders)
-
-### FABRIC-LOOPBACKS.j2 — Addressing Infrastructure
-- **Loopback0 (Underlay)**: BGP router-ID, NVE source, OSPF router-ID on all nodes
-- **Loopback 901-903 (Overlay)**: Per-VRF loopbacks on leaves/borders only (NOT spines)
-- Overlay addressing: `DEFN_LOOP_OVERLAY[vrf] + last_octet(loopback0)`
-- Enables PIM sparse-mode for multicast participation
-
-### FABRIC-L3OUT.j2 — External Connectivity (Optional)
-- Configures dot1Q sub-interfaces on Spines for Spine-to-Core VRF routing
-- Auto-skipped when `DEFN_L3OUT_NODES = []`
-- Installs east-west Null0 routes to prevent cross-tenant leakage through L3OUT
-- **BGP L3OUT peering**: Handled separately in FABRIC-EVPN.j2
-
-### FABRIC-NVE.j2 — VXLAN Overlay Plumbing
-- L3VNI VLANs (901-903) + unnumbered SVIs for VRF transit
-- L2VNI VLANs (101, 102, 201, 221) for tenant segments
-- NVE interface: source Loopback0, member VNI assignments, multicast groups
-- Spines receive L3VNI config for L3OUT VRF route leaking
-
-### FABRIC-MCAST.j2 — Multicast Services
-- Global IP multicast routing + PIM sparse-mode
-- Anycast RP on Loopback2 of both Spine-01 and Spine-02 (198.19.1.100) for fabric BUM scope
-- MSDP peering between spines for RP redundancy
-- Per-VRF RP handling defined in DEFN-MCAST and rendered by platform support
-
-### FABRIC-EVPN.j2 — BGP EVPN Control Plane
-- Role-based BGP configuration: Spines as RR (send/receive paths), Leaves/Borders as clients (receive only)
-- `address-family l2vpn evpn`: MAC/IP route distribution
-- `address-family ipv4 mvpn`: Multicast signaling
-- `address-family ipv4 vrf`: Per-tenant unicast routing (conditional L3OUT BGP when enabled)
-
-### FABRIC-OVERLAY.j2 — L2 Segment Services
-- L2VPN EVPN instances (one per segment VLAN)
-- Anycast gateway SVIs with DHCP relay per tenant
-- BGP EVPN route advertisement per VRF
-- Applied to Leaves/Borders only (NOT spines)
-
-### FABRIC-NAC.j2 — Access Control and Authentication
-- 802.1X and MAB policy-maps for device classification
-- Dynamic VLAN assignment and micro-segmentation
-- Applied to Leaves only (access ports)
+Spines do not configure this block — they do not participate in L2 forwarding.
 
 ---
 
-## Appendix
+## 11. FABRIC Template Detail
 
-### Appendix A: Catalyst Center Jinja2 Caveats
+### FABRIC-VRF.j2
+Creates VRF containers with per-device RD (`loopback_ip:vrf_id`) and fabric-wide RT (`asn:vrf_id`). Applied to all nodes listed in `DEFN_VRF_TO_NODE`.
 
-Catalyst Center uses a restricted Jinja2 engine with behavior differences from standard Jinja2. Use this appendix for parser-level troubleshooting and template-authoring caveats.
+### FABRIC-LOOPBACKS.j2
+- **Loopback0**: Underlay identity (BGP RID, NVE source, OSPF RID)
+- **Loopback901-903**: Per-VRF overlay loopbacks (leaves/borders only)
+- **Loopback1/2** (borders): GRE source and EVPN overlay identity
+- Overlay formula: `DEFN_LOOP_OVERLAY[vrf] + last_octet(Lo0)`
 
-#### Unsupported Constructs and Workarounds
+### FABRIC-BORDER-DMZ-TUNNELS.j2
+GRE tunnels sourced from Lo1 with OSPF 100 underlay. Rendered only on `DEFN_NODE_ROLES['BORDER']` nodes when `DEFN_TUNNELS` is defined.
 
-| Unsupported | Typical Behavior | Workaround | Status |
-|-------------|------------------|------------|--------|
-| `not in` operator | Key check may fail | Use `is not defined`: `{% if dict[key] is not defined %}` | Verified |
-| `.keys()` method | Empty/undefined on included dicts | Iterate companion list | Verified |
-| Two-variable loop: `{% for k, v in dict.items() %}` | Lookup can resolve empty | Iterate companion list; then use `dict[k]` | Verified |
-| Bare dict iteration in included scope | `dict[key]` can resolve empty | Iterate companion list instead of dict | Critical |
-| `.split('.')` | Dot treated as regex wildcard | Use `split('\\.')` | Verified |
-| Deep nested expressions | Undefined-variable false positives | Break into simpler steps | Case-by-case |
+### FABRIC-L3OUT.j2
+Dot1Q sub-interfaces on Spines for per-VRF routing to the IP Core. East-west Null0 routes prevent cross-tenant leakage. Auto-skipped when `DEFN_L3OUT_NODES = []`.
 
-#### Dict Iteration in Included-Scope Files (Critical Workaround)
+### FABRIC-NVE.j2
+L3VNI VLANs (transit), L2VNI VLANs (segment), NVE member VNI assignments with multicast groups. Spines receive L3VNI config for route leaking.
 
-Any dict defined in an included `DEFN-*.j2` file that you need to iterate must have a companion flat list.
+### FABRIC-MCAST.j2
+Global PIM sparse-mode, Anycast RP on Lo2, MSDP inter-spine peering, per-VRF MDT configuration.
 
-Define both list and dict:
+### FABRIC-EVPN.j2
+BGP router config with role-based peer templates. RRs: `send receive` + `route-reflector-client`. Clients: `receive` only. Includes L3OUT eBGP (conditional) and DMZ eBGP (conditional on `BORDER` + `MCLUSTER` roles).
+
+### FABRIC-OVERLAY.j2
+L2VPN EVPN instances per segment VLAN, anycast gateway SVIs with DHCP relay. Leaves/Borders only.
+
+### FABRIC-NAC.j2
+802.1X/MAB policy-maps for device classification and dynamic VLAN assignment. Leaves only.
+
+### FABRIC-TELEMETRY-SPLUNK.j2
+IOS-XE MDT subscriptions (gRPC dial-out) for EVPN, NVE, and interface YANG models. Rendered on nodes in `DEFN_TELEMETRY_SPLUNK_ROLES`.
+
+---
+
+## 12. Verification and Troubleshooting
+
+### 12.1 Post-Deployment Checks
+
+```
+show ip ospf neighbor                    ! OSPF adjacencies (FULL)
+show bgp l2vpn evpn summary             ! EVPN peers (Established)
+show nve interface                       ! NVE tunnel status + VNI list
+show l2vpn evpn summary                  ! L2VPN instance state
+show vrf                                 ! VRF presence and RD
+show ip route vrf red                    ! Per-VRF routing table
+show mac address-table dynamic           ! MAC learning across fabric
+```
+
+### 12.2 Common Failure Modes
+
+| Symptom | Root Cause | Resolution |
+|---------|-----------|-----------|
+| BGP EVPN peer stuck in Active | FQDN mismatch between DEFN and CatC inventory | Verify hostnames: `show inventory \| include NAME` |
+| NVE tunnel down | Loopback0 unreachable across underlay | Verify OSPF: `ping <peer-Lo0>`, `show ip ospf neighbor` |
+| L2VPN instances not activating | L3VNI VLAN/SVI missing | Verify FABRIC-NVE output includes `interface Vlan901` |
+| BUM replication failure | RP unreachable or MSDP down | `ping 198.19.1.100`, `show ip msdp peer` |
+| Border-DMZ EVPN down | GRE tunnel INIT / OSPF 100 not FULL | Check tunnel state, verify no Lo1 IP conflict with core |
+| Template renders empty | Device not in `DEFN_VRF_TO_NODE` | Add FQDN to node mapping in `DEFN-VRF.j2` |
+
+---
+
+## 13. Appendix: Catalyst Center Jinja2 Engine Caveats
+
+### 13.1 Unsupported Constructs
+
+| Unsupported | Workaround |
+|-------------|------------|
+| `not in` operator | `{% if dict[key] is not defined %}` |
+| `.keys()` method | Iterate companion list |
+| `{% for k, v in dict.items() %}` | Iterate companion list, then `dict[k]` |
+| `.split('.')` | `.split('\\.')` (CatC treats `.` as regex wildcard) |
+| Complex nested expressions | Break into simpler steps |
+
+### 13.2 Dict Iteration in Included Scope (Critical)
+
+Any dict defined in an included `DEFN-*.j2` file must have a **companion flat list** for iteration. Dict-key iteration is non-deterministic in CatC's included-scope engine — the loop variable may resolve to the value object instead of the key string.
+
+**Pattern**:
 ```jinja
-{# Companion list — iterate this in FABRIC templates #}
-{% set DEFN_ALL_NODES = [
-    'spine01.example.com',
-    'leaf01.example.com',
-    'border01.example.com'
-] %}
+{# DEFN file: define both #}
+{% set DEFN_ALL_NODES = ['spine01.fqdn', 'leaf01.fqdn'] %}
+{% set DEFN_LOOP_UNDERLAY = {'spine01.fqdn': '198.19.1.1', 'leaf01.fqdn': '198.19.1.3'} %}
 
-{# Dict — lookup only; avoid direct dict iteration in included scope #}
-{% set DEFN_LOOP_UNDERLAY = {
-  'spine01.example.com': '198.19.1.1',
-  'leaf01.example.com':  '198.19.1.3',
-  'border01.example.com': '198.19.1.5'
-} %}
-```
-
-Use list iteration in FABRIC templates:
-```jinja
-{# Correct #}
+{# FABRIC file: iterate the list, lookup from the dict #}
 {% for node in DEFN_ALL_NODES %}
-ip prefix-list LOOPBACKS seq {{ loop.index }} permit {{ DEFN_LOOP_UNDERLAY[node] }}/32
-{% endfor %}
-
-{# Wrong #}
-{% for node in DEFN_LOOP_UNDERLAY %}
-ip prefix-list LOOPBACKS seq {{ loop.index }} permit {{ DEFN_LOOP_UNDERLAY[node] }}/32
+ip prefix-list LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
 ```
 
-#### Existing Companion Lists in This Project
+**Existing companion lists**:
 
-| Companion List | Dict | Usage |
-|---|---|---|
+| List | Dict | Usage |
+|------|------|-------|
 | `DEFN_ALL_NODES` | `DEFN_LOOP_UNDERLAY` | Fabric node loopback IPs |
-| `DEFN_MCLUSTER_NODES` | `DEFN_LOOP_MCLUSTER` | Remote multi-cluster peer IPs and ASNs |
+| `DEFN_NODE_ROLES['MCLUSTER']` | `DEFN_LOOP_MCLUSTER` | Remote multi-cluster peers |
 
-When adding or removing entries, update both the dict and its companion list.
+### 13.3 `.split()` Escaping
 
-#### `.split()` Escaping
-
-CatC treats `.` as a wildcard in split expressions. Use escaped dot for IP parsing:
 ```jinja
-{# Correct #}
 {% set last_octet = DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME].split('\\.')[3] %}
-
-{# Wrong #}
-{% set last_octet = DEFN_LOOP_UNDERLAY[DEVICE_HOSTNAME].split('.')[3] %}
 ```
+
+---
+
+## 14. Adding New Fabric Elements
+
+### New Device
+1. `DEFN-ROLES.j2` — Add FQDN to appropriate role lists
+2. `DEFN-LOOPBACKS.j2` — Add to `DEFN_LOOP_UNDERLAY` dict + `DEFN_ALL_NODES` list (+ GRE/MCLUSTER if border)
+3. `DEFN-VRF.j2` — Add VRF ID list to `DEFN_VRF_TO_NODE`
+
+### New VRF
+1. `DEFN-VRF.j2` — Add VRF object to `DEFN_VRF` list + add node mappings to `DEFN_VRF_TO_NODE`
+2. `DEFN-OVERLAY.j2` — Add VLAN definitions under the new VRF
+
+### New VLAN
+Add entry to `DEFN_OVERLAY` under the correct VRF:
+```jinja
+'102': {'name':'corp-102', 'ipaddr':'10.1.12.1 255.255.255.0', 'mac':'0000.0901.0102',
+        'dhcp_helper':'198.18.5.253', 'bum_addr':'239.190.100.102', 'network':'10.1.12.0 255.255.255.0'}
+```
+
+---

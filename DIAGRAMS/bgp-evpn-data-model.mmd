@@ -17,6 +17,7 @@ flowchart TB
     nac["DEFN-NAC.j2"]:::defn
     vni["DEFN-VNIOFFSETS.j2"]:::defn
     tunnels["DEFN-BORDER-DMZ-TUNNELS.j2"]:::defn
+    telemetryDefn["DEFN-TELEMETRY-SPLUNK.j2"]:::defn
   end
 
   roles --> rolesKey["Key structures\nDEFN_NODE_ROLES['SPINE'|'RR'|'CLIENT'|'BORDER'|'MCLUSTER']"]:::key
@@ -29,6 +30,7 @@ flowchart TB
   nac --> nacKey["Key structures\nDEFN_NAC_IOT"]:::key
   vni --> vniKey["Key structures\nL2VNIOFFSET\nL3VNIOFFSET"]:::key
   tunnels --> tunnelsKey["Key structures\nDEFN_TUNNELS"]:::key
+  telemetryDefn --> telemetryKey["Key structures\nDEFN_TELEMETRY_SPLUNK_RECEIVER_IP\nDEFN_TELEMETRY_SPLUNK_RECEIVER_PORT\nDEFN_TELEMETRY_SPLUNK_ROLES\nDEFN_TELEMETRY_SPLUNK"]:::key
 
   vrfKey --> vrfFunc
   subgraph logicLayer["Reusable Jinja Logic"]
@@ -50,6 +52,7 @@ flowchart TB
     fabric7["FABRIC-OVERLAY\nL2VNI VLANs, EVPN instances, SVIs"]:::fabric
     fabric8["FABRIC-CLIENT-PORTS\nLeaf interface config"]:::fabric
     fabric9["FABRIC-NAC\nAAA and IBNS policies"]:::fabric
+    fabric10["FABRIC-TELEMETRY-SPLUNK\nIOS-XE MDT subscriptions for Splunk/OTel"]:::fabric
   end
 
   vrfFunc --> fabric1
@@ -72,6 +75,7 @@ flowchart TB
   rolesKey --> fabric4
   loopKey --> fabric4
   vniKey --> fabric4
+  telemetryKey --> fabric4
 
   vrfFunc --> fabric5
   rolesKey --> fabric5
@@ -98,6 +102,9 @@ flowchart TB
   rolesKey --> fabric9
   nacKey --> fabric9
 
+  telemetryKey --> fabric10
+  rolesKey --> fabric10
+
   fabric1 --> composite["BGP-EVPN-BUILD composite\nserializes the fabric templates into one deployment pipeline"]:::output
   fabric2 --> composite
   fabric2a --> composite
@@ -108,5 +115,6 @@ flowchart TB
   fabric7 --> composite
   fabric8 --> composite
   fabric9 --> composite
+  fabric10 --> composite
 
   composite --> result["Catalyst Center renders role-aware IOS-XE CLI\nfor each target switch at provisioning time"]:::output

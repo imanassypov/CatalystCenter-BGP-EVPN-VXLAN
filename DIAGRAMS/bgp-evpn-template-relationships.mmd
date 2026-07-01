@@ -29,8 +29,9 @@ flowchart TB
     overlay["FABRIC-OVERLAY\nL2VNI VLANs, EVPN instances, tenant SVIs"]:::fabric
     ports["FABRIC-CLIENT-PORTS\nLeaf access and trunk interface rendering"]:::fabric
     nac["FABRIC-NAC\nIBNS 2.0, AAA, RADIUS, IoT NAC policies"]:::fabric
+    telemetry["FABRIC-TELEMETRY-SPLUNK\nIOS-XE MDT subscriptions streamed to OpenTelemetry/Splunk"]:::fabric
 
-    build --> vrf --> loopbacks --> tunnels --> l3out --> nve --> mcast --> evpn --> overlay --> ports --> nac
+    build --> vrf --> loopbacks --> tunnels --> l3out --> nve --> mcast --> evpn --> overlay --> ports --> nac --> telemetry
   end
 
   vrf -. uses .-> vrfDeps["DEFN-VRF: VRF catalog and per-node placement<br/>DEFN-LOOPBACKS: RD source loopback IPs<br/>DEFN-OVERLAY: fabric ASN and shared overlay context"]:::support
@@ -43,7 +44,7 @@ flowchart TB
   l3out -. uses .-> l3outDeps["DEFN-L3OUT: uplinks, peers, aggregates, L3OUT enable toggle<br/>DEFN-VRF: VRF-to-node placement<br/>DEFN-OVERLAY: foreign-subnet Null0 guards"]:::support
   l3out -. optional .-> l3outOpt["Rendered only when DEFN_L3OUT_NODES contains the current device"]:::optional
 
-  nve -. uses .-> nveDeps["DEFN-VRF: local VRF inventory<br/>DEFN-ROLES: leaf versus spine or border behavior<br/>DEFN-LOOPBACKS: Loopback0 and anycast names<br/>DEFN-VNIOFFSETS: L3VNI numbering rules"]:::support
+  nve -. uses .-> nveDeps["DEFN-VRF: local VRF inventory<br/>DEFN-ROLES: leaf versus spine or border behavior<br/>DEFN-LOOPBACKS: Loopback0 and anycast names<br/>DEFN-VNIOFFSETS: L3VNI numbering rules<br/>DEFN-TELEMETRY-SPLUNK: telemetry enable statistics guard"]:::support
 
   mcast -. uses .-> mcastDeps["DEFN-MCAST: fabric RP and enterprise RP scopes<br/>DEFN-ROLES: Anycast RP only on spines<br/>DEFN-LOOPBACKS: RP and source loopbacks"]:::support
 
@@ -58,7 +59,10 @@ flowchart TB
   nac -. uses .-> nacDeps["DEFN-NAC: per-VRF NAC server definitions<br/>DEFN-VRF: NAC policy binding to local VRFs<br/>DEFN-ROLES: leaf-only enforcement"]:::support
   nac -. optional .-> nacOpt["Rendered only on leaf nodes and only for VRFs with NAC data"]:::optional
 
-  nac --> final["Catalyst Center produces role-aware IOS-XE configuration blocks"]:::composite
-  final --> spineOut["Spines and RRs<br/>VRF, loopbacks, Anycast RP, EVPN RR, optional L3OUT"]:::outcome
-  final --> leafOut["Leaves<br/>L3VNI and L2VNI services, client ports, optional NAC"]:::outcome
-  final --> borderOut["Borders<br/>VRF, loopbacks, GRE tunnels, OSPF 100, EVPN border policy, optional multi-cluster peering"]:::outcome
+  telemetry -. uses .-> telemetryDeps["DEFN-TELEMETRY-SPLUNK: receiver IP and port, role list,<br/>YANG subscription catalog (EVPN, NVE, BGP, OSPF, interfaces)"]:::support
+  telemetry -. optional .-> telemetryOpt["Rendered only on nodes whose role appears in DEFN_TELEMETRY_SPLUNK_ROLES"]:::optional
+
+  telemetry --> final["Catalyst Center produces role-aware IOS-XE configuration blocks"]:::composite
+  final --> spineOut["Spines and RRs<br/>VRF, loopbacks, Anycast RP, EVPN RR, optional L3OUT, MDT telemetry"]:::outcome
+  final --> leafOut["Leaves<br/>L3VNI and L2VNI services, client ports, optional NAC, MDT telemetry"]:::outcome
+  final --> borderOut["Borders<br/>VRF, loopbacks, GRE tunnels, OSPF 100, EVPN border policy, optional multi-cluster peering, MDT telemetry"]:::outcome
