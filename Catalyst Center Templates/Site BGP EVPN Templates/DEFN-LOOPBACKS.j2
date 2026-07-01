@@ -9,14 +9,18 @@
       'Border-02.dcloud.cisco.com':  '198.19.1.6'
     }
 %}
-{# DEFN_LOOP_MCLUSTER: remote DMZ EVPN peers reached over the GRE/OSPF 100 underlay #}
-{# Keys = remote DMZ hostnames; values = overlay EVPN identity (Loopback2) and ASN   #}
-{# The 'ip' is the remote overlay loopback (EVPN peer identity), reachable via OSPF  #}
-{# 100 over the GRE tunnels - NOT a directly-connected Loopback0.                    #}
-{# Iterate via DEFN_NODE_ROLES['MCLUSTER'] list in FABRIC templates                 #}
+{# DEFN_LOOP_MCLUSTER: remote DMZ EVPN peers reached over the GRE/OSPF 100 underlay     #}
+{# Keys = remote DMZ hostnames; values = overlay EVPN identity (Loopback2) and ASN       #}
+{# 'ip'      = remote EVPN peering identity (DMZ Loopback0); reachable via OSPF 100,     #}
+{#             NOT redistributed into OSPF 1 (decoupled from tunnel = bad failover)       #}
+{# 'asn'     = remote AS number                                                           #}
+{# 'gre_src' = remote GRE tunnel hub source (DMZ Loopback1); redistributed by spines     #}
+{#             into OSPF 1 via MCLUSTER-LOOPBACKS so borders have a specific /32 route    #}
+{#             to the GRE tunnel endpoint, independent of default-route ECMP.             #}
+{# Iterate via DEFN_NODE_ROLES['MCLUSTER'] list in FABRIC templates                      #}
 {% set DEFN_LOOP_MCLUSTER =
     {
-      'dmz1.dcloud.cisco.com': {'ip': '198.19.1.200', 'asn': '65003'}
+      'dmz1.dcloud.cisco.com': {'ip': '198.19.1.200', 'asn': '65003', 'gre_src': '10.100.2.1'}
     }
 %}
 {% set DEFN_LOOP_OVERLAY =
@@ -38,8 +42,8 @@
 {# Lookup by DEVICE_HOSTNAME only; never iterated - no companion list needed                 #}
 {% set DEFN_LOOP_GRE_SRC =
     {
-      'Border-01.dcloud.cisco.com':  '198.19.1.7',
-      'Border-02.dcloud.cisco.com':  '198.19.1.8'
+      'Border-01.dcloud.cisco.com':  '10.100.2.5',
+      'Border-02.dcloud.cisco.com':  '10.100.2.6'
     }
 %}
 {% set DEFN_LOOP_GRE_PEER =

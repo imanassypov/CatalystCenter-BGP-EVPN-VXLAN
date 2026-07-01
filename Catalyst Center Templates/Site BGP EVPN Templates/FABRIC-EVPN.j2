@@ -49,6 +49,22 @@ route-map FABRIC-LOOPBACKS permit 10
  match ip address prefix-list FABRIC-LOOPBACKS
 !
 {# ================================================================== #}
+{# MCLUSTER-LOOPBACKS: spine-only; redistributed into OSPF 1 via      #}
+{# BGP-TO-OSPF permit 30 so borders get a specific /32 to the DMZ     #}
+{# GRE tunnel hub (Loopback1 / gre_src). The DMZ EVPN identity        #}
+{# (Loopback0 / ip) is intentionally excluded: it is reachable via    #}
+{# OSPF 100 (redistributed by DMZ itself), and injecting it into      #}
+{# OSPF 1 would decouple peer reachability from tunnel state,         #}
+{# preventing fall-over from triggering on tunnel failure.            #}
+{# Gated on RR role (spines) + DEFN_TUNNELS.                         #}
+{# ================================================================== #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['RR'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
+{% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
+ip prefix-list MCLUSTER-LOOPBACKS seq {{loop.index * 10 + 5}} permit {{DEFN_LOOP_MCLUSTER[remote]['gre_src']}}/32
+{% endfor %}
+!
+{% endif %}
+{# ================================================================== #}
 {# NODE-LOOPBACKS: combined fabric + mcluster /32 fall-over tracking  #}
 {# Only rendered on BORDER nodes - used by DMZ peer session            #}
 {# Seq: SPINE(1..N) + CLIENT(N+1..M) + MCLUSTER(M+1..K)              #}
