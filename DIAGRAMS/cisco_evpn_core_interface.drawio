@@ -1,0 +1,210 @@
+<mxfile host="app.diagrams.net" modified="2026-07-01T15:00:00.000Z" agent="draw.io" version="24.0.0">
+  <diagram name="L3OUT Spine-to-Core" id="l3out-spine-core">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;font style=&quot;font-size:16px;&quot;&gt;&lt;b&gt;L3OUT Spine-to-Core Interface Architecture&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#666;&quot;&gt;Campus Fabric (ASN 65001) ↔ Enterprise IP Core (ASN 65002) | Each physical link carries VRF Default (parent) + VRF Red (dot1Q 2 sub-interface)&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="10" width="1000" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CORE BLOCK (TOP) ==================== -->
+        <mxCell id="core-block" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=5 3;strokeColor=#616161;strokeWidth=1;fillColor=#FAFAFA;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="330" y="60" width="740" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="core-block-label" value="&lt;font color=&quot;#424242&quot; style=&quot;font-size:11px;&quot;&gt;&lt;b&gt;Enterprise IP Core — ASN 65002 (NX-OS)&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=2;" vertex="1" parent="1">
+          <mxGeometry x="338" y="62" width="320" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Core-01 -->
+        <mxCell id="core01" value="&lt;b&gt;Core-01&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="420" y="100" width="120" height="60" as="geometry" />
+        </mxCell>
+        <!-- Core-01 interface labels -->
+        <mxCell id="c1-ports" value="&lt;font style=&quot;font-size:9px;font-family:monospace;&quot;&gt;Eth1/1 → Spine-01&lt;br&gt;Eth1/2 → Spine-02&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="400" y="162" width="140" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Core-02 -->
+        <mxCell id="core02" value="&lt;b&gt;Core-02&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="860" y="100" width="120" height="60" as="geometry" />
+        </mxCell>
+        <!-- Core-02 interface labels -->
+        <mxCell id="c2-ports" value="&lt;font style=&quot;font-size:9px;font-family:monospace;&quot;&gt;Eth1/1 → Spine-01&lt;br&gt;Eth1/2 → Spine-02&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="840" y="162" width="140" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== VRF RED BOX (BOTTOM LEFT) ==================== -->
+        <mxCell id="vrf-red-box" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;strokeColor=#C62828;strokeWidth=2;fillColor=#FFEBEE;arcSize=6;opacity=40;" vertex="1" parent="1">
+          <mxGeometry x="60" y="290" width="600" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="vrf-red-label" value="&lt;font color=&quot;#C62828&quot; style=&quot;font-size:14px;&quot;&gt;&lt;b&gt;VRF: RED&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#666&quot; style=&quot;font-size:10px;&quot;&gt;eBGP 65001 → 65002 | dot1Q 2 sub-interfaces | /30 point-to-point&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="70" y="295" width="420" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-01 in VRF Red -->
+        <mxCell id="s1-red" value="&lt;b&gt;Spine-01&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Lo0: 198.19.1.1/32&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;strokeWidth=2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="360" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-02 in VRF Red -->
+        <mxCell id="s2-red" value="&lt;b&gt;Spine-02&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Lo0: 198.19.1.2/32&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;strokeWidth=2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="500" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-01 VRF Red interface table -->
+        <mxCell id="s1-red-table" value="&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Interface&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Local IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Peer IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Peer&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/5.2&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.50/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.49&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-01 Eth1/1.2&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/6.2&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.54/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.53&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-02 Eth1/1.2&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=middle;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="290" y="348" width="350" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-02 VRF Red interface table -->
+        <mxCell id="s2-red-table" value="&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Interface&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Local IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Peer IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFCDD2;&quot;&gt;Peer&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/5.2&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.58/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.57&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-01 Eth1/2.2&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/6.2&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.62/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.61&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-02 Eth1/2.2&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=middle;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="290" y="488" width="350" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== VRF DEFAULT BOX (BOTTOM RIGHT) ==================== -->
+        <mxCell id="vrf-def-box" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 4;strokeColor=#E65100;strokeWidth=2;fillColor=#FFF8E1;arcSize=6;opacity=40;" vertex="1" parent="1">
+          <mxGeometry x="700" y="290" width="640" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="vrf-def-label" value="&lt;font color=&quot;#E65100&quot; style=&quot;font-size:14px;&quot;&gt;&lt;b&gt;VRF: Default&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#666&quot; style=&quot;font-size:10px;&quot;&gt;OSPF 1 underlay | parent physical interfaces | /30 point-to-point&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="710" y="295" width="400" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-01 in VRF Default -->
+        <mxCell id="s1-def" value="&lt;b&gt;Spine-01&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Lo0: 198.19.1.1/32&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;strokeWidth=2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="360" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-02 in VRF Default -->
+        <mxCell id="s2-def" value="&lt;b&gt;Spine-02&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;&quot;&gt;Lo0: 198.19.1.2/32&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;strokeWidth=2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="500" width="170" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-01 VRF Default interface table -->
+        <mxCell id="s1-def-table" value="&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Interface&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Local IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Peer IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Peer&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/5&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.33/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.34&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-01 Eth1/1&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/6&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.37/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.38&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-02 Eth1/1&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=middle;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="930" y="348" width="390" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Spine-02 VRF Default interface table -->
+        <mxCell id="s2-def-table" value="&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Interface&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Local IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Peer IP&lt;/th&gt;&lt;th style=&quot;border:1px solid #ccc;padding:2px 5px;background:#FFE0B2;&quot;&gt;Peer&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/5&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.41/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.42&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-01 Eth1/2&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Gi1/0/6&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.45/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;198.19.2.46&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:2px 5px;&quot;&gt;Core-02 Eth1/2&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=middle;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="930" y="488" width="390" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== LINKS: Core → VRF Red ==================== -->
+        <!-- Core-01 → Spine-01 VRF Red -->
+        <mxCell id="link-c1-s1-red" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#C62828;strokeWidth=2;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="core01" target="s1-red">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link-c1-s1-red-lbl" value="&lt;font style=&quot;font-size:8px;color:#C62828;&quot;&gt;Eth1/1.2 ↔ Gi1/0/5.2&lt;br&gt;198.19.2.48/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c1-s1-red">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Core-01 → Spine-02 VRF Red -->
+        <mxCell id="link-c1-s2-red" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#C62828;strokeWidth=2;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="core01" target="s2-red">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link-c1-s2-red-lbl" value="&lt;font style=&quot;font-size:8px;color:#C62828;&quot;&gt;Eth1/2.2 ↔ Gi1/0/5.2&lt;br&gt;198.19.2.56/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c1-s2-red">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Core-02 → Spine-01 VRF Red -->
+        <mxCell id="link-c2-s1-red" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#C62828;strokeWidth=2;dashed=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="core02" target="s1-red">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="240" />
+              <mxPoint x="660" y="373" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="link-c2-s1-red-lbl" value="&lt;font style=&quot;font-size:8px;color:#C62828;&quot;&gt;Eth1/1.2 ↔ Gi1/0/6.2&lt;br&gt;198.19.2.52/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c2-s1-red">
+          <mxGeometry x="-0.2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Core-02 → Spine-02 VRF Red -->
+        <mxCell id="link-c2-s2-red" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#C62828;strokeWidth=2;dashed=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="core02" target="s2-red">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="640" y="250" />
+              <mxPoint x="640" y="513" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="link-c2-s2-red-lbl" value="&lt;font style=&quot;font-size:8px;color:#C62828;&quot;&gt;Eth1/2.2 ↔ Gi1/0/6.2&lt;br&gt;198.19.2.60/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c2-s2-red">
+          <mxGeometry x="-0.2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== LINKS: Core → VRF Default ==================== -->
+        <!-- Core-01 → Spine-01 Default -->
+        <mxCell id="link-c1-s1-def" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#E65100;strokeWidth=2;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="core01" target="s1-def">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="240" />
+              <mxPoint x="720" y="373" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="link-c1-s1-def-lbl" value="&lt;font style=&quot;font-size:8px;color:#E65100;&quot;&gt;Eth1/1 ↔ Gi1/0/5&lt;br&gt;198.19.2.32/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c1-s1-def">
+          <mxGeometry x="-0.2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Core-01 → Spine-02 Default -->
+        <mxCell id="link-c1-s2-def" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#E65100;strokeWidth=2;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="core01" target="s2-def">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="250" />
+              <mxPoint x="700" y="513" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="link-c1-s2-def-lbl" value="&lt;font style=&quot;font-size:8px;color:#E65100;&quot;&gt;Eth1/2 ↔ Gi1/0/5&lt;br&gt;198.19.2.40/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c1-s2-def">
+          <mxGeometry x="-0.2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Core-02 → Spine-01 Default -->
+        <mxCell id="link-c2-s1-def" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#E65100;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="core02" target="s1-def">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link-c2-s1-def-lbl" value="&lt;font style=&quot;font-size:8px;color:#E65100;&quot;&gt;Eth1/1 ↔ Gi1/0/6&lt;br&gt;198.19.2.36/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c2-s1-def">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Core-02 → Spine-02 Default -->
+        <mxCell id="link-c2-s2-def" style="rounded=1;orthogonalLoop=1;jettySize=auto;strokeColor=#E65100;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="core02" target="s2-def">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="link-c2-s2-def-lbl" value="&lt;font style=&quot;font-size:8px;color:#E65100;&quot;&gt;Eth1/2 ↔ Gi1/0/6&lt;br&gt;198.19.2.44/30&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;" vertex="1" connectable="0" parent="link-c2-s2-def">
+          <mxGeometry x="-0.1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== LEGEND ==================== -->
+        <mxCell id="legend" value="&lt;table style=&quot;font-size:10px;border-collapse:collapse;&quot;&gt;&lt;tr&gt;&lt;td style=&quot;padding:2px 8px;&quot;&gt;&lt;hr style=&quot;border:2px solid #C62828;width:30px;display:inline-block;&quot;&gt;&lt;/td&gt;&lt;td style=&quot;padding:2px 5px;&quot;&gt;VRF Red (eBGP, dot1Q 2)&lt;/td&gt;&lt;td style=&quot;padding:2px 8px;&quot;&gt;&lt;hr style=&quot;border:2px dashed #C62828;width:30px;display:inline-block;&quot;&gt;&lt;/td&gt;&lt;td style=&quot;padding:2px 5px;&quot;&gt;VRF Red (cross-path)&lt;/td&gt;&lt;td style=&quot;padding:2px 8px;&quot;&gt;&lt;hr style=&quot;border:2px solid #E65100;width:30px;display:inline-block;&quot;&gt;&lt;/td&gt;&lt;td style=&quot;padding:2px 5px;&quot;&gt;VRF Default (OSPF 1)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=center;verticalAlign=middle;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="350" y="680" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Physical note -->
+        <mxCell id="phys-note" value="&lt;font style=&quot;font-size:10px;color:#555;&quot;&gt;⚠ Each physical link (Gi1/0/5, Gi1/0/6) carries &lt;b&gt;both&lt;/b&gt; VRFs:&lt;br&gt;• Parent interface → VRF Default (OSPF 1 underlay)&lt;br&gt;• dot1Q 2 sub-interface → VRF Red (eBGP tenant routing)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="60" y="680" width="320" height="60" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

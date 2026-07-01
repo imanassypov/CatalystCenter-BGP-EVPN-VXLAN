@@ -20,7 +20,8 @@ flowchart LR
     spine7["FABRIC-OVERLAY"]:::skipped
     spine8["FABRIC-CLIENT-PORTS"]:::skipped
     spine9["FABRIC-NAC"]:::skipped
-    spineOut["Result\nRR policies, Anycast RP, Loopback0, L3VNI SVIs,\noptional L3OUT to the core"]:::rendered
+    spine10["FABRIC-TELEMETRY-SPLUNK"]:::fabric
+    spineOut["Result\nRR policies, Anycast RP, Loopback0, L3VNI SVIs,\noptional L3OUT to the core, MDT telemetry subscriptions"]:::rendered
     spine3 --> spineOpt["Rendered only when DEFN_L3OUT_NODES includes the spine"]:::optional
   end
 
@@ -37,7 +38,8 @@ flowchart LR
     leaf7["FABRIC-OVERLAY"]:::fabric
     leaf8["FABRIC-CLIENT-PORTS"]:::fabric
     leaf9["FABRIC-NAC"]:::fabric
-    leafOut["Result\nTenant L2VNI and L3VNI services, access ports,\nDHCP relay, optional NAC enforcement"]:::rendered
+    leaf10["FABRIC-TELEMETRY-SPLUNK"]:::fabric
+    leafOut["Result\nTenant L2VNI and L3VNI services, access ports,\nDHCP relay, optional NAC enforcement, MDT telemetry subscriptions"]:::rendered
     leaf9 --> leafOpt["NAC renders only for VRFs present on the leaf and defined in DEFN-NAC"]:::optional
   end
 
@@ -54,7 +56,8 @@ flowchart LR
     border7["FABRIC-OVERLAY"]:::fabric
     border8["FABRIC-CLIENT-PORTS"]:::skipped
     border9["FABRIC-NAC"]:::skipped
-    borderOut["Result\nVRF presence for edge tenants, border EVPN policy,\nGRE tunnels to DMZ, OSPF 100,\noptional remote-site multi-cluster peering"]:::rendered
+    border10["FABRIC-TELEMETRY-SPLUNK"]:::fabric
+    borderOut["Result\nVRF presence for edge tenants, border EVPN policy,\nGRE tunnels to DMZ, OSPF 100,\noptional remote-site multi-cluster peering, MDT telemetry subscriptions"]:::rendered
     border6 --> borderOpt["Remote-site EVPN peering renders only when BORDER and MCLUSTER data exist"]:::optional
   end
 
@@ -62,6 +65,6 @@ flowchart LR
   top --> leaf
   top --> border
 
-  spine --> spine1 --> spine2 --> spine2a --> spine3 --> spine4 --> spine5 --> spine6 --> spine7 --> spine8 --> spine9 --> spineOut
-  leaf --> leaf1 --> leaf2 --> leaf2a --> leaf3 --> leaf4 --> leaf5 --> leaf6 --> leaf7 --> leaf8 --> leaf9 --> leafOut
-  border --> border1 --> border2 --> border2a --> border3 --> border4 --> border5 --> border6 --> border7 --> border8 --> border9 --> borderOut
+  spine --> spine1 --> spine2 --> spine2a --> spine3 --> spine4 --> spine5 --> spine6 --> spine7 --> spine8 --> spine9 --> spine10 --> spineOut
+  leaf --> leaf1 --> leaf2 --> leaf2a --> leaf3 --> leaf4 --> leaf5 --> leaf6 --> leaf7 --> leaf8 --> leaf9 --> leaf10 --> leafOut
+  border --> border1 --> border2 --> border2a --> border3 --> border4 --> border5 --> border6 --> border7 --> border8 --> border9 --> border10 --> borderOut
