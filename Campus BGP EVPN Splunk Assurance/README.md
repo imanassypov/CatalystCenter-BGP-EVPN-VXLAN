@@ -436,6 +436,8 @@ Executive view aggregates all roles). Read it left to right as a go/no‑go stri
 **Purpose:** a single screen that answers "is the whole fabric healthy, and is anything churning?"
 without naming individual devices. **Start every shift here.**
 
+![Executive Overview dashboard — fabric-wide scorecard row, BGP session trends, tenant VRF Sankey, VXLAN segment leaderboard, and the BGP Session Health Matrix](images/splunk_executive.png)
+
 | Panel | What it shows | How to read it |
 |---|---|---|
 | **Scorecard row** (6 tiles) | Fabric‑wide aggregate state | All `▼ 0` / `Silent 0` = converged. Any red → drill into the matching role view. |
@@ -455,6 +457,8 @@ without naming individual devices. **Start every shift here.**
 
 **Purpose:** deep dive on the leaves — where hosts attach, MACs are learned, and L2/L3 VNIs are
 locally instantiated. **This is where most overlay faults surface.**
+
+![Leafs dashboard — per-leaf BGP sessions, MAC/MAC-IP route churn, VXLAN throughput and BUM ratio, the Per-VNI Peer Reachability Matrix, and EVPN binding cross-check Sankeys](images/splunk_leafs.png)
 
 | Panel | What it shows | How to read it |
 |---|---|---|
@@ -476,6 +480,8 @@ locally instantiated. **This is where most overlay faults surface.**
 **Purpose:** the spines are **BGP EVPN route reflectors** and the underlay core. They normally
 host **no** NVE VNIs, so the VNI tiles read `0` by design.
 
+![Spines dashboard — per-spine Established BGP sessions to every VTEP, EVPN peering detail, and the BGP VRF Prefix Distribution Sankey; NVE/VNI panels are correctly sparse on a pure route reflector](images/splunk_spines.png)
+
 | Panel | What it shows | How to read it |
 |---|---|---|
 | **Scorecard row** (scoped to spines) | Spine posture | **NVE VNIs and L2/L3 VNIs read `0` — this is correct.** **BGP Sessions** is the tile that matters: a spine holds a session to every leaf and border. |
@@ -490,6 +496,8 @@ host **no** NVE VNIs, so the VNI tiles read `0` by design.
 
 **Purpose:** the borders terminate L3 VNIs and hand tenant traffic off to the outside
 (WAN/core/DC). They carry tenant VRFs and L3 VNIs but typically **no L2 (access) VNIs**.
+
+![Borders dashboard — per-border BGP sessions to spines and external routers, L3 VNI termination Sankey, NVE peer adjacency, and per-VNI VXLAN throughput for tenant egress](images/splunk_borders.png)
 
 | Panel | What it shows | How to read it |
 |---|---|---|
@@ -508,6 +516,8 @@ host **no** NVE VNIs, so the VNI tiles read `0` by design.
 
 **Purpose:** the triage landing pad — three alarm counts, an active‑alert table, and a BGP trend
 for context.
+
+![Alerts dashboard — BGP Sessions Not Established and Telemetry Stale scorecards, the NVE VNI down-per-node trend, the consolidated Active Alerts table, and the BGP session trend for flap-vs-outage context](images/splunk_alerts.png)
 
 | Panel | What it shows | How to read it |
 |---|---|---|
