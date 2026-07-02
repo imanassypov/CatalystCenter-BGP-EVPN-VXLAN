@@ -312,7 +312,7 @@
     "ds_leafs_input0": {
       "type": "ds.search",
       "options": {
-        "query": "| inputlookup evpn_device_inventory | stats count by site | fields site",
+        "query": "| inputlookup evpn_device_inventory | stats count by site | fields site | sort site",
         "queryParameters": {
           "earliest": "0",
           "latest": "now"
@@ -562,7 +562,7 @@
       "options": {
         "items": [],
         "token": "site",
-        "defaultValue": "Ottawa"
+        "selectFirstSearchResult": true
       },
       "encoding": {
         "value": "primary[0]",

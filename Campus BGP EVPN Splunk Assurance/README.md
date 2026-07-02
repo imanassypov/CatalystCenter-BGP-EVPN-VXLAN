@@ -405,7 +405,7 @@ Every view shares two global header controls:
 
 | Control | Default | Behaviour |
 |---|---|---|
-| **Site** dropdown | `Ottawa` | Scopes every panel to one site. Populated from the inventory CSV. |
+| **Site** dropdown | First site alphabetically | Scopes every panel to one site. Populated from the inventory CSV; the default is the first site returned by `... \| stats count by site \| sort site` (`selectFirstSearchResult`), so no site name is hard-wired in the dashboards. |
 | **Time Range** picker | Last 4 hours | **Trend/chart** panels honour this window. **Scorecard cards** and **state tables** deliberately read the *latest snapshot* so they always show current reality regardless of the picker. |
 
 > **Why two time behaviours?** A scorecard answers "is the fabric healthy *right now*?" — it must
