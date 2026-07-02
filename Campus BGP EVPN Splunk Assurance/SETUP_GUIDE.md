@@ -74,6 +74,22 @@ The required columns are:
 source,hostname,ip_address,loopback,site,role,description
 ```
 
+> **Map external (core / DMZ) eBGP peers too.** The Device × Peer matrices resolve each
+> peer's IP to a name with `lookup evpn_device_inventory loopback AS <peer-ip> OUTPUT hostname`.
+> Any peer IP that is **not** in the `loopback` column is shown as a raw IP address. To label
+> external neighbours (upstream core routers, DMZ gateways), add one row per peer IP with a
+> distinct `role` (e.g. `core`, `dmz`) so they never collide with the `spine`/`leaf`/`border`
+> role filters used by the per-role panels. A device with several peer links gets one row per
+> link IP, all sharing the same `hostname`. Example:
+>
+> ```csv
+> dmz1.dcloud.cisco.com,dmz1,198.19.1.200,198.19.1.200,Building P0,dmz,DMZ Gateway (external eBGP EVPN peer)
+> Core-01,Core-01,198.19.2.49,198.19.2.49,Building P0,core,Enterprise Core 01 (Spine-01 uplink1)
+> Core-01,Core-01,198.19.2.57,198.19.2.57,Building P0,core,Enterprise Core 01 (Spine-02 uplink1)
+> Core-02,Core-02,198.19.2.53,198.19.2.53,Building P0,core,Enterprise Core 02 (Spine-01 uplink2)
+> Core-02,Core-02,198.19.2.61,198.19.2.61,Building P0,core,Enterprise Core 02 (Spine-02 uplink2)
+> ```
+
 ## 4. Install the patched OTel collector
 
 Install the Splunk OpenTelemetry Collector package on the Linux collector host

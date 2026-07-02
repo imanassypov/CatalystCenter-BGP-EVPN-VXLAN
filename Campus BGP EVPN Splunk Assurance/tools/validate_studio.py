@@ -71,7 +71,7 @@ def fetch_definition(view):
 
 
 def sub_tokens(q):
-    q = q.replace("$site$", "Ottawa")
+    q = q.replace("$site$", "Building P0")
     q = q.replace("$timeRange.earliest$", "-4h")
     q = q.replace("$timeRange.latest$", "now")
     return q
