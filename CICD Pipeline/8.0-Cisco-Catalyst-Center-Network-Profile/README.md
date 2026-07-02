@@ -101,7 +101,7 @@ The diagram below shows every decision point and state transition from startup t
 ## Directory Structure
 
 ```
-7.0-Cisco-Catalyst-Center-Network-Profile/
+8.0-Cisco-Catalyst-Center-Network-Profile/
 ├── ansible.cfg                 # Ansible defaults (inventory path, host key checking)
 ├── inventory.yml               # Catalyst Center host + connection variables
 ├── network_profile.yml         # Main playbook (this file)
@@ -354,7 +354,7 @@ To create a second profile that spans multiple sites and uses both template type
 `playbook_dir` is an Ansible magic variable that holds the directory containing the playbook file. For a relative path like `../Settings/settings.json`, the resolved value would be:
 
 ```
-/path/to/repo/CICD Pipeline/7.0-Cisco-Catalyst-Center-Network-Profile/
+/path/to/repo/CICD Pipeline/8.0-Cisco-Catalyst-Center-Network-Profile/
 ../Settings/settings.json
 → /path/to/repo/CICD Pipeline/Settings/settings.json
 ```

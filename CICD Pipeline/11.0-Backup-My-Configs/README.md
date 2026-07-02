@@ -1,4 +1,4 @@
-# 10.0-Backup-My-Configs
+# 11.0-Backup-My-Configs
 
 ## Overview
 This workflow backs up `show running-config` from the lab network devices and stores the output on the Ansible controller.
@@ -72,7 +72,7 @@ pip install -r requirements.txt
 ## Directory Structure
 
 ```text
-10.0-Backup-My-Configs/
+11.0-Backup-My-Configs/
 ├── ansible.cfg
 ├── backup-lab-configs.yml      # main playbook
 ├── inventory.yml
@@ -92,7 +92,7 @@ pip install -r requirements.txt
 4. Run the playbook.
 
 ```bash
-cd Support/Resources/Ansible/10.0-Backup-My-Configs
+cd Support/Resources/Ansible/11.0-Backup-My-Configs
 ansible-galaxy collection install -r requirements.yml
 cp vault.yml.example vault.yml
 ansible-vault encrypt vault.yml --vault-password-file .vault_pass

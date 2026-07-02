@@ -1,4 +1,4 @@
-# Python pip dependencies for 10.0-Backup-My-Configs
+# Python pip dependencies for 11.0-Backup-My-Configs
 # Install with: pip install -r requirements.txt
 #
 # NOTE: ansible-pylibssh requires libssh to be installed first (macOS: brew install libssh)

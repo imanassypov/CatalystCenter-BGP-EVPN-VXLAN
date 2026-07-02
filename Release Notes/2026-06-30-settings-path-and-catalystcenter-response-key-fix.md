@@ -46,10 +46,10 @@ SDK 2.3.7.9). Playbooks 1.0 and 2.0 now complete successfully.
 - `CICD Pipeline/3.0-Cisco-Catalyst-Center-Credentials/inventory.yml`
 - `CICD Pipeline/4.0-Cisco-Catalyst-Center-Device-Discovery/inventory.yml`
 - `CICD Pipeline/5.0-Cisco-Catalyst-Center-Assign-To-Site/inventory.yml`
-- `CICD Pipeline/7.0-Cisco-Catalyst-Center-Network-Profile/inventory.yml`
-- `CICD Pipeline/8.0-Cisco-Catalyst-Center-Provision-Devices/inventory.yml`
-- `CICD Pipeline/9.0-Cisco-Catalyst-Center-Provision-Composite/inventory.yml`
-- Matching READMEs for 1.0–5.0 and 7.0–9.0 (inventory snippets, variable tables,
+- `CICD Pipeline/8.0-Cisco-Catalyst-Center-Network-Profile/inventory.yml`
+- `CICD Pipeline/9.0-Cisco-Catalyst-Center-Provision-Devices/inventory.yml`
+- `CICD Pipeline/10.0-Cisco-Catalyst-Center-Provision-Composite/inventory.yml`
+- Matching READMEs for 1.0–5.0 and 8.0–10.0 (inventory snippets, variable tables,
   and the 7.0 `playbook_dir` resolution example). Alternate-project override examples
   in 3.0/4.0/5.0 were updated to the new `../Settings/<file>.json` convention.
 

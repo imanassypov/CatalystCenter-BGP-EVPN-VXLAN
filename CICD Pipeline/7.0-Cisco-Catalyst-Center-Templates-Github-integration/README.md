@@ -109,7 +109,7 @@ Point the playbook at any GitHub repository subfolder containing `.j2` files and
 ## Directory Structure
 
 ```
-6.0-Cisco-Catalyst-Center-Templates-Github-integration/
+7.0-Cisco-Catalyst-Center-Templates-Github-integration/
 ├── ansible.cfg              # Sets inventory = inventory.yml (no -i flag needed)
 ├── ansible-git-catc.yml     # Main playbook — repo-wide setup, then loops subfolders
 ├── tasks/                   # Included task files
@@ -132,7 +132,7 @@ Point the playbook at any GitHub repository subfolder containing `.j2` files and
 
 ```bash
 # 1. Activate your Python virtual environment
-cd 6.0-Cisco-Catalyst-Center-Templates-Github-integration/
+cd 7.0-Cisco-Catalyst-Center-Templates-Github-integration/
 source ../.venv/bin/activate      # adjust path as needed
 
 # 2. Install Python dependencies

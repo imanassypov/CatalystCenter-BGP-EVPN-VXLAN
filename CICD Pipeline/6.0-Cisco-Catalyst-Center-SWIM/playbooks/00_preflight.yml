@@ -1,0 +1,131 @@
+---
+- name: SWIM pre-flight checks
+  hosts: catc
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../vars/images.yml
+  vars:
+    run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+    # Derive target sites from golden_tag_images — the sites where the image is
+    # tagged golden are exactly the sites whose devices need pre-flight validation.
+    # unique collapses duplicates when multiple entries share the same site_name.
+    target_sites: >-
+      {{ swim_details.golden_tag_images
+         | map(attribute='tagging_details.site_name')
+         | unique | list }}
+  tasks:
+    - name: Resync devices at target sites to refresh inventory state
+      cisco.catalystcenter.inventory_workflow_manager:
+        catalystcenter_host: "{{ catalystcenter_host }}"
+        catalystcenter_username: "{{ catalystcenter_username }}"
+        catalystcenter_password: "{{ catalystcenter_password }}"
+        catalystcenter_verify: "{{ catalystcenter_verify }}"
+        catalystcenter_port: "{{ catalystcenter_port }}"
+        catalystcenter_version: "{{ catalystcenter_version }}"
+        catalystcenter_log: "{{ catalystcenter_log }}"
+        catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+        catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+        catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+        validate_response_schema: "{{ validate_response_schema }}"
+        catalystcenter_api_task_timeout: "{{ catalystcenter_api_task_timeout }}"
+        catalystcenter_task_poll_interval: "{{ catalystcenter_task_poll_interval }}"
+        state: merged
+        config:
+          - site_name: "{{ item }}"
+            device_resync: true
+            force_sync: false
+      loop: "{{ target_sites }}"
+      loop_control:
+        label: "{{ item }}"
+      register: preflight_resync
+      tags: [resync]
+
+    - name: Baseline image compliance check per wave site
+      cisco.catalystcenter.network_compliance_workflow_manager:
+        catalystcenter_host: "{{ catalystcenter_host }}"
+        catalystcenter_username: "{{ catalystcenter_username }}"
+        catalystcenter_password: "{{ catalystcenter_password }}"
+        catalystcenter_verify: "{{ catalystcenter_verify }}"
+        catalystcenter_port: "{{ catalystcenter_port }}"
+        catalystcenter_version: "{{ catalystcenter_version }}"
+        catalystcenter_log: "{{ catalystcenter_log }}"
+        catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+        catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+        catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+        validate_response_schema: "{{ validate_response_schema }}"
+        catalystcenter_api_task_timeout: "{{ catalystcenter_api_task_timeout }}"
+        catalystcenter_task_poll_interval: "{{ catalystcenter_task_poll_interval }}"
+        state: merged
+        config:
+          - site_name: "{{ item }}"
+            run_compliance: true
+            # Compliance categories to evaluate. Valid values (cisco.catalystcenter
+            # network_compliance_workflow_manager):
+            #   INTENT           - device intent vs. design (templates, fabric, etc.)
+            #   RUNNING_CONFIG   - running config drift vs. CatC-managed config
+            #   IMAGE            - software image vs. golden tag (used here for SWIM)
+            #   PSIRT            - exposure to published security advisories
+            #   EOX              - end-of-life / end-of-support hardware & software
+            #   NETWORK_SETTINGS - AAA, NTP, DNS, syslog and other network settings
+            # Omitting this key runs ALL categories. Scoped to IMAGE for SWIM pre-flight.
+            run_compliance_categories:
+              - IMAGE
+            sync_device_config: false
+      loop: "{{ target_sites }}"
+      loop_control:
+        label: "{{ item }}"
+      register: precheck_compliance
+
+    - name: Write preflight evidence
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../logs/{{ run_id }}-00_preflight.json"
+        content: "{{ {'resync': preflight_resync | default({}), 'compliance': precheck_compliance} | to_nice_json }}"
+        mode: "0640"
+
+    - name: Evaluate pre-flight results for issues
+      vars:
+        compliance_results: "{{ precheck_compliance.results | default([]) }}"
+        skipped_devices: >-
+          {{ compliance_results
+             | map(attribute='msg')
+             | select('mapping')
+             | map(attribute='Run Compliance Check Skipped for following device(s)')
+             | select('defined')
+             | map(attribute='skipped_devices')
+             | flatten }}
+        failed_compliance: >-
+          {{ compliance_results
+             | selectattr('failed', 'defined')
+             | selectattr('failed')
+             | list }}
+        resync_failed: "{{ preflight_resync.failed | default(false) }}"
+      ansible.builtin.set_fact:
+        preflight_skipped_devices: "{{ skipped_devices }}"
+        preflight_failed_compliance: "{{ failed_compliance }}"
+        preflight_resync_failed: "{{ resync_failed }}"
+        preflight_has_issues: >-
+          {{ (skipped_devices | length > 0)
+             or (failed_compliance | length > 0)
+             or (resync_failed | bool) }}
+
+    - name: Show pre-flight issues
+      ansible.builtin.debug:
+        msg:
+          - "Pre-flight detected issues — review before proceeding to import/tag."
+          - "Resync failed: {{ preflight_resync_failed }}"
+          - "Compliance task failures: {{ preflight_failed_compliance | length }}"
+          - >-
+            Devices skipped during compliance check (not evaluated):
+            {{ preflight_skipped_devices | join(', ')
+               if (preflight_skipped_devices | length > 0) else 'none' }}
+          - "Evidence file: logs/{{ run_id }}-00_preflight.json"
+      when: preflight_has_issues | bool
+
+    - name: Fail when pre-flight has hard errors
+      ansible.builtin.fail:
+        msg: >-
+          Pre-flight hard errors detected — resync_failed={{ preflight_resync_failed }},
+          compliance_task_failures={{ preflight_failed_compliance | length }}.
+          See logs/{{ run_id }}-00_preflight.json for details.
+      when: (preflight_resync_failed | bool) or (preflight_failed_compliance | length > 0)
