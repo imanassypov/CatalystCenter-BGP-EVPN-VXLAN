@@ -1,0 +1,49 @@
+---
+# =============================================================================
+# HTTP image server — non-secret configuration TEMPLATE
+#
+# Copy to vars.yml and edit for your environment:
+#   cp vars.yml.example vars.yml
+#
+# vars.yml is gitignored — the real IP/paths stay out of version control.
+# Secrets (SSH user / password / become password) live in the sibling
+# encrypted file: vault.yml  (see vault.yml.example for the schema).
+# =============================================================================
+
+# --- Target host -------------------------------------------------------------
+# IP of the Ubuntu server that will host the SWIM images. Referenced by
+# inventory/hosts.yml as ansible_host and used as the nginx server_name.
+image_server_ip: "198.18.134.28"
+
+# --- Connection (credentials pulled from vault.yml) --------------------------
+ansible_user: "{{ vault_image_server_user }}"
+ansible_ssh_pass: "{{ vault_image_server_password }}"
+ansible_become: true
+ansible_become_method: sudo
+ansible_become_password: "{{ vault_image_server_become_password }}"
+# Pin to the target python that has apt_pkg. On some hosts /usr/bin/python3 is
+# upgraded (e.g. 3.9) while system python3-apt is built for 3.8 — set this to
+# whichever /usr/bin/pythonX.Y can 'import apt_pkg'.
+ansible_python_interpreter: /usr/bin/python3.8
+
+# --- Web server layout -------------------------------------------------------
+# The image is served at:
+#   http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ image_filename }}
+# This URL must match vars/images.yml in the 6.0 SWIM playbook exactly.
+image_web_root: /var/www/html          # nginx document root
+image_url_subdir: images               # URL/dir segment under the web root
+image_dir: "{{ image_web_root }}/{{ image_url_subdir }}"
+
+# --- Image staging -----------------------------------------------------------
+# Absolute path on the Ansible control node to the .bin image to upload.
+# If the image already exists on the target server (matched by filename under
+# image_dir) it is NOT re-transferred. Override with -e image_local_path=... .
+image_local_path: "/path/to/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin"
+
+# Filename derived from the local path — also the name used on the server and
+# in the published HTTP URL. Do not set manually.
+image_filename: "{{ image_local_path | basename }}"
+
+# --- Firewall ----------------------------------------------------------------
+# When true, open TCP/80 in ufw if ufw is installed and active.
+manage_ufw: true

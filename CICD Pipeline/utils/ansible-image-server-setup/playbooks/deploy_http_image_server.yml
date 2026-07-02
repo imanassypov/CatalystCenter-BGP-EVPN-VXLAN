@@ -1,0 +1,232 @@
+---
+# =============================================================================
+# Deploy an HTTP image-distribution server for Cisco Catalyst Center SWIM.
+#
+# Implements the "Appendix A: Image distribution (HTTP) server setup" recipe
+# from ../../6.0-Cisco-Catalyst-Center-SWIM/README.md against a target Ubuntu
+# host, using nginx. Catalyst Center performs a *remote* import, pulling the
+# .bin over anonymous HTTP from:
+#     http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ image_filename }}
+#
+# Idempotent: the image is only uploaded when it is missing on the target.
+#
+# Run:
+#   ansible-playbook playbooks/deploy_http_image_server.yml \
+#       --vault-password-file .vault \
+#       -e image_local_path=/abs/path/to/<image>.SSA.bin
+#
+# Override the target on the fly:
+#   ... -e image_server_ip=10.1.2.3
+# =============================================================================
+- name: Deploy HTTP image-distribution server for Catalyst Center SWIM
+  hosts: image_servers
+  become: true
+  gather_facts: true
+
+  tasks:
+    # ---- Pre-flight: local image must exist if the server doesn't have it ----
+    - name: Assert image_local_path is defined
+      ansible.builtin.assert:
+        that:
+          - image_local_path is defined
+          - image_local_path | length > 0
+          - image_local_path != '/path/to/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin'
+        fail_msg: >-
+          Set image_local_path to the absolute path of the .bin image on the
+          control node (edit inventory/group_vars/image_servers/vars.yml or pass
+          -e image_local_path=...).
+
+    - name: Stat the local image on the control node
+      ansible.builtin.stat:
+        path: "{{ image_local_path }}"
+      delegate_to: localhost
+      become: false
+      register: local_image
+
+    # ---- A.1  Install nginx --------------------------------------------------
+    # Best-effort cache refresh. Ignored on failure because unrelated broken
+    # third-party repos (e.g. expired Grafana/Jenkins GPG keys) make apt-get
+    # update exit non-zero even though the Ubuntu archive itself is reachable.
+    - name: Refresh apt cache (best effort)
+      ansible.builtin.apt:
+        update_cache: true
+      register: apt_cache_update
+      failed_when: false
+
+    - name: Install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: false
+
+    - name: Ensure nginx is enabled and running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    # ---- A.2  Create the image directory ------------------------------------
+    - name: Create the image web-root directory
+      ansible.builtin.file:
+        path: "{{ image_dir }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    # ---- A.2  Stage the image (only if missing on the target) ----------------
+    - name: Check whether the image already exists on the target
+      ansible.builtin.stat:
+        path: "{{ image_dir }}/{{ image_filename }}"
+        get_checksum: false
+      register: remote_image
+
+    - name: Fail if the image is missing on both the target and the control node
+      ansible.builtin.fail:
+        msg: >-
+          Image '{{ image_filename }}' is not present on {{ image_server_ip }}
+          and the local source '{{ image_local_path }}' does not exist on the
+          control node. Nothing to upload.
+      when:
+        - not remote_image.stat.exists
+        - not local_image.stat.exists
+
+    - name: Upload the image to the server (missing on target)
+      ansible.builtin.copy:
+        src: "{{ image_local_path }}"
+        dest: "{{ image_dir }}/{{ image_filename }}"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+      when:
+        - not remote_image.stat.exists
+        - local_image.stat.exists
+
+    - name: Enforce ownership and permissions on the image directory
+      ansible.builtin.file:
+        path: "{{ image_dir }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        recurse: true
+
+    # ---- A.3  Dedicated server block with directory browsing -----------------
+    - name: Deploy the SWIM images nginx server block
+      ansible.builtin.template:
+        src: swim-images.conf.j2
+        dest: /etc/nginx/sites-available/swim-images
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable the SWIM images server block
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/swim-images
+        dest: /etc/nginx/sites-enabled/swim-images
+        state: link
+      notify: Reload nginx
+
+    - name: Disable the default nginx server block
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Validate the nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+
+    # ---- A.4  Open the firewall (only if ufw is active) ----------------------
+    - name: Check whether ufw is installed
+      ansible.builtin.stat:
+        path: /usr/sbin/ufw
+      register: ufw_bin
+
+    - name: Query ufw status
+      ansible.builtin.command: ufw status
+      register: ufw_status
+      changed_when: false
+      failed_when: false
+      when:
+        - manage_ufw | bool
+        - ufw_bin.stat.exists
+
+    - name: Allow HTTP (TCP/80) through ufw
+      community.general.ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+      when:
+        - manage_ufw | bool
+        - ufw_bin.stat.exists
+        - ufw_status.stdout is defined
+        - "'Status: active' in ufw_status.stdout"
+
+    # Apply any pending nginx reload before verification.
+    - name: Flush handlers before verification
+      ansible.builtin.meta: flush_handlers
+
+    # ---- A.5  Verify ---------------------------------------------------------
+    - name: Verify the image is served over HTTP (from the server itself)
+      ansible.builtin.uri:
+        url: "http://localhost/{{ image_url_subdir }}/{{ image_filename }}"
+        method: HEAD
+        status_code: 200
+      register: http_check
+      when: remote_image.stat.exists or local_image.stat.exists
+
+    # Reachability that actually matters: an external HTTP client (the control
+    # node, standing in for Catalyst Center) reaching the server on its public
+    # IP:80. Mirrors the second curl in Appendix A.5.
+    - name: Verify TCP/80 reachability to the image server (from the control node)
+      ansible.builtin.wait_for:
+        host: "{{ image_server_ip }}"
+        port: 80
+        timeout: 10
+        state: started
+      delegate_to: localhost
+      become: false
+
+    - name: Verify the image is reachable over HTTP on the public IP (from the control node)
+      ansible.builtin.uri:
+        url: "http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ image_filename }}"
+        method: HEAD
+        status_code: 200
+        return_content: false
+      register: http_check_remote
+      delegate_to: localhost
+      become: false
+      when: remote_image.stat.exists or local_image.stat.exists
+
+    - name: Assert the served content type is a binary download
+      ansible.builtin.assert:
+        that:
+          - http_check_remote.status == 200
+          - "'application/octet-stream' in (http_check_remote.content_type | default(''))"
+        fail_msg: >-
+          The image URL responded but not as application/octet-stream
+          (got '{{ http_check_remote.content_type | default('n/a') }}').
+          Catalyst Center remote import expects a binary download.
+        success_msg: >-
+          Image reachable over HTTP as application/octet-stream
+          ({{ http_check_remote.content_length | default('n/a') }} bytes).
+      when: http_check_remote is not skipped
+
+    - name: Report the published image URL
+      ansible.builtin.debug:
+        msg: >-
+          Image server ready:
+          http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ image_filename }}
+          (Content-Length: {{ http_check_remote.content_length
+                              | default(http_check.content_length)
+                              | default('n/a') }}).
+          Reachable from the control node over HTTP:80.
+          This URL must match vars/images.yml in the 6.0 SWIM playbook.
+      when: http_check_remote is not skipped or http_check is not skipped
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

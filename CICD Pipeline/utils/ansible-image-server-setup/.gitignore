@@ -1,0 +1,18 @@
+.DS_Store
+.venv/
+__pycache__/
+*.retry
+
+.ansible/
+collections/
+
+# Vault password + decrypted secrets — never commit
+.vault_pass*
+.vault
+inventory/group_vars/image_servers/vault.yml
+inventory/group_vars/image_servers/vault.yml.bak
+
+# Environment-specific config (copy from vars.yml.example) — never commit
+inventory/group_vars/image_servers/vars.yml
+
+logs/
