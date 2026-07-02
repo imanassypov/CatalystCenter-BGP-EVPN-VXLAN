@@ -30,17 +30,22 @@
 {% for vrf in vrf_objs %}
     {% for nac in DEFN_NAC_IOT %}
         {% if vrf.name == nac.vrf %}
-        {% if nac.nac_ip in dnac_server_ips %}
+        {# Detect whether this RADIUS server is already managed by Catalyst Center.        #}
+        {# CatC pushes AAA servers from network settings as 'dnac-radius_<ip>'. When the   #}
+        {# same IP is present, reuse that existing server entry instead of creating a new  #}
+        {# 'NAC_<vrfid>_<ip>' server, which would fail on the device with:                 #}
+        {#   %Server already exists with same address port combination.                    #}
+        {# 'dnac_managed' can be set explicitly per entry in DEFN-NAC.j2, or auto-detected #}
+        {# from the __aaaendpointserver system binding variable.                           #}
+        {% set nac_dnac_managed = (nac.dnac_managed is defined and nac.dnac_managed) or (nac.nac_ip in dnac_server_ips) %}
+        {% if nac_dnac_managed %}
         {% set nac_servername = 'dnac-radius_' + nac.nac_ip %}
-        {% set nac_groupname = 'dnac-client-radius-group' %}
         {% else %}
         {% set nac_servername = 'NAC_' + vrf.id + '_' + nac.nac_ip %}
-        {% set nac_groupname = 'NAC_IOT_' + vrf.id %}
         {% endif %}
+        {% set nac_groupname = 'NAC_IOT_' + vrf.id %}
 !
-#INTERACTIVE
-class-map type control subscriber match-all AAA_SVR_DOWN_AUTHD_HOST<IQ>Do you wish to continue?<R>yes
-#END_INTERACTIVE
+class-map type control subscriber match-all AAA_SVR_DOWN_AUTHD_HOST
  match result-type aaa-timeout
  match authorization-status authorized
 !
@@ -76,13 +81,15 @@ class-map type control subscriber match-none NOT_IN_CRITICAL_AUTH_CLOSED_MODE
  match activated-service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
  match activated-service-template DefaultCriticalVoice_SRV_TEMPLATE
 !
-{% if nac.nac_ip in dnac_server_ips %}
+{% if nac_dnac_managed %}
+{# RADIUS server 'dnac-radius_{{nac.nac_ip}}' is managed by Catalyst Center - reuse it, do not recreate #}
 {% else %}
 no radius server {{nac_servername}}
 radius server {{nac_servername}}
  address ipv4 {{nac.nac_ip}} auth-port 1812 acct-port 1813
  key {{nac.nac_key}}
 !
+{% endif %}
 aaa group server radius {{nac_groupname}}
 server name {{nac_servername}}
 ip vrf forwarding {{vrf.name}}
@@ -90,7 +97,6 @@ ip radius source-interface Loopback{{vrf.id}}
 retransmit 2
 timeout 10
 !
-{% endif %}
 aaa authentication dot1x NAC_IOT_AUTH_{{vrf.id}} group {{nac_groupname}}
 aaa authorization network NAC_IOT_AUTHZ_{{vrf.id}} group {{nac_groupname}}
 !
@@ -98,7 +104,7 @@ policy-map type control subscriber NAC_IOT_PM_{{vrf.id}}
  event session-started match-all
   10 class always do-until-failure
    10 authenticate using mab aaa authc-list NAC_IOT_AUTH_{{vrf.id}} authz-list NAC_IOT_AUTHZ_{{vrf.id}} priority 10
-{# authc/authz lists above reference {{nac_groupname}} which resolves to dnac-client-radius-group or NAC_IOT_{{vrf.id}} #}
+{# authc/authz lists above reference {{nac_groupname}} which resolves to NAC_IOT_{{vrf.id}} (VRF-scoped group) #}
  event authentication-failure match-first
   5 class DOT1X_FAILED do-until-failure
    10 terminate dot1x
