@@ -83,7 +83,7 @@ Borders peer with the DMZ gateway over a **GRE underlay** to decouple EVPN sessi
 
 **Supported hardware**: Catalyst 9500, 9400, 9300, and 9000v (virtual).
 
-> Validation baseline: `Node Configs/Config-Backup-032626` (March 26, 2026).
+> Validation baseline: `Node Configs/Config-Backup-20260508-131703` (May 8, 2026).
 
 ---
 
@@ -98,7 +98,7 @@ Catalyst Center Templates/
     └── FUNC-*.j2                  # Reusable Jinja macros
 
 Node Configs/                      # Reference device configs (lab output)
-├── Config-Backup-032626/          # Current validation baseline
+├── Config-Backup-20260508-131703/ # Current validation baseline
 ├── fabric-site1/                  # Per-template rendered configs
 ├── fabric-dmz/                    # DMZ rendered configs
 └── cores/                         # Core router configs
@@ -124,7 +124,7 @@ Campus BGP EVPN Splunk Assurance/  # Streaming telemetry assurance
 ├── Model Maps/                    # YANG → Splunk metric mappings
 └── SETUP_GUIDE.md                 # Install procedure
 
-DIAGRAMS/                          # Architecture diagrams (.mmd + .png)
+DIAGRAMS/                          # Architecture diagrams (.mmd/.drawio source + .png)
 Release Notes/                     # Dated feature and behavior change notes
 test-cases/                        # Fabric validation scenarios
 ```
@@ -434,7 +434,9 @@ See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%
 
 ### 10.1 CLI Dependency Hierarchy
 
-![IOS-XE BGP EVPN CLI Hierarchy](DIAGRAMS/cisco_evpn_CLI_hierarchy.png)
+![IOS-XE BGP EVPN CLI Hierarchy](DIAGRAMS/cisco_evpn_data_model.png)
+
+> Diagram source: [`DIAGRAMS/cisco_evpn_data_model.drawio`](DIAGRAMS/cisco_evpn_data_model.drawio)
 
 Configuration must be applied in strict dependency order:
 
@@ -454,7 +456,7 @@ VRF DEFINITION
 |----------|-----------------|
 | `FABRIC-VRF.j2` | `vrf definition`, RD/RT |
 | `FABRIC-LOOPBACKS.j2` | `interface Loopback0/901-903`, PIM, OSPF |
-| `FABRIC-BORDER-DMZ-TUNNELS.j2` | `interface Tunnel10/11`, `router ospf 100` |
+| `FABRIC-BORDER-DMZ-TUNNELS.j2` | `interface Tunnel10` (one per DMZ peer), `router ospf 100` |
 | `FABRIC-L3OUT.j2` | Dot1Q sub-interfaces, Null0 routes |
 | `FABRIC-NVE.j2` | `interface nve1`, L3VNI VLANs/SVIs, `vlan configuration` |
 | `FABRIC-MCAST.j2` | `ip pim`, `ip msdp`, VRF MDT |
