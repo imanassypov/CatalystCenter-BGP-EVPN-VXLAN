@@ -3,17 +3,14 @@
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-ROLES.j2" %}
 {% include "{{ TEMPLATE_PROJECT_NAME }}/DEFN-TELEMETRY-SPLUNK.j2" %}
 {% set DEVICE_HOSTNAME = __device.hostname | default('', true) %}
-{% set TELEMETRY_TARGET_DEVICES = [] %}
-{% set TELEMETRY_TARGET_SEEN = {} %}
-{% for role in DEFN_TELEMETRY_SPLUNK_ROLES %}
-{% for node in DEFN_NODE_ROLES[role] %}
-{% if TELEMETRY_TARGET_SEEN[node] is not defined %}
-{% set _ = TELEMETRY_TARGET_DEVICES.append(node) %}
-{% set _ = TELEMETRY_TARGET_SEEN.update({node: true}) %}
-{% endif %}
-{% endfor %}
-{% endfor %}
-{% if DEVICE_HOSTNAME in TELEMETRY_TARGET_DEVICES %}
+{# Telemetry target = union of SPINE, BORDER, and CLIENT roles.                     #}
+{# Membership is tested with LITERAL-key lookups (DEFN_NODE_ROLES['ROLE']) - the    #}
+{# only reliable pattern in Catalyst Center's included-scope Jinja engine.          #}
+{# A previous variable-key iteration (for role in DEFN_TELEMETRY_SPLUNK_ROLES ->    #}
+{# DEFN_NODE_ROLES[role]) silently returned empty, so this section never rendered   #}
+{# on CLIENT-only nodes (leaves). DEFN_TELEMETRY_SPLUNK_ROLES stays in the DEFN for #}
+{# documentation; the roles are enumerated explicitly below to avoid variable keys. #}
+{% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['SPINE'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['BORDER'] or DEVICE_HOSTNAME in DEFN_NODE_ROLES['CLIENT'] %}
 ! =============================================================================
 ! IOS-XE MDT Telemetry Subscriptions - Campus BGP EVPN VXLAN Fabric
 ! =============================================================================
