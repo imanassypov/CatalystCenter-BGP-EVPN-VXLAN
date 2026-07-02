@@ -1,0 +1,141 @@
+<mxfile host="app.diagrams.net" agent="drawio-cli" version="24.7.17">
+  <diagram id="cisco-evpn-topology" name="Logical EVPN Topology">
+    <mxGraphModel dx="1200" dy="800" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1520" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ============ CONTAINERS ============ -->
+        <mxCell id="campus-box" value="" style="rounded=1;arcSize=4;dashed=1;dashPattern=6 4;strokeColor=#1F5FBF;strokeWidth=2;fillColor=none;verticalAlign=bottom;fontColor=#1F5FBF;fontSize=16;fontStyle=1;spacingBottom=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="980" height="570" as="geometry" />
+        </mxCell>
+        <mxCell id="campus-title" value="Cisco Catalyst BGP EVPN VXLAN Campus &#8212; ASN 65001" style="text;html=1;align=left;verticalAlign=middle;fontColor=#1F5FBF;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="52" y="976" width="560" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="iot-box" value="" style="rounded=1;arcSize=6;dashed=1;dashPattern=3 3;strokeColor=#1F5FBF;strokeWidth=2;fillColor=none;verticalAlign=top;align=right;fontColor=#333333;fontSize=16;fontStyle=1;spacingTop=-30;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="60" width="360" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="iot-title" value="Isolated IOT Segment &#8212; ASN 65003" style="text;html=1;align=right;verticalAlign=middle;fontColor=#333333;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="28" width="400" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- ============ SPINES ============ -->
+        <mxCell id="spine01" value="Spine-01&#10;RR &#183; Lo0 198.19.1.1" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#1BA1E2;strokeColor=#0A6FA8;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="450" width="78" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="spine02" value="Spine-02&#10;RR &#183; Lo0 198.19.1.2" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#1BA1E2;strokeColor=#0A6FA8;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="450" width="78" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="spine-link" value="" style="endArrow=none;html=1;strokeColor=#0A6FA8;strokeWidth=2;" edge="1" parent="1" source="spine01" target="spine02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ LEAVES ============ -->
+        <mxCell id="leaf01" value="Leaf-01&#10;Lo0 198.19.1.3" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.switches.workgroup_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="680" width="80" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="leaf02" value="Leaf-02&#10;Lo0 198.19.1.4" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.switches.workgroup_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="680" width="80" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="leaf03" value="Leaf-03" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.switches.workgroup_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="680" width="80" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- ============ BORDERS ============ -->
+        <mxCell id="border01" value="Border-01&#10;Lo0 198.19.1.5" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#F5A623;strokeColor=#B8760C;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="675" width="78" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="border02" value="Border-02&#10;Lo0 198.19.1.6" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#F5A623;strokeColor=#B8760C;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="675" width="78" height="62" as="geometry" />
+        </mxCell>
+
+        <!-- ============ SPINE-LEAF FABRIC MESH ============ -->
+        <mxCell id="e-s1-l1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="leaf01"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s1-l2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="leaf02"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s1-l3" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="leaf03"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s1-b1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="border01"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s1-b2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="border02"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-l1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="leaf01"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-l2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="leaf02"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-l3" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="leaf03"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-b1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="border01"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-b2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="border02"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ TENANT SEGMENT BARS ============ -->
+        <mxCell id="seg-corp-a" value="CORP SEGMENT &#183; VRF red &#183; VLAN 101" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5A623;strokeColor=#B8760C;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="70" y="775" width="520" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="seg-corp-b" value="CORP SEGMENT &#183; VRF red &#183; VLAN 102" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E05B49;strokeColor=#B23A2C;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="808" width="310" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="seg-iot-a" value="IOT SEGMENT &#183; VRF blue &#183; VLAN 201" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=#2E6DB4;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="862" width="330" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="seg-iot-b" value="IOT SEGMENT &#183; VRF green &#183; VLAN 221" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#5AB05A;strokeColor=#2E7D32;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="70" y="896" width="430" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ============ ISOLATED IOT SEGMENT (DMZ, ASN 65003) ============ -->
+        <mxCell id="fw" value="Internet&#10;Firewall" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#D64541;strokeColor=#9B2E2A;pointerEvents=1;shape=mxgraph.cisco.security.firewall;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1272" y="90" width="56" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="shared-vrf" value="SHARED SERVICES VRF" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;dashed=1;dashPattern=4 4;fillColor=none;strokeColor=#555555;fontColor=#333333;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="170" width="230" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz" value="DMZ Gateway&#10;dmz1 &#183; Lo0 198.19.1.200" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.routers.router;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1268" y="228" width="64" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="iot-vrf-blue" value="IOT SEGMENT VRF &#183; blue" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=#2E6DB4;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="308" width="230" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="iot-vrf-green" value="IOT SEGMENT VRF &#183; green" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#5AB05A;strokeColor=#2E7D32;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="336" width="230" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- ============ ISOLATED SEGMENT INTERNAL LINKS ============ -->
+        <mxCell id="e-fw-shared" value="" style="endArrow=none;html=1;strokeColor=#1F5FBF;strokeWidth=2;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="fw" target="shared-vrf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-shared-dmz" value="" style="endArrow=none;html=1;strokeColor=#1F5FBF;strokeWidth=2;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="shared-vrf" target="dmz"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-dmz-iotblue" value="" style="endArrow=none;html=1;strokeColor=#2E6DB4;strokeWidth=2;" edge="1" parent="1" source="dmz" target="iot-vrf-blue"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ OVERLAY: VXLAN (blue dashed) borders -> IOT VRF ============ -->
+        <mxCell id="vxlan-b1" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot-vrf-blue">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="760" y="520" /><mxPoint x="1050" y="322" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="vxlan-b2" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot-vrf-blue">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="950" y="560" /><mxPoint x="1090" y="322" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="vxlan-lbl" value="VXLAN" style="text;html=1;align=center;verticalAlign=middle;fontColor=#1F3FBF;fontSize=12;fontStyle=1;rotation=-70;" vertex="1" parent="1">
+          <mxGeometry x="980" y="420" width="70" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ============ OVERLAY: HW IPSEC (green dashed) borders -> isolated segment ============ -->
+        <mxCell id="ipsec-b1" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot-vrf-green">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="820" y="480" /><mxPoint x="1120" y="360" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ipsec-b2" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot-vrf-green">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1010" y="500" /><mxPoint x="1140" y="360" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ipsec-lbl" value="HW IPSEC" style="text;html=1;align=center;verticalAlign=middle;fontColor=#2E9B4E;fontSize=12;fontStyle=1;rotation=-35;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="430" width="90" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ============ LEGEND ============ -->
+        <mxCell id="legend-box" value="" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="70" y="430" width="270" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="Legend" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="82" y="436" width="120" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-vxlan-line" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="86" y="466" as="sourcePoint" /><mxPoint x="126" y="466" as="targetPoint" /></mxGeometry></mxCell>
+        <mxCell id="legend-vxlan-txt" value="VXLAN EVPN overlay (VNI)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=10;" vertex="1" parent="1"><mxGeometry x="134" y="457" width="200" height="18" as="geometry" /></mxCell>
+        <mxCell id="legend-ipsec-line" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="86" y="491" as="sourcePoint" /><mxPoint x="126" y="491" as="targetPoint" /></mxGeometry></mxCell>
+        <mxCell id="legend-ipsec-txt" value="HW IPSEC (encrypted transport)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=10;" vertex="1" parent="1"><mxGeometry x="134" y="482" width="210" height="18" as="geometry" /></mxCell>
+        <mxCell id="legend-fabric-line" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="86" y="516" as="sourcePoint" /><mxPoint x="126" y="516" as="targetPoint" /></mxGeometry></mxCell>
+        <mxCell id="legend-fabric-txt" value="Spine-leaf underlay (IGP)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=10;" vertex="1" parent="1"><mxGeometry x="134" y="507" width="200" height="18" as="geometry" /></mxCell>
+        <mxCell id="legend-border-txt" value="Amber = Border (EVPN handoff)   Green = Leaf/DMZ" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=9;" vertex="1" parent="1"><mxGeometry x="82" y="527" width="252" height="16" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
