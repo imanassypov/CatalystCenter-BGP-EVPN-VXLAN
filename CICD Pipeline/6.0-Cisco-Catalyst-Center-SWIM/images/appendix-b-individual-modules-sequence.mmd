@@ -1,0 +1,72 @@
+sequenceDiagram
+    autonumber
+    participant PB as Ansible Playbook
+    participant CatC as Catalyst Center API
+    participant Dev as Devices (Floor 1)
+
+    rect rgb(230,240,255)
+        Note over PB,CatC: PHASE 00 — Preflight (resync + IMAGE compliance)
+        PB->>CatC: network_devices_resync_interval_settings_override(site, force_sync)
+        CatC-->>PB: taskId
+        PB->>CatC: task_info — poll until endTime set
+        CatC-->>PB: resync complete
+        PB->>CatC: compliance_device(deviceIds, categories=[IMAGE])
+        CatC-->>PB: taskId
+        PB->>CatC: task_info — poll until endTime set
+        PB->>CatC: compliance_device_details_info(deviceId, complianceType=IMAGE)
+        CatC-->>PB: compliance results per device
+    end
+
+    rect rgb(255,245,225)
+        Note over PB,CatC: PHASE 10 — Import image + golden tag
+        PB->>CatC: swim_import_via_url(sourceURL)
+        CatC-->>PB: taskId
+        PB->>CatC: task_info — poll until endTime / isError
+        CatC-->>PB: import complete
+        PB->>CatC: swim_image_details_info(name) — resolve imageId UUID
+        CatC-->>PB: imageId
+        PB->>CatC: sites_info(site_name) — resolve siteId UUID
+        CatC-->>PB: siteId
+        PB->>CatC: golden_image_create(imageId, siteId, deviceFamilyIdentifier, deviceRole)
+        CatC-->>PB: golden tag applied
+    end
+
+    rect rgb(230,255,235)
+        Note over PB,CatC: PHASE 20 — Distribute (install add, no reload)
+        PB->>CatC: swim_image_details_info(name) — resolve imageId
+        CatC-->>PB: imageId
+        PB->>CatC: intent_network_devices_query(site, family, series)
+        CatC-->>PB: deviceId list
+        PB->>CatC: swim_trigger_distribution([{deviceUuid, imageUuid}])
+        Note over PB,CatC: OR network_device_images_id_distribute(deviceId, imageId)
+        CatC-->>PB: taskId
+        PB->>CatC: task_info — poll until endTime / isError
+        CatC-->>Dev: install add (no reload)
+        Dev-->>CatC: image staged
+    end
+
+    rect rgb(255,230,230)
+        Note over PB,CatC: PHASE 30 — Activate (install activate + commit — REBOOTS)
+        PB->>CatC: swim_image_details_info(name) — resolve imageId
+        CatC-->>PB: imageId
+        PB->>CatC: intent_network_devices_query(site, family, series)
+        CatC-->>PB: deviceId list
+        PB->>CatC: network_device_images_id_readiness_checks(deviceId, imageId)
+        CatC-->>PB: readiness status per device
+        PB->>CatC: swim_trigger_activation([{deviceUuid, imageUuidList, activateLowerImageVersion}])
+        Note over PB,CatC: OR network_device_images_id_activate(deviceId, installedImages)
+        CatC-->>PB: taskId
+        PB->>CatC: task_info — poll with timeout >= 7200s (devices reload)
+        CatC-->>Dev: install activate + install commit
+        Dev-->>CatC: reloaded on new image
+        CatC-->>PB: task complete
+    end
+
+    rect rgb(230,240,255)
+        Note over PB,CatC: PHASE 40 — Postcheck (IMAGE compliance)
+        PB->>CatC: compliance_device(deviceIds, categories=[IMAGE])
+        CatC-->>PB: taskId
+        PB->>CatC: task_info — poll until endTime
+        PB->>CatC: compliance_device_details_info(complianceType=IMAGE)
+        CatC-->>PB: Compliant: 6 / 6
+    end

@@ -151,7 +151,7 @@ The diagram below shows every decision point and state transition from startup t
 ## Directory Structure
 
 ```
-8.0-Cisco-Catalyst-Center-Provision-Devices/
+9.0-Cisco-Catalyst-Center-Provision-Devices/
 ├── provision_devices.yml   # Main playbook — loads data, authenticates, loops per site
 ├── tasks/
 │   └── provision_site.yml  # Per-site task — resolves UUIDs, checks state, provisions
@@ -173,7 +173,7 @@ The diagram below shows every decision point and state transition from startup t
 ```bash
 # 1. Clone the repository (if not already done)
 git clone <repo-url>
-cd "Support/Resources/Ansible/8.0-Cisco-Catalyst-Center-Provision-Devices"
+cd "Support/Resources/Ansible/9.0-Cisco-Catalyst-Center-Provision-Devices"
 
 # 2. Install the required Ansible collection
 ansible-galaxy collection install -r requirements.yml

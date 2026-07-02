@@ -1,0 +1,71 @@
+---
+- name: Roll back to previous golden image (reloads devices)
+  hosts: catc
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../vars/images.yml
+  vars:
+    run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  pre_tasks:
+    - name: Enforce rollback confirmation gates
+      ansible.builtin.assert:
+        that:
+          - rollback_confirm | default('') == 'YES'
+          - rollback_reload_ack | default('') == 'RELOAD_OK'
+        fail_msg: "Rollback requires -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK."
+
+  tasks:
+    - name: Retag previous image as golden for rollback targets
+      cisco.catalystcenter.swim_workflow_manager:
+        catalystcenter_host: "{{ catalystcenter_host }}"
+        catalystcenter_username: "{{ catalystcenter_username }}"
+        catalystcenter_password: "{{ catalystcenter_password }}"
+        catalystcenter_verify: "{{ catalystcenter_verify }}"
+        catalystcenter_port: "{{ catalystcenter_port }}"
+        catalystcenter_version: "{{ catalystcenter_version }}"
+        catalystcenter_log: "{{ catalystcenter_log }}"
+        catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+        catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+        catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+        validate_response_schema: "{{ validate_response_schema }}"
+        catalystcenter_api_task_timeout: "{{ catalystcenter_api_task_timeout }}"
+        catalystcenter_task_poll_interval: "{{ catalystcenter_task_poll_interval }}"
+        config_verify: true
+        state: merged
+        config:
+          - tagging_details: "{{ item.tagging_details }}"
+      loop: "{{ swim_details.rollback_images.tag }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: rollback_tag_result
+
+    - name: Activate rollback image on targets
+      cisco.catalystcenter.swim_workflow_manager:
+        catalystcenter_host: "{{ catalystcenter_host }}"
+        catalystcenter_username: "{{ catalystcenter_username }}"
+        catalystcenter_password: "{{ catalystcenter_password }}"
+        catalystcenter_verify: "{{ catalystcenter_verify }}"
+        catalystcenter_port: "{{ catalystcenter_port }}"
+        catalystcenter_version: "{{ catalystcenter_version }}"
+        catalystcenter_log: "{{ catalystcenter_log }}"
+        catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+        catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+        catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+        validate_response_schema: "{{ validate_response_schema }}"
+        catalystcenter_api_task_timeout: 7200
+        catalystcenter_task_poll_interval: 60
+        config_verify: true
+        state: merged
+        config:
+          - image_activation_details: "{{ item.image_activation_details }}"
+      loop: "{{ swim_details.rollback_images.activate }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: rollback_activate_result
+
+    - name: Write rollback evidence
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../logs/{{ run_id }}-35_rollback.json"
+        content: "{{ {'tag': rollback_tag_result, 'activate': rollback_activate_result} | to_nice_json }}"
+        mode: "0640"

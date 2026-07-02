@@ -99,10 +99,18 @@ Node Configs/                      # Reference device configs (lab output)
 ├── fabric-dmz/                    # DMZ rendered configs
 └── cores/                         # Core router configs
 
-CICD Pipeline/
-└── Cisco-Catalyst-Center-Templates-Github-integration/
-    ├── ansible-git-catc.yml       # GitOps sync: Git → Catalyst Center
-    └── README.md                  # Pipeline documentation
+CICD Pipeline/                     # Ordered Catalyst Center provisioning stages
+├── 1.0-Cisco-Catalyst-Center-Site-Hierarchy/
+├── 2.0-Cisco-Catalyst-Center-Settings/
+├── 3.0-Cisco-Catalyst-Center-Credentials/
+├── 4.0-Cisco-Catalyst-Center-Device-Discovery/
+├── 5.0-Cisco-Catalyst-Center-Assign-To-Site/
+├── 6.0-Cisco-Catalyst-Center-SWIM/                        # Software Image Management (upgrade)
+├── 7.0-Cisco-Catalyst-Center-Templates-Github-integration/  # GitOps sync: Git → Catalyst Center
+├── 8.0-Cisco-Catalyst-Center-Network-Profile/
+├── 9.0-Cisco-Catalyst-Center-Provision-Devices/
+├── 10.0-Cisco-Catalyst-Center-Provision-Composite/
+└── 11.0-Backup-My-Configs/
 
 Campus BGP EVPN Splunk Assurance/  # Streaming telemetry assurance
 ├── campus_evpn_assurance/         # Packaged Splunk app
@@ -360,7 +368,7 @@ ip msdp peer 198.19.1.X connect-source Loopback0 remote-as 65001
 
 ### 8.1 GitOps Workflow (Ansible)
 
-The vendored pipeline at [`CICD Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/) performs:
+The vendored pipeline at [`CICD Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/) performs:
 
 1. Fetch `.j2` templates from Git repository
 2. Enrich each template with Git commit metadata (version description + diff header)
@@ -368,7 +376,7 @@ The vendored pipeline at [`CICD Pipeline/Cisco-Catalyst-Center-Templates-Github-
 4. Sync to Catalyst Center Template Project via `cisco.dnac.template_workflow_manager`
 5. Create/update `BGP-EVPN-BUILD` composite and bind to CLI Network Profile
 
-The playbook supports **multiple subfolders** (`git_repo_subfolders` in `inventory.yml`), each synced to its own CatC project. See the [pipeline README](CICD%20Pipeline/Cisco-Catalyst-Center-Templates-Github-integration/README.md) for configuration details.
+The playbook supports **multiple subfolders** (`git_repo_subfolders` in `inventory.yml`), each synced to its own CatC project. See the [pipeline README](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/README.md) for configuration details.
 
 ### 8.2 Provisioning Workflow
 

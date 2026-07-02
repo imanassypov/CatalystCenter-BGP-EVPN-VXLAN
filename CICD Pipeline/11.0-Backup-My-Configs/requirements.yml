@@ -1,4 +1,4 @@
-# Ansible Galaxy collection requirements for 10.0-Backup-My-Configs
+# Ansible Galaxy collection requirements for 11.0-Backup-My-Configs
 # Install with: ansible-galaxy collection install -r requirements.yml
 #
 # Modules used:

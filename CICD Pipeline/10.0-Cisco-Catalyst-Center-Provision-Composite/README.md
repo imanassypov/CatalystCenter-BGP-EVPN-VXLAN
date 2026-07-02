@@ -148,7 +148,7 @@ The diagram below shows every decision point and state transition from startup t
 ## Directory Structure
 
 ```
-9.0-Cisco-Catalyst-Center-Provision-Composite/
+10.0-Cisco-Catalyst-Center-Provision-Composite/
 ├── ansible.cfg                         # Ansible defaults (inventory path)
 ├── inventory.yml                       # CatC connection + deploy variables
 ├── deploy_composite_template.yml       # Main playbook
