@@ -1,0 +1,162 @@
+<mxfile host="app.diagrams.net" modified="2026-07-02T12:00:00.000Z" agent="draw.io" version="24.0.0">
+  <diagram name="Border-DMZ EVPN Peering (GRE Overlay)" id="border-dmz-evpn-gre">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1960" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== TITLE ==================== -->
+        <mxCell id="title" value="&lt;font style=&quot;font-size:18px;&quot;&gt;&lt;b&gt;Border-to-DMZ EVPN Peering — GRE Overlay (Multi-Cluster BGP EVPN)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#666;&quot;&gt;Logical role view — physical members collapsed | Campus Fabric BORDER role (AS 65001) ↔ DMZ role (AS 65003) | eBGP L2VPN EVPN, Loopback2-sourced over GRE / OSPF 100 | ebgp-multihop 255 | EVPN-only + rewrite-evpn-rt-asn&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="330" y="12" width="1100" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 3-LAYER TRANSPORT LEGEND ==================== -->
+        <mxCell id="layer3-band" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=6 4;strokeColor=#6A1B9A;strokeWidth=1.5;fillColor=#F3E5F5;arcSize=4;opacity=45;" vertex="1" parent="1">
+          <mxGeometry x="90" y="76" width="1790" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="layer3-label" value="&lt;font color=&quot;#6A1B9A&quot; style=&quot;font-size:11px;&quot;&gt;&lt;b&gt;LAYER 3 — eBGP L2VPN EVPN overlay (control plane).&lt;/b&gt;&amp;nbsp; BORDER Lo2 (AS 65001) ↔ DMZ Lo0 198.19.1.200 (AS 65003). Loopback-sourced → not directly connected → &lt;b&gt;ebgp-multihop 255&lt;/b&gt;. EVPN-only (no IPv4 unicast AF). fall-over route-map NODE-LOOPBACKS bonds liveness to the tunnel.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="80" width="1770" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer2-band" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=6 4;strokeColor=#2E7D32;strokeWidth=1.5;fillColor=#E8F5E9;arcSize=4;opacity=45;" vertex="1" parent="1">
+          <mxGeometry x="90" y="140" width="1790" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="layer2-label" value="&lt;font color=&quot;#2E7D32&quot; style=&quot;font-size:11px;&quot;&gt;&lt;b&gt;LAYER 2 — GRE tunnel underlay (OSPF 100, P2P, PIM-SM).&lt;/b&gt;&amp;nbsp; Runs inside Tunnel10. Advertises the EVPN loopbacks (Border Lo2 /32 and DMZ Lo0 198.19.1.200/32) so the multihop eBGP session has an inner path. Border Lo2 = OSPF 100 RID; DMZ Lo0 = OSPF 100 RID.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="144" width="1770" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer1-band" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=6 4;strokeColor=#E65100;strokeWidth=1.5;fillColor=#FFF3E0;arcSize=4;opacity=45;" vertex="1" parent="1">
+          <mxGeometry x="90" y="200" width="1790" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="layer1-label" value="&lt;font color=&quot;#E65100&quot; style=&quot;font-size:11px;&quot;&gt;&lt;b&gt;LAYER 1 — GRE outer transport (Campus OSPF 1 underlay).&lt;/b&gt;&amp;nbsp; Tunnel source/dest = Loopback1 (10.100.2.0/29). GRE dest reachability is provided by OSPF 1; Spines redistribute DMZ Lo1 10.100.2.1/32 into OSPF 1 via prefix-list MCLUSTER-LOOPBACKS so the tunnel can form.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="204" width="1770" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== SPINE / RR ROLE (underlay injector) ==================== -->
+        <mxCell id="spine-c" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#F1F8E9;arcSize=6;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="90" y="620" width="360" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="spine-h" value="&lt;font style=&quot;font-size:13px;color:#1B5E20;&quot;&gt;&lt;b&gt;SPINE role&lt;/b&gt;&amp;nbsp; · Route-Reflectors · AS 65001&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#555;&quot;&gt;members: Spine-01, Spine-02&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fillColor=#DCEDC8;rounded=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="98" y="628" width="344" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="spine-b" value="&lt;font style=&quot;font-size:10px;font-family:monospace;&quot;&gt;Lo0: 198.19.1.1 / 198.19.1.2&lt;br&gt;&lt;br&gt;&lt;b&gt;Underlay glue — makes the GRE dest routable:&lt;/b&gt;&lt;br&gt;ip prefix-list MCLUSTER-LOOPBACKS&lt;br&gt;&amp;nbsp;&amp;nbsp;permit 10.100.2.1/32  ← DMZ Lo1 (GRE hub)&lt;br&gt;route-map BGP-TO-OSPF permit 30&lt;br&gt;router ospf 1 → redistribute bgp (match)&lt;br&gt;&lt;br&gt;DMZ Lo0 198.19.1.200 is &lt;b&gt;NOT&lt;/b&gt; injected here&lt;br&gt;(kept in OSPF 100 only → fall-over integrity).&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="98" y="672" width="344" height="172" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== BORDER ROLE CONTAINER ==================== -->
+        <mxCell id="border-c" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=3;fillColor=#EAF3FC;arcSize=4;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="500" y="300" width="680" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="border-h" value="&lt;font style=&quot;font-size:14px;color:#0D47A1;&quot;&gt;&lt;b&gt;BORDER role&lt;/b&gt;&amp;nbsp; · AS 65001 (iBGP fabric member) · GRE hub to DMZ&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#555;&quot;&gt;members: Border-01, Border-02&amp;nbsp; · rendered by FABRIC-*.j2 (BORDER-guarded)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fillColor=#D6E7FA;rounded=1;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="510" y="308" width="660" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- Border loopback breakout table -->
+        <mxCell id="border-lo-t" value="&lt;div style=&quot;font-size:11px;color:#0D47A1;text-align:left;margin-bottom:3px;&quot;&gt;&lt;b&gt;① Loopbacks (per-member breakout)&lt;/b&gt;&lt;/div&gt;&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;width:100%;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #90CAF9;padding:3px 6px;background:#BBDEFB;&quot;&gt;Loopback&lt;/th&gt;&lt;th style=&quot;border:1px solid #90CAF9;padding:3px 6px;background:#BBDEFB;&quot;&gt;Role / Function&lt;/th&gt;&lt;th style=&quot;border:1px solid #90CAF9;padding:3px 6px;background:#BBDEFB;&quot;&gt;Border-01&lt;/th&gt;&lt;th style=&quot;border:1px solid #90CAF9;padding:3px 6px;background:#BBDEFB;&quot;&gt;Border-02&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;&lt;b&gt;Lo0&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;Underlay VTEP · BGP router-id&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;198.19.1.5/32&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;198.19.1.6/32&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;&lt;b&gt;Lo1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;GRE tunnel &lt;b&gt;source&lt;/b&gt; · in OSPF 1&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.5/32&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.6/32&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;background:#E1BEE7;&quot;&gt;&lt;b&gt;Lo2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;background:#F3E5F5;&quot;&gt;EVPN &lt;b&gt;update-source&lt;/b&gt; · OSPF 100 RID&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;background:#F3E5F5;&quot;&gt;10.101.1.2/32&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;background:#F3E5F5;&quot;&gt;10.101.2.2/32&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=top;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="512" y="358" width="656" height="108" as="geometry" />
+        </mxCell>
+
+        <!-- Border tunnel breakout table -->
+        <mxCell id="border-tun-t" value="&lt;div style=&quot;font-size:11px;color:#E65100;text-align:left;margin-bottom:3px;&quot;&gt;&lt;b&gt;② GRE Tunnels (one per member → single DMZ hub)&lt;/b&gt;&lt;/div&gt;&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;width:100%;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;Member&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;Interface&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;Overlay addr&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;src (Lo1)&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;dest (DMZ Lo1)&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;Border-01&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;Tunnel10&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.100.2/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.5&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.1&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;Border-02&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;Tunnel10&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.101.2/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.6&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.1&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=top;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="512" y="476" width="656" height="86" as="geometry" />
+        </mxCell>
+
+        <!-- Border BGP config breakout -->
+        <mxCell id="border-bgp" value="&lt;div style=&quot;font-size:11px;color:#6A1B9A;text-align:left;margin-bottom:3px;&quot;&gt;&lt;b&gt;③ eBGP EVPN peer config (per member, DMZ neighbor = Lo0)&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-family:monospace;text-align:left;line-height:1.35;&quot;&gt;router bgp &lt;b&gt;65001&lt;/b&gt;&lt;br&gt;&amp;nbsp;template peer-session OVERLAY-DMZ-EVPN-PEER-SESSION-POLICY&lt;br&gt;&amp;nbsp;&amp;nbsp;remote-as &lt;b&gt;65003&lt;/b&gt;&lt;br&gt;&amp;nbsp;&amp;nbsp;&lt;b&gt;ebgp-multihop 255&lt;/b&gt;&lt;br&gt;&amp;nbsp;&amp;nbsp;&lt;b&gt;update-source Loopback2&lt;/b&gt;&amp;nbsp; (10.101.1.2 / 10.101.2.2)&lt;br&gt;&amp;nbsp;&amp;nbsp;&lt;b&gt;fall-over route-map NODE-LOOPBACKS&lt;/b&gt;&lt;br&gt;&amp;nbsp;neighbor &lt;b&gt;198.19.1.200&lt;/b&gt; remote-as 65003&amp;nbsp; ← DMZ Lo0&lt;br&gt;&amp;nbsp;neighbor 198.19.1.200 inherit peer-session OVERLAY-DMZ-…&lt;br&gt;&amp;nbsp;address-family &lt;b&gt;l2vpn evpn&lt;/b&gt;&lt;br&gt;&amp;nbsp;&amp;nbsp;neighbor 198.19.1.200 activate&lt;br&gt;&amp;nbsp;&amp;nbsp;neighbor 198.19.1.200 inherit peer-policy OVERLAY-DMZ-EVPN&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;(rewrite-evpn-rt-asn) — &lt;i&gt;EVPN-only, no IPv4 unicast&lt;/i&gt;&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=top;overflow=fill;fillColor=#FBF5FE;strokeColor=#CE93D8;rounded=1;arcSize=4;spacingLeft=8;spacingTop=6;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="512" y="572" width="656" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="border-foot" value="&lt;font style=&quot;font-size:9px;color:#555;&quot;&gt;NODE-LOOPBACKS (fall-over) tracks all fabric Lo0 /32 + remote DMZ Lo0 (198.19.1.200). Loss of the DMZ /32 in OSPF 100 (tunnel down) drops the session.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="512" y="808" width="656" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== DMZ ROLE CONTAINER ==================== -->
+        <mxCell id="dmz-c" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=3;fillColor=#FFF6EC;arcSize=4;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="360" width="480" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz-h" value="&lt;font style=&quot;font-size:14px;color:#BF360C;&quot;&gt;&lt;b&gt;DMZ role&lt;/b&gt;&amp;nbsp; · AS 65003 (eBGP) · EVPN GRE spoke&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#555;&quot;&gt;members: dmz1 … dmzN (extensible)&amp;nbsp; · &lt;b&gt;manual&lt;/b&gt; — not rendered by templates&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fillColor=#FFE0B2;rounded=1;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="368" width="460" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- DMZ loopback table -->
+        <mxCell id="dmz-lo-t" value="&lt;div style=&quot;font-size:11px;color:#BF360C;text-align:left;margin-bottom:3px;&quot;&gt;&lt;b&gt;① Loopbacks (per role member)&lt;/b&gt;&lt;/div&gt;&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;width:100%;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;Loopback&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;Role / Function&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;dmz1&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;background:#E1BEE7;&quot;&gt;&lt;b&gt;Lo0&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;background:#F3E5F5;&quot;&gt;EVPN identity · &lt;b&gt;update-source&lt;/b&gt; · OSPF 100 RID&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;background:#F3E5F5;&quot;&gt;198.19.1.200/32&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;&lt;b&gt;Lo1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;GRE hub &lt;b&gt;source&lt;/b&gt; (into OSPF 1 via spines)&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.1/32&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=top;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="418" width="460" height="86" as="geometry" />
+        </mxCell>
+
+        <!-- DMZ tunnel endpoints -->
+        <mxCell id="dmz-tun-t" value="&lt;div style=&quot;font-size:11px;color:#E65100;text-align:left;margin-bottom:3px;&quot;&gt;&lt;b&gt;② GRE tunnel endpoints (hub — one spoke per Border)&lt;/b&gt;&lt;/div&gt;&lt;table style=&quot;font-size:10px;border-collapse:collapse;font-family:monospace;width:100%;&quot;&gt;&lt;tr&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;Toward&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;Overlay addr&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;src&lt;/th&gt;&lt;th style=&quot;border:1px solid #FFB74D;padding:3px 6px;background:#FFE0B2;&quot;&gt;dest&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;Border-01&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.100.1/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.1&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.5&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;Border-02&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.101.1/30&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.1&lt;/td&gt;&lt;td style=&quot;border:1px solid #ccc;padding:3px 6px;&quot;&gt;10.100.2.6&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;align=left;verticalAlign=top;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="514" width="460" height="86" as="geometry" />
+        </mxCell>
+
+        <!-- DMZ BGP config -->
+        <mxCell id="dmz-bgp" value="&lt;div style=&quot;font-size:11px;color:#6A1B9A;text-align:left;margin-bottom:3px;&quot;&gt;&lt;b&gt;③ eBGP EVPN peer config (neighbors = Border Lo2)&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;font-size:10px;font-family:monospace;text-align:left;line-height:1.35;&quot;&gt;router bgp &lt;b&gt;65003&lt;/b&gt;&lt;br&gt;&amp;nbsp;template peer-session OVERLAY-Border-EVPN-PEER-SESSION&lt;br&gt;&amp;nbsp;&amp;nbsp;remote-as &lt;b&gt;65001&lt;/b&gt;&lt;br&gt;&amp;nbsp;&amp;nbsp;&lt;b&gt;ebgp-multihop 255&lt;/b&gt;&lt;br&gt;&amp;nbsp;&amp;nbsp;&lt;b&gt;update-source Loopback0&lt;/b&gt;&amp;nbsp; (198.19.1.200)&lt;br&gt;&amp;nbsp;neighbor &lt;b&gt;10.101.1.2&lt;/b&gt; inherit …&amp;nbsp; ← Border-01 Lo2&lt;br&gt;&amp;nbsp;neighbor &lt;b&gt;10.101.2.2&lt;/b&gt; inherit …&amp;nbsp; ← Border-02 Lo2&lt;br&gt;&amp;nbsp;address-family &lt;b&gt;l2vpn evpn&lt;/b&gt;&lt;br&gt;&amp;nbsp;&amp;nbsp;neighbor 10.101.1.2 activate&lt;br&gt;&amp;nbsp;&amp;nbsp;neighbor 10.101.2.2 activate&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=top;overflow=fill;fillColor=#FBF5FE;strokeColor=#CE93D8;rounded=1;arcSize=4;spacingLeft=8;spacingTop=6;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="610" width="460" height="196" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz-foot" value="&lt;font style=&quot;font-size:9px;color:#555;&quot;&gt;DMZ role can scale to N gateways; each adds its own Lo0 EVPN identity + GRE spoke back to both Borders.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="812" width="460" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== EDGES: GRE (Layer 1/2) ==================== -->
+        <mxCell id="gre-b1" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;GRE Tunnel10 — Border-01&lt;/b&gt;&lt;br&gt;OSPF 100 P2P · outer 10.100.2.5↔.1&lt;/font&gt;" style="endArrow=classic;startArrow=classic;html=1;rounded=1;edgeStyle=orthogonalEdgeStyle;strokeColor=#E65100;strokeWidth=3;fontColor=#8A4B00;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="border-tun-t" target="dmz-tun-t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gre-b2" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;GRE Tunnel10 — Border-02&lt;/b&gt;&lt;br&gt;OSPF 100 P2P · outer 10.100.2.6↔.1&lt;/font&gt;" style="endArrow=classic;startArrow=classic;html=1;rounded=1;edgeStyle=orthogonalEdgeStyle;strokeColor=#E65100;strokeWidth=3;fontColor=#8A4B00;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="1" source="border-tun-t" target="dmz-tun-t">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== EDGES: eBGP EVPN (Layer 3) ==================== -->
+        <mxCell id="evpn-b1" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;eBGP L2VPN EVPN&lt;/b&gt; · Border-01&lt;br&gt;10.101.1.2 (65001) ↔ 198.19.1.200 (65003)&lt;br&gt;multihop 255 · src Lo2&lt;/font&gt;" style="endArrow=classic;startArrow=classic;html=1;rounded=1;dashed=1;dashPattern=8 4;edgeStyle=orthogonalEdgeStyle;strokeColor=#6A1B9A;strokeWidth=2.5;fontColor=#4A148C;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="border-bgp" target="dmz-bgp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="evpn-b2" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;eBGP L2VPN EVPN&lt;/b&gt; · Border-02&lt;br&gt;10.101.2.2 (65001) ↔ 198.19.1.200 (65003)&lt;br&gt;multihop 255 · src Lo2&lt;/font&gt;" style="endArrow=classic;startArrow=classic;html=1;rounded=1;dashed=1;dashPattern=8 4;edgeStyle=orthogonalEdgeStyle;strokeColor=#6A1B9A;strokeWidth=2.5;fontColor=#4A148C;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="1" source="border-bgp" target="dmz-bgp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== EDGE: Underlay injection (Spine → DMZ Lo1) ==================== -->
+        <mxCell id="inject" value="&lt;font style=&quot;font-size:9px;&quot;&gt;OSPF 1: redistribute&lt;br&gt;10.100.2.1/32 (DMZ Lo1)&lt;br&gt;via MCLUSTER-LOOPBACKS&lt;/font&gt;" style="endArrow=open;html=1;rounded=1;dashed=1;dashPattern=2 3;edgeStyle=orthogonalEdgeStyle;strokeColor=#616161;strokeWidth=1.5;fontColor=#424242;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.15;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="spine-c" target="dmz-c">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="270" y="930" />
+              <mxPoint x="1512" y="930" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== LEGEND ==================== -->
+        <mxCell id="key-box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#9E9E9E;strokeWidth=1;fillColor=#FAFAFA;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="90" y="960" width="1830" height="128" as="geometry" />
+        </mxCell>
+        <mxCell id="key-title" value="&lt;font style=&quot;font-size:11px;&quot;&gt;&lt;b&gt;Legend&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="100" y="964" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="key-gre-line" value="" style="endArrow=none;html=1;strokeColor=#E65100;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="115" y="1002" as="sourcePoint" />
+            <mxPoint x="185" y="1002" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="key-gre-t" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;GRE Tunnel10 + OSPF 100&lt;/b&gt; (P2P, PIM-SM) — one tunnel per Border member to the single DMZ hub; carries the overlay loopbacks (Layers 1–2).&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="992" width="1400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="key-evpn-line" value="" style="endArrow=none;html=1;strokeColor=#6A1B9A;strokeWidth=2.5;dashed=1;dashPattern=8 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="115" y="1030" as="sourcePoint" />
+            <mxPoint x="185" y="1030" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="key-evpn-t" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;eBGP L2VPN EVPN session&lt;/b&gt; — Border Lo2 ↔ DMZ Lo0, AS 65001↔65003, ebgp-multihop 255, EVPN-only (not activated in IPv4 unicast), rewrite-evpn-rt-asn (Layer 3).&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1020" width="1400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="key-inject-line" value="" style="endArrow=open;html=1;strokeColor=#616161;strokeWidth=1.5;dashed=1;dashPattern=2 3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="115" y="1058" as="sourcePoint" />
+            <mxPoint x="185" y="1058" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="key-inject-t" value="&lt;font style=&quot;font-size:10px;&quot;&gt;&lt;b&gt;Campus OSPF 1 underlay injection&lt;/b&gt; — Spines (RR) redistribute DMZ Lo1 (10.100.2.1/32) so Borders can reach the GRE tunnel destination. DMZ Lo0 is deliberately withheld to preserve fall-over integrity.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1048" width="1470" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
