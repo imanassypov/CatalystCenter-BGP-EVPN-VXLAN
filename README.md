@@ -58,6 +58,10 @@ BGP control plane: three ASN domains (campus, core, DMZ) and their peering relat
 
 ### 1.3 Border-to-DMZ EVPN Peering (GRE Overlay)
 
+![Border-to-DMZ EVPN peering over GRE overlay](DIAGRAMS/cisco_evpn_border_dmz_peering.png)
+
+> Diagram source: [`DIAGRAMS/cisco_evpn_border_dmz_peering.drawio`](DIAGRAMS/cisco_evpn_border_dmz_peering.drawio)
+
 Borders peer with the DMZ gateway over a **GRE underlay** to decouple EVPN session stability from physical path topology:
 
 - **GRE source addressing**: All GRE tunnel sources are allocated from `10.100.2.0/29`, intentionally outside the `198.19.1.0/24` fabric loopback space to avoid conflicts with core router Loopback0 addresses. See `DEFN_LOOP_GRE_SRC` and `DEFN_LOOP_GRE_PEER` in `DEFN-LOOPBACKS.j2`.
