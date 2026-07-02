@@ -1,0 +1,216 @@
+# ============================================================================
+# Authors
+# ============================================================================
+# | Name            | Role                              | Contact              |
+# |-----------------|-----------------------------------|----------------------|
+# | Igor Manassypov | Systems Engineer                  | imanassy@cisco.com   |
+# Copyright © 2024-2026 Cisco Systems, Inc. All rights reserved.
+# ============================================================================
+#
+# Load & synthesise swim_details from the central data model (settings.json).
+#
+# This task file is imported at the top of every SWIM playbook. It reads the
+# same settings.json consumed by stages 1.0 (site hierarchy), 4.0 (discovery)
+# and 9.0 (provisioning), then synthesises the exact swim_details structure the
+# playbooks already loop over:
+#
+#   swim_details.import_images       → 10_import_and_tag.yml (import task)
+#   swim_details.golden_tag_images   → 10_import_and_tag.yml (tag task)
+#   swim_details.distribute_images   → 20_distribute.yml
+#   swim_details.activate_images     → 30_activate.yml
+#   swim_details.rollback_images     → 35_rollback.yml
+#
+# All image facts come from the per-project `swim` block in settings.json; the
+# site_name is DERIVED from the same HierarchyParent/Area/Bldg/Floor fields used
+# by the site-hierarchy and provisioning stages — never hardcoded here.
+---
+# ── Resolve & load the central data model ───────────────────────────────────
+- name: Resolve settings_json_path to absolute
+  ansible.builtin.set_fact:
+    _resolved_json_path: >-
+      {{ settings_json_path if settings_json_path.startswith('/')
+         else (playbook_dir + '/' + settings_json_path) }}
+
+- name: "DEBUG | Resolved settings JSON path"
+  ansible.builtin.debug:
+    var: _resolved_json_path
+  when: catc_debug | default(false) | bool
+
+- name: Load settings JSON
+  ansible.builtin.set_fact:
+    settings_data: "{{ lookup('file', _resolved_json_path) | from_json }}"
+
+- name: Validate that project key exists in settings data
+  ansible.builtin.assert:
+    that: settings_data.project is defined and settings_data.project | length > 0
+    fail_msg: "settings.json must contain a non-empty 'project' list."
+    success_msg: "Settings data loaded — {{ settings_data.project | length }} project entries found."
+
+- name: Validate that every project entry carries a swim block
+  ansible.builtin.assert:
+    that:
+      - item.swim is defined
+      - item.swim.image_server_base_url is defined
+      - item.swim.upgrade_image is defined
+    fail_msg: >-
+      Each settings.json project entry consumed by SWIM must define a 'swim' block
+      with at least image_server_base_url and upgrade_image.
+    quiet: true
+  loop: "{{ settings_data.project }}"
+  loop_control:
+    label: "{{ item.HierarchyParent | default('') }}/{{ item.HierarchyFloor | default('') }}"
+
+# ── Normalise each project entry into a flat SWIM record ─────────────────────
+# site_name is composed from the hierarchy fields exactly like stages 1.0 / 9.0:
+#   HierarchyParent / HierarchyArea / HierarchyBldg / HierarchyFloor
+# Empty segments are skipped so partial hierarchies still yield a valid path.
+- name: Normalise per-project SWIM records
+  ansible.builtin.set_fact:
+    _swim_records: >-
+      {%- set ns = namespace(items=[]) -%}
+      {%- for entry in settings_data.project -%}
+        {%- set sw = entry.swim -%}
+        {%- set sp = namespace(path='') -%}
+        {%- for part in [entry.HierarchyParent | default(''),
+                          entry.HierarchyArea   | default(''),
+                          entry.HierarchyBldg   | default(''),
+                          entry.HierarchyFloor  | default('')] -%}
+          {%- if part -%}
+            {%- set sp.path = sp.path + ('/' if sp.path else '') + part -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- set rec = {
+              'site_name':            sp.path,
+              'base_url':             sw.image_server_base_url,
+              'family_identifier':    sw.device_family_identifier,
+              'family_name':          sw.device_family_name,
+              'series_name':          sw.device_series_name,
+              'role':                 sw.device_role | default('ALL'),
+              'upgrade_image':        sw.upgrade_image,
+              'rollback_image':       sw.rollback_image | default(''),
+              'device_upgrade_mode':  (sw.activation | default({})).device_upgrade_mode | default('install'),
+              'distribute_if_needed': (sw.activation | default({})).distribute_if_needed | default(true),
+              'schedule_validate':    (sw.activation | default({})).schedule_validate | default(false)
+            } -%}
+        {%- set ns.items = ns.items + [rec] -%}
+      {%- endfor -%}
+      {{ ns.items }}
+
+# ── Synthesise swim_details (same schema the playbooks already consume) ──────
+- name: Synthesise swim_details from the central data model
+  ansible.builtin.set_fact:
+    swim_details:
+      import_images: >-
+        {%- set ns = namespace(items=[], seen=[]) -%}
+        {%- for r in _swim_records -%}
+          {%- for img in [r.upgrade_image, r.rollback_image] -%}
+            {%- if img and img not in ns.seen -%}
+              {%- set ns.seen = ns.seen + [img] -%}
+              {%- set ns.items = ns.items + [{
+                    'name': img,
+                    'import_image_details': {
+                      'type': 'remote',
+                      'url_details': {
+                        'payload': [{
+                          'source_url': [r.base_url ~ '/' ~ img],
+                          'is_third_party': false
+                        }]
+                      }
+                    }
+                  }] -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endfor -%}
+        {{ ns.items }}
+      golden_tag_images: >-
+        {%- set ns = namespace(items=[]) -%}
+        {%- for r in _swim_records -%}
+          {%- set ns.items = ns.items + [{
+                'name': r.upgrade_image ~ ' @ ' ~ r.site_name ~ ' / ' ~ r.role,
+                'tagging_details': {
+                  'image_name': r.upgrade_image,
+                  'device_role': r.role,
+                  'device_image_family_name': r.family_identifier,
+                  'site_name': r.site_name,
+                  'tagging': true
+                }
+              }] -%}
+        {%- endfor -%}
+        {{ ns.items }}
+      distribute_images: >-
+        {%- set ns = namespace(items=[]) -%}
+        {%- for r in _swim_records -%}
+          {%- set ns.items = ns.items + [{
+                'name': r.upgrade_image ~ ' @ ' ~ r.site_name ~ ' / ' ~ r.role,
+                'image_distribution_details': {
+                  'image_name': r.upgrade_image,
+                  'site_name': r.site_name,
+                  'device_role': r.role,
+                  'device_family_name': r.family_name,
+                  'device_series_name': r.series_name
+                }
+              }] -%}
+        {%- endfor -%}
+        {{ ns.items }}
+      activate_images: >-
+        {%- set ns = namespace(items=[]) -%}
+        {%- for r in _swim_records -%}
+          {%- set ns.items = ns.items + [{
+                'name': r.upgrade_image ~ ' @ ' ~ r.site_name ~ ' / ' ~ r.role,
+                'image_activation_details': {
+                  'image_name': r.upgrade_image,
+                  'site_name': r.site_name,
+                  'device_role': r.role,
+                  'device_family_name': r.family_name,
+                  'device_series_name': r.series_name,
+                  'activate_lower_image_version': false,
+                  'device_upgrade_mode': r.device_upgrade_mode,
+                  'distribute_if_needed': r.distribute_if_needed,
+                  'schedule_validate': r.schedule_validate
+                }
+              }] -%}
+        {%- endfor -%}
+        {{ ns.items }}
+      rollback_images:
+        tag: >-
+          {%- set ns = namespace(items=[]) -%}
+          {%- for r in _swim_records -%}
+            {%- if r.rollback_image -%}
+              {%- set ns.items = ns.items + [{
+                    'name': r.rollback_image ~ ' @ ' ~ r.site_name ~ ' / ' ~ r.role,
+                    'tagging_details': {
+                      'image_name': r.rollback_image,
+                      'device_role': r.role,
+                      'device_image_family_name': r.family_identifier,
+                      'site_name': r.site_name,
+                      'tagging': true
+                    }
+                  }] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ ns.items }}
+        activate: >-
+          {%- set ns = namespace(items=[]) -%}
+          {%- for r in _swim_records -%}
+            {%- if r.rollback_image -%}
+              {%- set ns.items = ns.items + [{
+                    'name': r.rollback_image ~ ' @ ' ~ r.site_name ~ ' / ' ~ r.role,
+                    'image_activation_details': {
+                      'image_name': r.rollback_image,
+                      'site_name': r.site_name,
+                      'device_role': r.role,
+                      'device_family_name': r.family_name,
+                      'device_series_name': r.series_name,
+                      'activate_lower_image_version': true,
+                      'distribute_if_needed': r.distribute_if_needed,
+                      'schedule_validate': true
+                    }
+                  }] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ ns.items }}
+
+- name: "DEBUG | Synthesised swim_details"
+  ansible.builtin.debug:
+    var: swim_details
+  when: catc_debug | default(false) | bool

@@ -3,8 +3,6 @@
   hosts: catc
   connection: local
   gather_facts: false
-  vars_files:
-    - ../vars/images.yml
   vars:
     run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
   pre_tasks:
@@ -16,6 +14,9 @@
         fail_msg: "Rollback requires -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK."
 
   tasks:
+    - name: Load SWIM image details from settings.json
+      ansible.builtin.import_tasks: ../tasks/load_swim_details.yml
+
     - name: Retag previous image as golden for rollback targets
       cisco.catalystcenter.swim_workflow_manager:
         catalystcenter_host: "{{ catalystcenter_host }}"
