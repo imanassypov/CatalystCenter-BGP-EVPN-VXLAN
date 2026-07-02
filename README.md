@@ -372,15 +372,39 @@ ip msdp peer 198.19.1.X connect-source Loopback0 remote-as 65001
 
 ### 8.1 GitOps Workflow (Ansible)
 
-The vendored pipeline at [`CICD Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/) performs:
+The [`CICD Pipeline/`](CICD%20Pipeline/) directory holds a numbered, end-to-end collection of Ansible playbooks that build the fabric from an empty Catalyst Center up through provisioned devices and config backup. Each stage is a self-contained project with its own `inventory.yml`, `requirements.yml`, and `vault.yml`, and all stages consume the shared declarative source-of-truth in [`CICD Pipeline/Settings/`](CICD%20Pipeline/Settings/) (`settings.json`).
 
-1. Fetch `.j2` templates from Git repository
+Run the stages in numeric order:
+
+| Stage | Playbook | Purpose |
+|-------|----------|---------|
+| [1.0 Site Hierarchy](CICD%20Pipeline/1.0-Cisco-Catalyst-Center-Site-Hierarchy/) | `site_hierarchy.yml` | Create/update the CatC site hierarchy (areas, buildings, floors) |
+| [2.0 Settings](CICD%20Pipeline/2.0-Cisco-Catalyst-Center-Settings/) | `network_settings.yml` | Apply per-site network settings (DNS, DHCP, NTP, SNMP, Syslog, AAA, banner) |
+| [3.0 Credentials](CICD%20Pipeline/3.0-Cisco-Catalyst-Center-Credentials/) | `credentials.yml` | Create/assign device credentials (CLI, SNMPv2c, NETCONF) and bind to sites |
+| [4.0 Device Discovery](CICD%20Pipeline/4.0-Cisco-Catalyst-Center-Device-Discovery/) | `device_discovery.yml` | Discover reachable devices and add them to CatC inventory |
+| [5.0 Assign To Site](CICD%20Pipeline/5.0-Cisco-Catalyst-Center-Assign-To-Site/) | `assign_to_site.yml` | Move discovered devices from Global into their designated site |
+| [6.0 SWIM](CICD%20Pipeline/6.0-Cisco-Catalyst-Center-SWIM/) | `playbooks/00_preflight.yml` → `10_import_and_tag.yml` → `20_distribute.yml` → `30_activate.yml` → `40_postcheck.yml` (rollback: `35_rollback.yml`) | Phased software image lifecycle: preflight/baseline, import + golden tag, distribute, activate (reload), postcheck, and rollback |
+| [7.0 Templates (GitOps)](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/) | `ansible-git-catc.yml` | Sync Jinja2 templates from GitHub into a CatC Template Project (incl. composites) |
+| [8.0 Network Profile](CICD%20Pipeline/8.0-Cisco-Catalyst-Center-Network-Profile/) | `network_profile.yml` | Create switching network profiles and bind Day-N templates to sites |
+| [9.0 Provision Devices](CICD%20Pipeline/9.0-Cisco-Catalyst-Center-Provision-Devices/) | `provision_devices.yml` | Provision devices to their sites (push site settings + licensing) |
+| [10.0 Provision Composite](CICD%20Pipeline/10.0-Cisco-Catalyst-Center-Provision-Composite/) | `deploy_composite_template.yml` | Deploy the composite (multi-member) Day-N template to target devices |
+| [11.0 Backup My Configs](CICD%20Pipeline/11.0-Backup-My-Configs/) | `backup-lab-configs.yml` | Back up `show running-config` from IOS-XE/NX-OS devices to timestamped archives |
+
+Supporting directories:
+- [`Settings/`](CICD%20Pipeline/Settings/) — `settings.json`, the single declarative source-of-truth consumed by stages 1.0–5.0 and 8.0
+- [`utils/ansible-image-server-setup/`](CICD%20Pipeline/utils/ansible-image-server-setup/) — `playbooks/deploy_http_image_server.yml` stands up the HTTP image server used as the file source for SWIM image import (stage 6.0)
+
+#### Template GitOps (Stage 7.0) in detail
+
+The GitOps pipeline at [`7.0-Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/) is the stage that publishes these BGP EVPN templates:
+
+1. Fetch `.j2` templates from the Git repository
 2. Enrich each template with Git commit metadata (version description + diff header)
 3. Read `BGP-EVPN-BUILD.yml` to determine composite ordering
-4. Sync to Catalyst Center Template Project via `cisco.dnac.template_workflow_manager`
-5. Create/update `BGP-EVPN-BUILD` composite and bind to CLI Network Profile
+4. Sync to the Catalyst Center Template Project via `cisco.dnac.template_workflow_manager`
+5. Create/update the `BGP-EVPN-BUILD` composite and bind it to a CLI Network Profile
 
-The playbook supports **multiple subfolders** (`git_repo_subfolders` in `inventory.yml`), each synced to its own CatC project. See the [pipeline README](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/README.md) for configuration details.
+It supports **multiple subfolders** (`git_repo_subfolders` in `inventory.yml`), each synced to its own CatC project. See the [pipeline README](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/README.md) for configuration details.
 
 ### 8.2 Provisioning Workflow
 
