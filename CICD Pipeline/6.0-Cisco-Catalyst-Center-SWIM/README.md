@@ -22,7 +22,7 @@ Validated against **Cisco Catalyst Center 2.3.7.6** with `cisco.catalystcenter` 
 4. [Repository layout](#4-repository-layout)
 5. [Install dependencies](#5-install-dependencies)
 6. [Configure credentials (Ansible Vault)](#6-configure-credentials-ansible-vault)
-7. [The data model — `vars/images.yml`](#7-the-data-model--varsimagesyml)
+7. [The data model — the `swim` block in `settings.json`](#7-the-data-model--the-swim-block-in-settingsjson)
 8. [The playbooks, explained](#8-the-playbooks-explained)
 9. [Run sequence](#9-run-sequence)
 10. [Evidence and logging](#10-evidence-and-logging)
@@ -230,7 +230,7 @@ that Catalyst Center uses in three different contexts. This repository keeps the
 > **Why this matters:** tagging is keyed to the **SWIM device-family identifier**, while
 > distribution and activation select devices using the **inventory** family/series. Using the
 > golden-tag identifier in a distribute call returns *"no eligible devices."* Both names are
-> pre-resolved in `vars/images.yml` so operators never have to guess.
+> pre-resolved in the `swim` block of `settings.json` so operators never have to guess.
 
 ---
 
@@ -245,10 +245,10 @@ that Catalyst Center uses in three different contexts. This repository keeps the
 ├── inventory/
 │   ├── hosts.yml                     # 'catalyst_center' host in group 'catc' (connection: local)
 │   └── group_vars/catc/
-│       ├── connection.yml            # catalystcenter_* connection + logging + timeout params
+│   ├── connection.yml            # catalystcenter_* connection + settings_json_path
 │       └── vault.yml                 # ENCRYPTED: catalystcenter_username / _password
-├── vars/
-│   └── images.yml                    # single source of truth: swim_details data model
+├── tasks/
+│   └── load_swim_details.yml         # synthesises swim_details from settings.json (imported by every playbook)
 ├── playbooks/
 │   ├── 00_preflight.yml              # resync + baseline IMAGE compliance
 │   ├── 10_import_and_tag.yml         # import images + mark golden
@@ -258,6 +258,12 @@ that Catalyst Center uses in three different contexts. This repository keeps the
 │   └── 40_postcheck.yml              # post-activation IMAGE compliance
 └── logs/                             # SDK log + per-phase JSON evidence (gitignored)
 ```
+
+> **Source of truth:** image details are **not** stored in this folder. They live in the central
+> data model at [`../Settings/settings.json`](../Settings/settings.json) under each project entry's
+> `swim` block, shared with stages 1.0 (site hierarchy), 4.0 (discovery) and 9.0 (provisioning).
+> [`tasks/load_swim_details.yml`](tasks/load_swim_details.yml) synthesises the `swim_details`
+> structure at run time — see [section 7](#7-the-data-model--the-swim-block-in-settingsjson).
 
 ---
 
@@ -315,53 +321,94 @@ non-secret connection settings applied to every task:
 | `catalystcenter_api_task_timeout` | `3600` | Max seconds to wait on an async task |
 | `catalystcenter_task_poll_interval` | `30` | Seconds between task-status polls |
 | `validate_response_schema` | `true` | Validate API responses against the SDK schema |
+| `settings_json_path` | `../../Settings/settings.json` | Central data model consumed by every playbook; relative paths resolve from the playbook directory |
 
 > Activation tasks override the timeout/poll values inline (`7200` / `60`) because device reloads
 > take longer than import or distribution.
 
 ---
 
-## 7. The data model — `vars/images.yml`
+## 7. The data model — the `swim` block in `settings.json`
 
-All deployment intent lives in **one file**, [`vars/images.yml`](vars/images.yml), under a single
-`swim_details` key. Its structure deliberately mirrors the `swim_workflow_manager` config blocks,
-so what you read in the data file is exactly what is sent to Catalyst Center.
+SWIM intent lives in the **central data model**, [`../Settings/settings.json`](../Settings/settings.json) —
+the same file consumed by stages 1.0 (site hierarchy), 4.0 (discovery) and 9.0 (provisioning).
+Each `project` entry carries a `swim` block holding the irreducible image facts; everything the
+`swim_workflow_manager` modules need is **synthesised at run time** by
+[`tasks/load_swim_details.yml`](tasks/load_swim_details.yml), which every playbook imports as its
+first task.
+
+```json
+"swim": {
+  "image_server_base_url": "http://198.18.134.28/images",
+  "device_family_identifier": "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+  "device_family_name": "Switches and Hubs",
+  "device_series_name": "Cisco Catalyst 9000 Series Virtual Switches",
+  "device_role": "ALL",
+  "upgrade_image": "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+  "rollback_image": "cat9kv-universalk9.17.15.03.SPA.bin",
+  "activation": {
+    "device_upgrade_mode": "install",
+    "distribute_if_needed": true,
+    "schedule_validate": false
+  }
+}
+```
+
+| `swim` field | Purpose |
+|---|---|
+| `image_server_base_url` | HTTP base URL of the file server (see [Appendix A](#appendix-a-image-distribution-http-server-setup)). Image URLs are `base_url/<image>`. |
+| `device_family_identifier` | **SWIM device-family identifier** used for golden tagging (`Cisco Catalyst 9000 UADP 8 Port Virtual Switch`, id `999999901`). |
+| `device_family_name` | **Inventory** family used for distribute/activate targeting (`Switches and Hubs`). |
+| `device_series_name` | **Inventory** series used for distribute/activate targeting. |
+| `device_role` | Role filter for tag/distribute/activate (e.g. `ALL`). |
+| `upgrade_image` | Filename of the image to import, tag golden, distribute and activate. |
+| `rollback_image` | Filename of the prior-stable image (imported alongside the upgrade; used by `35_rollback.yml`). |
+| `activation.device_upgrade_mode` | `install` (banked — install-mode) upgrade. |
+| `activation.distribute_if_needed` | Distribute first if the image isn't already on the device. |
+| `activation.schedule_validate` | **Must be `false`** to trigger real activation (see §7.2). |
+
+### 7.1 How `swim_details` is synthesised
+
+[`tasks/load_swim_details.yml`](tasks/load_swim_details.yml) loads `settings.json`, derives the
+`site_name` from each entry's `HierarchyParent/Area/Bldg/Floor` fields (exactly like stages 1.0 and
+9.0 — no hardcoded site path), and builds the `swim_details` structure the playbooks loop over:
 
 ```yaml
 swim_details:
-  import_images:        # → 10: list of { name, import_image_details }
-  golden_tag_images:    # → 10: list of { name, tagging_details }
-  distribute_images:    # → 20: list of { name, image_distribution_details }
-  activate_images:      # → 30: list of { name, image_activation_details }
+  import_images:        # → 10: { name, import_image_details }  (upgrade + rollback images)
+  golden_tag_images:    # → 10: { name, tagging_details }
+  distribute_images:    # → 20: { name, image_distribution_details }
+  activate_images:      # → 30: { name, image_activation_details }
   rollback_images:
-    tag:                # → 35: list of { name, tagging_details }
-    activate:           # → 35: list of { name, image_activation_details }
+    tag:                # → 35: { name, tagging_details }
+    activate:           # → 35: { name, image_activation_details }
 ```
 
-| Section | Consumed by | Module config key | Purpose |
+| Synthesised section | Consumed by | Module config key | Built from |
 |---|---|---|---|
-| `import_images` | `10` | `import_image_details` | Image source URL(s). Includes **both** the upgrade and the rollback image, so the rollback target is in the repository *before* any activation. |
-| `golden_tag_images` | `10` | `tagging_details` | Mark the upgrade image golden for a site + role, using the **SWIM device-family identifier**. |
-| `distribute_images` | `20` | `image_distribution_details` | Copy targeting by site + role + **inventory** family/series. |
-| `activate_images` | `30` | `image_activation_details` | Activation targeting + flags (`activate_lower_image_version`, `distribute_if_needed`, `schedule_validate`). |
-| `rollback_images.tag` | `35` | `tagging_details` | Re-tag the prior-stable image golden. |
-| `rollback_images.activate` | `35` | `image_activation_details` | Activate the prior-stable image (`activate_lower_image_version: true`). |
+| `import_images` | `10` | `import_image_details` | `upgrade_image` **and** `rollback_image` (deduplicated), each as `base_url/<image>`. |
+| `golden_tag_images` | `10` | `tagging_details` | `upgrade_image` + `device_family_identifier` + derived `site_name` + `device_role`. |
+| `distribute_images` | `20` | `image_distribution_details` | `upgrade_image` + `device_family_name`/`device_series_name` + derived `site_name`. |
+| `activate_images` | `30` | `image_activation_details` | `upgrade_image` + inventory family/series + `activation.*` flags. |
+| `rollback_images.tag` | `35` | `tagging_details` | `rollback_image` + `device_family_identifier`. |
+| `rollback_images.activate` | `35` | `image_activation_details` | `rollback_image` (`activate_lower_image_version: true`). |
 
-### 7.1 Design principles
+### 7.2 Design principles
 
-- **`name` is a label, not data.** Every entry carries a human-readable `name` (e.g.
-  `cat9kv_throttle_26.2 @ Floor 1 / ALL`) used only for the Ansible `loop_control.label`. It is
-  never sent to the module — the playbook passes only the module-config key beneath it.
-- **One file, no joins.** Earlier iterations split image identity from a separate rollout-waves
-  file and joined them at runtime with Jinja2. That indirection is gone: each section is a flat,
-  ready-to-loop list. Playbooks pass `item.<config_key>` straight through to the module.
-- **Targets derive from the data, not from CLI args.** Pre-flight and post-check derive their
-  site list automatically from `golden_tag_images[*].tagging_details.site_name` — there is no
-  separate IP list or `wave_name` to keep in sync.
-- **Rollback is first-class.** The rollback image is imported alongside the upgrade image so it is
+- **Single source of truth, no duplication.** Each fact (image filename, family names, base URL) is
+  declared **once** in the `swim` block. The five per-phase config blocks are derived, so image
+  names and family identifiers can never drift out of sync.
+- **`site_name` is derived, not typed.** The target site path is composed from the same
+  `Hierarchy*` fields used by site-hierarchy and provisioning — change the hierarchy once and SWIM
+  follows automatically.
+- **Multi-site by construction.** Every `project` entry with a `swim` block yields its own image
+  set, so a multi-site `settings.json` upgrades each site to its declared image with no extra work.
+- **Targets derive from the data, not from CLI args.** Pre-flight and post-check derive their site
+  list from the synthesised `golden_tag_images[*].tagging_details.site_name`.
+- **Rollback is first-class.** The `rollback_image` is imported alongside the upgrade image so it is
   always present in the repository, never scrambled for after a failure.
 
-### 7.2 Activation flags worth knowing
+### 7.3 Activation flags worth knowing
 
 | Flag | This repo | Meaning |
 |---|---|---|
@@ -369,18 +416,20 @@ swim_details:
 | `distribute_if_needed` | `true` | If the image isn't already on the device, distribute it first as part of activation. |
 | `schedule_validate` | `false` | **Must be `false`** to trigger real activation. When `true`, CatC runs pre-validation only and the activation task returns `SUCCESS` immediately as a no-op — devices are never reloaded. |
 
-### 7.3 Adding a site or role
+### 7.4 Adding a site or role
 
-Append another entry (with its own `name`) to the relevant section(s). No playbook edits required —
-the loops and the derived compliance-site list pick it up automatically.
+Edit the `swim` block (and, for a new site, add another `project` entry with its own `Hierarchy*`
+fields and `swim` block) in [`../Settings/settings.json`](../Settings/settings.json). No playbook
+edits required — the synthesis and the derived compliance-site list pick it up automatically.
 
 ---
 
 ## 8. The playbooks, explained
 
-All playbooks target `hosts: catc`, run `connection: local`, load `vars/images.yml`, and stamp a
-`run_id` (`YYYYMMDD-HHMMSS`) onto their evidence file. Each phase is independently runnable and
-idempotent (except activation/rollback, which reboot devices).
+All playbooks target `hosts: catc`, run `connection: local`, import
+[`tasks/load_swim_details.yml`](tasks/load_swim_details.yml) to synthesise `swim_details` from
+`settings.json`, and stamp a `run_id` (`YYYYMMDD-HHMMSS`) onto their evidence file. Each phase is
+independently runnable and idempotent (except activation/rollback, which reboot devices).
 
 ### 8.1 `00_preflight.yml` — resync + baseline compliance
 
@@ -562,7 +611,7 @@ actually orchestrates under the hood, and is essential if you need fine-grained 
 per-device targeting, custom scheduling, or integration with an external ITSM workflow).
 
 This appendix describes how to rebuild the same pipeline using individual modules while keeping
-**the same `vars/images.yml` data model** as the source of truth.
+**the same `settings.json` `swim` data model** as the source of truth.
 
 ---
 
@@ -662,8 +711,9 @@ Same as Phase 00 compliance steps — `compliance_device` + `task_info` + `compl
 
 ### B.5 Mapping `swim_details` keys to individual-module parameters
 
-The `vars/images.yml` `swim_details` keys map to individual-module parameters as follows —
-allowing you to reuse the same data model with minimal Jinja2 transformation:
+The synthesised `swim_details` keys (see [§7.1](#71-how-swim_details-is-synthesised)) map to
+individual-module parameters as follows — allowing you to reuse the same data model with minimal
+Jinja2 transformation:
 
 | `swim_details` key | Field | Maps to individual-module parameter |
 |---|---|---|
@@ -719,8 +769,9 @@ Commit both the `.mmd` source and the regenerated `.png` together.
 
 ## Appendix A: Image distribution (HTTP) server setup
 
-`vars/images.yml` uses `import_image_details.type: remote`, so **Catalyst Center itself** pulls
-the `.bin` image over HTTP from the Ubuntu host `198.18.134.28`. The URL must resolve exactly to:
+The `swim` block in `settings.json` sets `image_server_base_url`, so imports use `type: remote` and
+**Catalyst Center itself** pulls the `.bin` image over HTTP from the Ubuntu host `198.18.134.28`.
+The URL must resolve exactly to:
 
 ```
 http://198.18.134.28/images/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin
@@ -792,7 +843,7 @@ curl -I http://198.18.134.28/images/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_
 Both must return `HTTP/1.1 200 OK` with a `Content-Length` matching the file size.
 
 > **Gotchas**
-> - The URL path must match `vars/images.yml` exactly — wrong subdir or trailing slash fails the import.
+> - The URL path must match the `swim` block's `image_server_base_url` + image filename exactly — wrong subdir or trailing slash fails the import.
 > - Serve as `application/octet-stream` so the `.bin` downloads instead of rendering.
 > - Use anonymous HTTP (no basic-auth) — CatC remote import expects an unauthenticated URL.
 > - Reachability that matters is **CatC → 198.18.134.28:80**, not your workstation; verify with the second `curl`.
