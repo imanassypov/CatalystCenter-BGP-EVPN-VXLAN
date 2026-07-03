@@ -6,6 +6,7 @@ Leaf-02.dcloud.cisco.com,Leaf-02,198.18.128.104,198.19.1.4,Building P0,leaf,Camp
 Border-01.dcloud.cisco.com,Border-01,198.18.128.105,198.19.1.5,Building P0,border,Campus Border 01
 Border-02.dcloud.cisco.com,Border-02,198.18.128.106,198.19.1.6,Building P0,border,Campus Border 02
 dmz1.dcloud.cisco.com,dmz1,198.19.1.200,198.19.1.200,Building P0,dmz,DMZ Gateway (external eBGP EVPN peer)
+dmz2.dcloud.cisco.com,dmz1,198.19.2.200,198.19.2.200,Building P0,dmz,DMZ Gateway (external eBGP EVPN peer)
 Core-01,Core-01,198.19.2.34,198.19.2.34,Building P0,core,Enterprise Core 01 (Spine-01 underlay uplink)
 Core-01,Core-01,198.19.2.42,198.19.2.42,Building P0,core,Enterprise Core 01 (Spine-02 underlay uplink)
 Core-01,Core-01,198.19.2.49,198.19.2.49,Building P0,core,Enterprise Core 01 (Spine-01 red VRF uplink)
