@@ -1,0 +1,190 @@
+<mxfile host="app.diagrams.net" agent="drawio-cli" version="24.7.17">
+  <diagram id="cisco-evpn-cml" name="CML Lab Topology">
+    <mxGraphModel dx="1200" dy="800" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1480" pageHeight="1360" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ============ LEGEND (top-left) ============ -->
+        <mxCell id="legend-box" value="" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="300" height="176" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="Legend — CML Lab (virtual Catalyst 9000v)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="52" y="46" width="278" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="lg-underlay-line" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="56" y="76" as="sourcePoint" /><mxPoint x="96" y="76" as="targetPoint" /></mxGeometry></mxCell>
+        <mxCell id="lg-underlay-txt" value="Underlay · spine-leaf / core (OSPF + iBGP)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=10;" vertex="1" parent="1"><mxGeometry x="104" y="67" width="230" height="18" as="geometry" /></mxCell>
+        <mxCell id="lg-vxlan-line" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="56" y="100" as="sourcePoint" /><mxPoint x="96" y="100" as="targetPoint" /></mxGeometry></mxCell>
+        <mxCell id="lg-vxlan-txt" value="VXLAN EVPN overlay (VNI)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=10;" vertex="1" parent="1"><mxGeometry x="104" y="91" width="230" height="18" as="geometry" /></mxCell>
+        <mxCell id="lg-ipsec-line" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="56" y="124" as="sourcePoint" /><mxPoint x="96" y="124" as="targetPoint" /></mxGeometry></mxCell>
+        <mxCell id="lg-ipsec-txt" value="HW IPSEC · multi-cluster border↔DMZ EVPN/GRE" style="text;html=1;align=left;verticalAlign=middle;fontColor=#333333;fontSize=10;" vertex="1" parent="1"><mxGeometry x="104" y="115" width="250" height="18" as="geometry" /></mxCell>
+        <mxCell id="lg-vrf-red" value="vrf red · 901 · L3VNI 50901 · VLAN 101,102" style="text;html=1;align=left;verticalAlign=middle;fontColor=#B23A2C;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="52" y="140" width="288" height="16" as="geometry" /></mxCell>
+        <mxCell id="lg-vrf-blue" value="vrf blue · 902 · L3VNI 50902 · VLAN 201 (10201)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#1F5FBF;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="52" y="158" width="288" height="16" as="geometry" /></mxCell>
+        <mxCell id="lg-vrf-green" value="vrf green · 903 · L3VNI 50903 · VLAN 221 (10221)" style="text;html=1;align=left;verticalAlign=middle;fontColor=#2E7D32;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="52" y="176" width="288" height="16" as="geometry" /></mxCell>
+        <mxCell id="lg-loop" value="blue Lo1 902:50902 · green Lo1 903:50903" style="text;html=1;align=left;verticalAlign=middle;fontColor=#666666;fontSize=9;" vertex="1" parent="1"><mxGeometry x="52" y="194" width="288" height="16" as="geometry" /></mxCell>
+
+        <!-- ============ SHARED SERVICES / FIREWALL ============ -->
+        <mxCell id="fw-ss" value="FW-SHARED-SERVICES" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#D64541;strokeColor=#9B2E2A;pointerEvents=1;shape=mxgraph.cisco.security.firewall;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="648" y="40" width="60" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="ss-blue" value="vrf-blue&#10;dmz1 198.18.144.x&#10;dmz2 198.18.146.x" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F5FBF;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="540" y="150" width="176" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ss-green" value="vrf-green&#10;dmz1 198.18.143.x&#10;dmz2 198.18.145.x" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2E7D32;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="716" y="150" width="176" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="e-fw-blue" value="G1/0/3" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;fontSize=9;fontColor=#666666;" edge="1" parent="1" source="fw-ss" target="ss-blue"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-fw-green" value="G1/0/3" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;fontSize=9;fontColor=#666666;" edge="1" parent="1" source="fw-ss" target="ss-green"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ DMZ GATEWAYS (two separate physical locations) ============ -->
+        <mxCell id="dmz-a-box" value="DMZ Location A" style="rounded=1;arcSize=8;dashed=1;dashPattern=3 3;strokeColor=#2E7D32;strokeWidth=2;fillColor=none;verticalAlign=top;align=center;fontColor=#2E7D32;fontSize=11;fontStyle=1;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="512" y="248" width="156" height="124" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz-b-box" value="DMZ Location B" style="rounded=1;arcSize=8;dashed=1;dashPattern=3 3;strokeColor=#2E7D32;strokeWidth=2;fillColor=none;verticalAlign=top;align=center;fontColor=#2E7D32;fontSize=11;fontStyle=1;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="730" y="248" width="156" height="124" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz1" value="dmz1&#10;65003 · Lo0 198.19.1.200" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.routers.router;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="558" y="290" width="64" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz2" value="dmz2&#10;65004 · Lo0 198.19.2.200" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.routers.router;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="776" y="290" width="64" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="evpn-ext-lbl" value="EVPN extended services:&#10;vrf blue + vrf green&#10;(both DMZ locations)" style="text;html=1;align=right;verticalAlign=middle;fontColor=#666666;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="258" width="156" height="48" as="geometry" />
+        </mxCell>
+        <!-- both DMZs extend BOTH vrf blue and vrf green -->
+        <mxCell id="e-blue-dmz1" value="" style="endArrow=none;html=1;strokeColor=#2E6DB4;strokeWidth=1.5;dashed=1;dashPattern=4 3;exitX=0.35;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ss-blue" target="dmz1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-green-dmz1" value="" style="endArrow=none;html=1;strokeColor=#2E7D32;strokeWidth=1.5;dashed=1;dashPattern=4 3;exitX=0.05;exitY=1;exitDx=0;exitDy=0;entryX=0.8;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ss-green" target="dmz1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-blue-dmz2" value="" style="endArrow=none;html=1;strokeColor=#2E6DB4;strokeWidth=1.5;dashed=1;dashPattern=4 3;exitX=0.95;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ss-blue" target="dmz2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-green-dmz2" value="" style="endArrow=none;html=1;strokeColor=#2E7D32;strokeWidth=1.5;dashed=1;dashPattern=4 3;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ss-green" target="dmz2"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ ENTERPRISE CORE (ASN 65002) ============ -->
+        <mxCell id="core-box" value="Enterprise Core &#8212; ASN 65002" style="rounded=1;arcSize=6;dashed=1;dashPattern=6 4;strokeColor=#2E8B8B;strokeWidth=2;fillColor=none;verticalAlign=top;align=left;fontColor=#2E8B8B;fontSize=13;fontStyle=1;spacingTop=4;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="536" y="450" width="272" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="core1" value="core1" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#4FB0B0;strokeColor=#2E8B8B;pointerEvents=1;shape=mxgraph.cisco.routers.router;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="492" width="64" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="core2" value="core2" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#4FB0B0;strokeColor=#2E8B8B;pointerEvents=1;shape=mxgraph.cisco.routers.router;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="702" y="492" width="64" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="core-rp-lbl" value="Lo2 198.19.1.254&#10;(Enterprise Anycast RP)" style="text;html=1;align=right;verticalAlign=middle;fontColor=#2E8B8B;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="494" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e-core1-core2" value="iBGP 65002" style="endArrow=none;html=1;strokeColor=#2E8B8B;strokeWidth=2;fontSize=9;fontColor=#2E8B8B;" edge="1" parent="1" source="core1" target="core2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-dmz1-core1" value="E1/3 &#183; 198.19.2.64/30" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;fontSize=9;fontColor=#666666;" edge="1" parent="1" source="dmz1" target="core1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-dmz2-core2" value="E1/6 &#183; 198.19.2.88/30" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;fontSize=9;fontColor=#666666;" edge="1" parent="1" source="dmz2" target="core2"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ DHCP SERVER ============ -->
+        <mxCell id="dhcp" value="dhcp-server&#10;G3" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="600" width="120" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="dhcp-s1" value="DHCP 198.19.2.78" style="text;html=1;align=left;verticalAlign=middle;fontColor=#D64541;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="170" y="586" width="180" height="15" as="geometry" /></mxCell>
+        <mxCell id="dhcp-s2" value="blue dmz1 198.18.144.100" style="text;html=1;align=left;verticalAlign=middle;fontColor=#1F5FBF;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="170" y="601" width="180" height="15" as="geometry" /></mxCell>
+        <mxCell id="dhcp-s2b" value="blue dmz2 198.18.146.100" style="text;html=1;align=left;verticalAlign=middle;fontColor=#1F5FBF;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="170" y="616" width="180" height="15" as="geometry" /></mxCell>
+        <mxCell id="dhcp-s3" value="green dmz1 198.18.143.100" style="text;html=1;align=left;verticalAlign=middle;fontColor=#2E7D32;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="170" y="631" width="180" height="15" as="geometry" /></mxCell>
+        <mxCell id="dhcp-s3b" value="green dmz2 198.18.145.100" style="text;html=1;align=left;verticalAlign=middle;fontColor=#2E7D32;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="170" y="646" width="180" height="15" as="geometry" /></mxCell>
+        <mxCell id="e-dhcp-core1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;" edge="1" parent="1" source="dhcp" target="core1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ SPINES / cp-border (ASN 65001) ============ -->
+        <mxCell id="spine-box" value="cp-border &#8212; ASN 65001 (Route Reflectors)" style="rounded=1;arcSize=6;dashed=1;dashPattern=6 4;strokeColor=#B8760C;strokeWidth=2;fillColor=none;verticalAlign=top;align=left;fontColor=#B8760C;fontSize=13;fontStyle=1;spacingTop=4;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="660" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="spine1" value="spine1&#10;RR · Lo0 198.19.1.1" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#1BA1E2;strokeColor=#0A6FA8;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="570" y="692" width="78" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="spine2" value="spine2&#10;RR · Lo0 198.19.1.2" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#1BA1E2;strokeColor=#0A6FA8;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="692" width="78" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="spine-rp-lbl" value="Lo2 198.19.1.100&#10;(Fabric Anycast RP)" style="text;html=1;align=right;verticalAlign=middle;fontColor=#B8760C;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="700" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e-spine1-spine2" value="" style="endArrow=none;html=1;strokeColor=#0A6FA8;strokeWidth=2;" edge="1" parent="1" source="spine1" target="spine2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-core1-spine1" value="L3OUT" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;fontSize=9;fontColor=#666666;" edge="1" parent="1" source="core1" target="spine1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-core2-spine2" value="L3OUT" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;fontSize=9;fontColor=#666666;" edge="1" parent="1" source="core2" target="spine2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-core1-spine2" value="" style="endArrow=none;html=1;strokeColor=#DADADA;strokeWidth=1;" edge="1" parent="1" source="core1" target="spine2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-core2-spine1" value="" style="endArrow=none;html=1;strokeColor=#DADADA;strokeWidth=1;" edge="1" parent="1" source="core2" target="spine1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ CAMPUS FABRIC (ASN 65001) ============ -->
+        <mxCell id="fabric-box" value="Campus Fabric &#8212; ASN 65001" style="rounded=1;arcSize=4;dashed=1;dashPattern=6 4;strokeColor=#1F5FBF;strokeWidth=2;fillColor=none;verticalAlign=top;align=left;fontColor=#1F5FBF;fontSize=14;fontStyle=1;spacingTop=4;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="850" width="640" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="leaf1" value="leaf1 (edge node)&#10;Lo0 198.19.1.3" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.switches.workgroup_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="875" width="80" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="leaf2" value="leaf2 (edge node)&#10;Lo0 198.19.1.4" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.switches.workgroup_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="875" width="80" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="border-box" value="border · IPSEC" style="rounded=1;arcSize=8;dashed=1;dashPattern=3 3;strokeColor=#B8760C;fillColor=none;verticalAlign=top;align=right;fontColor=#B8760C;fontSize=11;fontStyle=1;spacingTop=2;spacingRight=6;" vertex="1" parent="1">
+          <mxGeometry x="728" y="856" width="212" height="98" as="geometry" />
+        </mxCell>
+        <mxCell id="border1" value="border1&#10;Lo0 198.19.1.5" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#F5A623;strokeColor=#B8760C;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="748" y="884" width="64" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="border2" value="border2&#10;Lo0 198.19.1.6" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#F5A623;strokeColor=#B8760C;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="884" width="64" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="e-border1-border2" value="IPSEC" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=2;dashed=1;dashPattern=6 4;fontSize=9;fontColor=#2E7D32;" edge="1" parent="1" source="border1" target="border2"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- spine-leaf underlay mesh -->
+        <mxCell id="e-s1-l1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine1" target="leaf1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s1-l2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine1" target="leaf2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s1-b1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine1" target="border1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s1-b2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine1" target="border2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-l1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine2" target="leaf1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-l2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine2" target="leaf2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-b1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine2" target="border1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2-b2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine2" target="border2"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- multi-cluster border <-> DMZ EVPN over GRE: BOTH borders peer BOTH DMZs -->
+        <mxCell id="mc-lbl" value="Multi-Cluster BGP EVPN&#10;over GRE underlay" style="text;html=1;align=center;verticalAlign=middle;fontColor=#2E7D32;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="890" y="560" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="e-b1-dmz1" value="EVPN/GRE" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=2.25;dashed=1;dashPattern=8 6;fontSize=9;fontColor=#2E7D32;exitX=0.7;exitY=0;exitDx=0;exitDy=0;entryX=0.4;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border1" target="dmz1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="905" y="895" /><mxPoint x="905" y="395" /><mxPoint x="583" y="395" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e-b2-dmz1" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=2.25;dashed=1;dashPattern=8 6;exitX=0.35;exitY=0;exitDx=0;exitDy=0;entryX=0.6;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border2" target="dmz1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="888" y="905" /><mxPoint x="888" y="406" /><mxPoint x="600" y="406" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e-b1-dmz2" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=2.25;dashed=1;dashPattern=8 6;exitX=0.9;exitY=0;exitDx=0;exitDy=0;entryX=0.4;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border1" target="dmz2">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="930" y="890" /><mxPoint x="930" y="378" /><mxPoint x="801" y="378" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e-b2-dmz2" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=2.25;dashed=1;dashPattern=8 6;exitX=0.7;exitY=0;exitDx=0;exitDy=0;entryX=0.6;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border2" target="dmz2">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="948" y="905" /><mxPoint x="948" y="368" /><mxPoint x="818" y="368" /></Array></mxGeometry>
+        </mxCell>
+
+        <!-- ============ RED TENANT ============ -->
+        <mxCell id="red-box" value="red · VRF 901 · VLAN 101/102 · 198.18.101/102.x" style="rounded=1;arcSize=6;dashed=1;dashPattern=3 3;strokeColor=#B23A2C;fillColor=none;verticalAlign=bottom;fontColor=#B23A2C;fontSize=12;fontStyle=1;spacingBottom=4;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1040" width="380" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="red01" value="red01&#10;.10" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#8E44AD;fontColor=#4A235A;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="150" y="1075" width="110" height="46" as="geometry" /></mxCell>
+        <mxCell id="red02" value="red02&#10;.20" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#8E44AD;fontColor=#4A235A;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="340" y="1075" width="110" height="46" as="geometry" /></mxCell>
+        <mxCell id="red03" value="red03 (dhcp)&#10;.10" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#F2B8B0;strokeColor=#B23A2C;fontColor=#7A1F16;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="150" y="1195" width="110" height="46" as="geometry" /></mxCell>
+        <mxCell id="red04" value="red04&#10;.20" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#F2B8B0;strokeColor=#B23A2C;fontColor=#7A1F16;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="340" y="1195" width="110" height="46" as="geometry" /></mxCell>
+
+        <!-- ============ BLUE TENANT ============ -->
+        <mxCell id="blue-box" value="blue · VRF 902 · VLAN 201 · 198.18.201.x" style="rounded=1;arcSize=6;dashed=1;dashPattern=3 3;strokeColor=#2E6DB4;fillColor=none;verticalAlign=bottom;fontColor=#2E6DB4;fontSize=12;fontStyle=1;spacingBottom=4;" vertex="1" parent="1">
+          <mxGeometry x="530" y="1040" width="300" height="185" as="geometry" />
+        </mxCell>
+        <mxCell id="blue01" value="blue01&#10;.10" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#2E6DB4;fontColor=#0D3C61;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="560" y="1075" width="110" height="46" as="geometry" /></mxCell>
+        <mxCell id="blue02" value="blue02&#10;.20" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#2E6DB4;fontColor=#0D3C61;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="690" y="1075" width="110" height="46" as="geometry" /></mxCell>
+        <mxCell id="blue03" value="blue03 (dhcp)" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#2E6DB4;fontColor=#0D3C61;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="625" y="1150" width="120" height="46" as="geometry" /></mxCell>
+
+        <!-- ============ GREEN TENANT ============ -->
+        <mxCell id="green-box" value="green · VRF 903 · VLAN 221 · 198.18.221.x" style="rounded=1;arcSize=6;dashed=1;dashPattern=3 3;strokeColor=#2E7D32;fillColor=none;verticalAlign=bottom;fontColor=#2E7D32;fontSize=12;fontStyle=1;spacingBottom=4;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1040" width="300" height="185" as="geometry" />
+        </mxCell>
+        <mxCell id="green01" value="green01&#10;.10" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontColor=#1B4D1F;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="890" y="1075" width="110" height="46" as="geometry" /></mxCell>
+        <mxCell id="green03" value="green-03&#10;.20" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontColor=#1B4D1F;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1020" y="1075" width="110" height="46" as="geometry" /></mxCell>
+        <mxCell id="green02" value="green02 (dhcp)" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontColor=#1B4D1F;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="955" y="1150" width="120" height="46" as="geometry" /></mxCell>
+
+        <!-- ============ LEAF -> TENANT ATTACH ============ -->
+        <mxCell id="e-leaf1-red" value="" style="endArrow=none;html=1;strokeColor=#B23A2C;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="leaf1" target="red-box"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-leaf1-blue" value="" style="endArrow=none;html=1;strokeColor=#2E6DB4;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="leaf1" target="blue-box"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-leaf2-blue" value="" style="endArrow=none;html=1;strokeColor=#2E6DB4;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="leaf2" target="blue-box"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-leaf2-green" value="" style="endArrow=none;html=1;strokeColor=#2E7D32;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="leaf2" target="green-box"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
