@@ -14,10 +14,10 @@
         </mxCell>
 
         <mxCell id="iot-box" value="" style="rounded=1;arcSize=6;dashed=1;dashPattern=3 3;strokeColor=#1F5FBF;strokeWidth=2;fillColor=none;verticalAlign=top;align=right;fontColor=#333333;fontSize=16;fontStyle=1;spacingTop=-30;spacingRight=8;" vertex="1" parent="1">
-          <mxGeometry x="1120" y="60" width="360" height="330" as="geometry" />
+          <mxGeometry x="540" y="40" width="360" height="330" as="geometry" />
         </mxCell>
         <mxCell id="iot-title" value="Isolated IOT Segment &#8212; ASN 65003" style="text;html=1;align=right;verticalAlign=middle;fontColor=#333333;fontSize=16;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1080" y="28" width="400" height="24" as="geometry" />
+          <mxGeometry x="500" y="8" width="400" height="24" as="geometry" />
         </mxCell>
 
         <!-- ============ SPINES ============ -->
@@ -38,9 +38,6 @@
         <mxCell id="leaf02" value="Leaf-02&#10;Lo0 198.19.1.4" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.switches.workgroup_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="280" y="680" width="80" height="52" as="geometry" />
         </mxCell>
-        <mxCell id="leaf03" value="Leaf-03" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.switches.workgroup_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="460" y="680" width="80" height="52" as="geometry" />
-        </mxCell>
 
         <!-- ============ BORDERS ============ -->
         <mxCell id="border01" value="Border-01&#10;Lo0 198.19.1.5" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#F5A623;strokeColor=#B8760C;pointerEvents=1;shape=mxgraph.cisco.switches.layer_3_switch;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
@@ -53,12 +50,10 @@
         <!-- ============ SPINE-LEAF FABRIC MESH ============ -->
         <mxCell id="e-s1-l1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="leaf01"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="e-s1-l2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="leaf02"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e-s1-l3" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="leaf03"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="e-s1-b1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="border01"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="e-s1-b2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine01" target="border02"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="e-s2-l1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="leaf01"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="e-s2-l2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="leaf02"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e-s2-l3" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="leaf03"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="e-s2-b1" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="border01"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="e-s2-b2" value="" style="endArrow=none;html=1;strokeColor=#B0B0B0;strokeWidth=1.5;curved=1;" edge="1" parent="1" source="spine02" target="border02"><mxGeometry relative="1" as="geometry" /></mxCell>
 
@@ -78,19 +73,19 @@
 
         <!-- ============ ISOLATED IOT SEGMENT (DMZ, ASN 65003) ============ -->
         <mxCell id="fw" value="Internet&#10;Firewall" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#D64541;strokeColor=#9B2E2A;pointerEvents=1;shape=mxgraph.cisco.security.firewall;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1272" y="90" width="56" height="42" as="geometry" />
+          <mxGeometry x="692" y="70" width="56" height="42" as="geometry" />
         </mxCell>
         <mxCell id="shared-vrf" value="SHARED SERVICES VRF" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;dashed=1;dashPattern=4 4;fillColor=none;strokeColor=#555555;fontColor=#333333;fontStyle=1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1175" y="170" width="230" height="34" as="geometry" />
+          <mxGeometry x="595" y="150" width="230" height="34" as="geometry" />
         </mxCell>
         <mxCell id="dmz" value="DMZ Gateway&#10;dmz1 &#183; Lo0 198.19.1.200" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.routers.router;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1268" y="228" width="64" height="46" as="geometry" />
+          <mxGeometry x="688" y="200" width="64" height="46" as="geometry" />
         </mxCell>
         <mxCell id="iot-vrf-blue" value="IOT SEGMENT VRF &#183; blue" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=#2E6DB4;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1175" y="308" width="230" height="28" as="geometry" />
+          <mxGeometry x="595" y="304" width="230" height="28" as="geometry" />
         </mxCell>
         <mxCell id="iot-vrf-green" value="IOT SEGMENT VRF &#183; green" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#5AB05A;strokeColor=#2E7D32;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1175" y="336" width="230" height="28" as="geometry" />
+          <mxGeometry x="595" y="332" width="230" height="28" as="geometry" />
         </mxCell>
 
         <!-- ============ ISOLATED SEGMENT INTERNAL LINKS ============ -->
@@ -99,25 +94,63 @@
         <mxCell id="e-dmz-iotblue" value="" style="endArrow=none;html=1;strokeColor=#2E6DB4;strokeWidth=2;" edge="1" parent="1" source="dmz" target="iot-vrf-blue"><mxGeometry relative="1" as="geometry" /></mxCell>
 
         <!-- ============ OVERLAY: VXLAN (blue dashed) borders -> IOT VRF ============ -->
-        <mxCell id="vxlan-b1" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot-vrf-blue">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="760" y="520" /><mxPoint x="1050" y="322" /></Array></mxGeometry>
+        <mxCell id="vxlan-b1" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.4;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot-vrf-blue">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="700" y="470" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="vxlan-b2" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot-vrf-blue">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="950" y="560" /><mxPoint x="1090" y="322" /></Array></mxGeometry>
-        </mxCell>
-        <mxCell id="vxlan-lbl" value="VXLAN" style="text;html=1;align=center;verticalAlign=middle;fontColor=#1F3FBF;fontSize=12;fontStyle=1;rotation=-70;" vertex="1" parent="1">
-          <mxGeometry x="980" y="420" width="70" height="20" as="geometry" />
+        <mxCell id="vxlan-b2" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.3;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot-vrf-blue">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="800" y="460" /></Array></mxGeometry>
         </mxCell>
 
         <!-- ============ OVERLAY: HW IPSEC (green dashed) borders -> isolated segment ============ -->
-        <mxCell id="ipsec-b1" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot-vrf-green">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="820" y="480" /><mxPoint x="1120" y="360" /></Array></mxGeometry>
+        <mxCell id="ipsec-b1" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.15;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot-vrf-green">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="620" y="460" /><mxPoint x="560" y="330" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="ipsec-b2" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot-vrf-green">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1010" y="500" /><mxPoint x="1140" y="360" /></Array></mxGeometry>
+        <mxCell id="ipsec-b2" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot-vrf-green">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="640" y="500" /><mxPoint x="575" y="342" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="ipsec-lbl" value="HW IPSEC" style="text;html=1;align=center;verticalAlign=middle;fontColor=#2E9B4E;fontSize=12;fontStyle=1;rotation=-35;" vertex="1" parent="1">
-          <mxGeometry x="1030" y="430" width="90" height="20" as="geometry" />
+
+        <!-- ============ ISOLATED IOT SEGMENT #2 (DMZ, ASN 65004) ============ -->
+        <mxCell id="iot2-box" value="" style="rounded=1;arcSize=6;dashed=1;dashPattern=3 3;strokeColor=#1F5FBF;strokeWidth=2;fillColor=none;verticalAlign=top;align=right;fontColor=#333333;fontSize=16;fontStyle=1;spacingTop=-30;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="920" y="40" width="360" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="iot2-title" value="Isolated IOT Segment &#8212; ASN 65004" style="text;html=1;align=right;verticalAlign=middle;fontColor=#333333;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="880" y="8" width="400" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="fw2" value="Internet&#10;Firewall" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#D64541;strokeColor=#9B2E2A;pointerEvents=1;shape=mxgraph.cisco.security.firewall;verticalLabelPosition=bottom;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="70" width="56" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="shared-vrf2" value="SHARED SERVICES VRF" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;dashed=1;dashPattern=4 4;fillColor=none;strokeColor=#555555;fontColor=#333333;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="975" y="150" width="230" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz2" value="DMZ Gateway&#10;dmz2 &#183; Lo0 198.19.2.200" style="sketch=0;outlineConnect=0;html=1;dashed=0;whiteSpace=wrap;fillColor=#5AB05A;strokeColor=#2E7D32;pointerEvents=1;shape=mxgraph.cisco.routers.router;verticalLabelPosition=bottom;verticalAlign=top;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1068" y="200" width="64" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="iot2-vrf-blue" value="IOT SEGMENT VRF &#183; blue" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=#2E6DB4;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="975" y="304" width="230" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="iot2-vrf-green" value="IOT SEGMENT VRF &#183; green" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#5AB05A;strokeColor=#2E7D32;fontColor=#ffffff;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="975" y="332" width="230" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- ============ ISOLATED SEGMENT #2 INTERNAL LINKS ============ -->
+        <mxCell id="e-fw2-shared" value="" style="endArrow=none;html=1;strokeColor=#1F5FBF;strokeWidth=2;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="fw2" target="shared-vrf2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-shared2-dmz2" value="" style="endArrow=none;html=1;strokeColor=#1F5FBF;strokeWidth=2;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="shared-vrf2" target="dmz2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-dmz2-iotblue" value="" style="endArrow=none;html=1;strokeColor=#2E6DB4;strokeWidth=2;" edge="1" parent="1" source="dmz2" target="iot2-vrf-blue"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============ OVERLAY: VXLAN (blue dashed) borders -> IOT#2 VRF ============ -->
+        <mxCell id="vxlan2-b1" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.7;exitY=0;exitDx=0;exitDy=0;entryX=0.4;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot2-vrf-blue">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1010" y="470" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="vxlan2-b2" value="" style="endArrow=none;html=1;strokeColor=#1F3FBF;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.6;exitY=0;exitDx=0;exitDy=0;entryX=0.6;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot2-vrf-blue">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1010" y="460" /></Array></mxGeometry>
+        </mxCell>
+
+        <!-- ============ OVERLAY: HW IPSEC (green dashed) borders -> IOT#2 segment ============ -->
+        <mxCell id="ipsec2-b1" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.85;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="border01" target="iot2-vrf-green">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1160" y="480" /><mxPoint x="1240" y="330" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ipsec2-b2" value="" style="endArrow=none;html=1;strokeColor=#2E9B4E;strokeWidth=3;dashed=1;dashPattern=8 6;curved=1;exitX=0.9;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.9;entryDx=0;entryDy=0;" edge="1" parent="1" source="border02" target="iot2-vrf-green">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1120" y="520" /><mxPoint x="1225" y="342" /></Array></mxGeometry>
         </mxCell>
 
         <!-- ============ LEGEND ============ -->
