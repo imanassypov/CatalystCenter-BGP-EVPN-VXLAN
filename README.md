@@ -126,7 +126,6 @@ Campus BGP EVPN Splunk Assurance/  # Streaming telemetry assurance
 ├── campus_evpn_assurance/         # Packaged Splunk app
 ├── otel-collector/                # OpenTelemetry collector config
 ├── packaging/                     # Build scripts (.spl + handoff bundle)
-├── mcp-ssh-server/                # MCP stdio server for CLI verification
 ├── Model Maps/                    # YANG → Splunk metric mappings
 └── SETUP_GUIDE.md                 # Install procedure
 
@@ -272,10 +271,12 @@ Lifecycle phases:
 
 | Component | Formula | Example (VRF red, VLAN 101) |
 |-----------|---------|----------------------------|
-| L3VNI | `50 + VRF_ID` | 50 + 901 = **50901** |
-| L2VNI | `50000 + VLAN_ID` | 50000 + 101 = **50101** |
+| L3VNI | `L3VNIOFFSET ~ VRF_ID` (string concatenation) | `"50" ~ "901"` = **50901** |
+| L2VNI | `L2VNIOFFSET + VLAN_ID` (integer addition) | `50000 + 101` = **50101** |
 | RD | `{loopback_ip}:{vrf_id}` | `198.19.1.3:901` |
 | RT | `{fabric_asn}:{vrf_id}` | `65001:901` |
+
+> **Note on the two formulas**: L3VNI is a *string concatenation* of the offset and VRF ID (`(L3VNIOFFSET|string) + vrf.id` in `FABRIC-NVE.j2`), so offset `50` and VRF `901` yield `50901` — not `951`. L2VNI is an *integer addition* (`(L2VNIOFFSET|int) + (vlan|int)` in `FABRIC-OVERLAY.j2`), so `50000 + 101` yields `50101`.
 
 Offsets defined in `DEFN-VNIOFFSETS.j2`:
 ```jinja
@@ -399,6 +400,7 @@ Run the stages in numeric order:
 Supporting directories:
 - [`Settings/`](CICD%20Pipeline/Settings/) — `settings.json`, the single declarative source-of-truth consumed by stages 1.0–5.0 and 8.0
 - [`utils/ansible-image-server-setup/`](CICD%20Pipeline/utils/ansible-image-server-setup/) — `playbooks/deploy_http_image_server.yml` stands up the HTTP image server used as the file source for SWIM image import (stage 6.0)
+- [`utils/mcp-ssh-server/`](CICD%20Pipeline/utils/mcp-ssh-server/) — MCP stdio server for live device CLI verification during triage
 
 #### Template GitOps (Stage 7.0) in detail
 
@@ -452,7 +454,6 @@ Fabric nodes (MDT/YANG, gRPC dial-out) → OpenTelemetry collector → splunk_he
 | `packaging/` | Build scripts for `.spl` package and customer handoff bundle |
 | `SETUP_GUIDE.md` | Install workflow for Splunk app + patched `otelcol-yangfix` |
 | `Model Maps/` | YANG → Splunk metric model mappings |
-| `mcp-ssh-server/` | MCP stdio server for live device CLI verification during triage |
 
 The assurance suite shares the same fabric model (roles, tenants, VNIs, loopbacks) as the provisioning templates, so dashboard logic maps directly onto what was provisioned.
 
@@ -587,26 +588,29 @@ show mac address-table dynamic           ! MAC learning across fabric
 
 ### 13.2 Dict Iteration in Included Scope (Critical)
 
-Any dict defined in an included `DEFN-*.j2` file must have a **companion flat list** for iteration. Dict-key iteration is non-deterministic in CatC's included-scope engine — the loop variable may resolve to the value object instead of the key string.
+Any dict defined in an included `DEFN-*.j2` file must have a **companion flat list** for iteration. Dict-key iteration is non-deterministic in CatC's included-scope engine — the loop variable may resolve to the value object instead of the key string. This project reuses the `DEFN_NODE_ROLES` role sub-lists (`SPINE`, `CLIENT`, `BORDER`, `MCLUSTER`) as the companion lists that key into the addressing dicts.
 
 **Pattern**:
 ```jinja
-{# DEFN file: define both #}
-{% set DEFN_ALL_NODES = ['spine01.fqdn', 'leaf01.fqdn'] %}
+{# DEFN file: define both the role list and the addressing dict #}
+{% set DEFN_NODE_ROLES = {'SPINE': ['spine01.fqdn'], 'CLIENT': ['leaf01.fqdn']} %}
 {% set DEFN_LOOP_UNDERLAY = {'spine01.fqdn': '198.19.1.1', 'leaf01.fqdn': '198.19.1.3'} %}
 
-{# FABRIC file: iterate the list, lookup from the dict #}
-{% for node in DEFN_ALL_NODES %}
+{# FABRIC file: iterate the role list, look up the dict by key #}
+{% for node in DEFN_NODE_ROLES['SPINE'] %}
 ip prefix-list LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/32
 {% endfor %}
 ```
+
+> Use **literal** dict keys (`DEFN_NODE_ROLES['SPINE']`). A variable key (`DEFN_NODE_ROLES[role]` where `role` is a loop variable) silently resolves to empty in CatC's included-scope engine.
 
 **Existing companion lists**:
 
 | List | Dict | Usage |
 |------|------|-------|
-| `DEFN_ALL_NODES` | `DEFN_LOOP_UNDERLAY` | Fabric node loopback IPs |
-| `DEFN_NODE_ROLES['MCLUSTER']` | `DEFN_LOOP_MCLUSTER` | Remote multi-cluster peers |
+| `DEFN_NODE_ROLES['SPINE'/'CLIENT'/'BORDER']` | `DEFN_LOOP_UNDERLAY` | Fabric node Loopback0 IPs |
+| `DEFN_NODE_ROLES['BORDER']` | `DEFN_LOOP_GRE_SRC` / `DEFN_LOOP_GRE_PEER` | Per-border GRE source / peer IPs |
+| `DEFN_NODE_ROLES['MCLUSTER']` | `DEFN_LOOP_MCLUSTER` | Remote DMZ (multi-cluster) peers |
 
 ### 13.3 `.split()` Escaping
 
@@ -619,8 +623,8 @@ ip prefix-list LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/
 ## 14. Adding New Fabric Elements
 
 ### New Device
-1. `DEFN-ROLES.j2` — Add FQDN to appropriate role lists
-2. `DEFN-LOOPBACKS.j2` — Add to `DEFN_LOOP_UNDERLAY` dict + `DEFN_ALL_NODES` list (+ GRE/MCLUSTER if border)
+1. `DEFN-ROLES.j2` — Add FQDN to the appropriate `DEFN_NODE_ROLES` role lists (SPINE/RR/CLIENT/BORDER/MCLUSTER)
+2. `DEFN-LOOPBACKS.j2` — Add to `DEFN_LOOP_UNDERLAY` (+ `DEFN_LOOP_GRE_SRC`/`DEFN_LOOP_GRE_PEER` if border, `DEFN_LOOP_MCLUSTER` if DMZ)
 3. `DEFN-VRF.j2` — Add VRF ID list to `DEFN_VRF_TO_NODE`
 
 ### New VRF
