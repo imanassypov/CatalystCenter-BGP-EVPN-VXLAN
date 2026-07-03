@@ -36,6 +36,8 @@ all:
           ansible_host: 198.18.128.106
         dmz1:
           ansible_host: 198.18.128.107
+        dmz2:
+          ansible_host: 198.18.128.114
         dhcp-server:
           ansible_host: 198.18.128.110
 
