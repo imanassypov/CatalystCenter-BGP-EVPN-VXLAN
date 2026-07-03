@@ -40,7 +40,7 @@ mcp-ssh-server/
 
 ```bash
 /path/to/python -m pip install -r \
-  "/path/to/Campus BGP EVPN Splunk Assurance/mcp-ssh-server/requirements.txt"
+  "/path/to/CICD Pipeline/utils/mcp-ssh-server/requirements.txt"
 ```
 
 ### 2. Review credentials in `.vscode/mcp.json`
@@ -52,10 +52,10 @@ mcp-ssh-server/
       "type": "stdio",
       "command": "/path/to/python",
       "args": [
-        "/path/to/Campus BGP EVPN Splunk Assurance/mcp-ssh-server/server.py"
+        "/path/to/CICD Pipeline/utils/mcp-ssh-server/server.py"
       ],
       "env": {
-        "MCP_SSH_INVENTORY": "/path/to/Campus BGP EVPN Splunk Assurance/mcp-ssh-server/devices.csv",
+        "MCP_SSH_INVENTORY": "/path/to/CICD Pipeline/utils/mcp-ssh-server/devices.csv",
         "IOSXE_PASS": "<iosxe-password>",
         "HF_PASS": "<hf-password>"
       }

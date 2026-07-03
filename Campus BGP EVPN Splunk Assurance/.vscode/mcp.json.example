@@ -4,10 +4,10 @@
       "type": "stdio",
       "command": "/path/to/python",
       "args": [
-        "/path/to/Campus BGP EVPN Splunk Assurance/mcp-ssh-server/server.py"
+        "/path/to/CICD Pipeline/utils/mcp-ssh-server/server.py"
       ],
       "env": {
-        "MCP_SSH_INVENTORY": "/path/to/Campus BGP EVPN Splunk Assurance/mcp-ssh-server/devices.csv",
+        "MCP_SSH_INVENTORY": "/path/to/CICD Pipeline/utils/mcp-ssh-server/devices.csv",
         "IOSXE_PASS": "<device-enable-password>",
         "HF_PASS": "<heavy-forwarder-password>",
         "SSH_KEY_PATH": "/path/to/Campus BGP EVPN Splunk Assurance/dcloud-splunk-creds/<your-key>.pem",
