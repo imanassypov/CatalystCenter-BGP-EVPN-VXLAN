@@ -25,14 +25,16 @@ The lab validates a **three-tenant, multi-cluster spine-leaf fabric** with the f
 | Border-01 | C9000v | Border Client | 65001 | 198.19.1.5/32 | Lo1 = 10.100.2.5 (GRE src), Lo2 = 10.101.1.2 (EVPN overlay) |
 | Border-02 | C9000v | Border Client | 65001 | 198.19.1.6/32 | Lo1 = 10.100.2.6 (GRE src), Lo2 = 10.101.2.2 (EVPN overlay) |
 | dmz1 | C9000v | DMZ Gateway | 65003 | 198.19.1.200/32 | Lo1 = 10.100.2.1 (GRE hub src) |
-| Core-01 | NX-OSv | Core Router | 65002 | — | Enterprise IP Core |
-| Core-02 | NX-OSv | Core Router | 65002 | — | Enterprise IP Core |
+| dmz2 | C9000v | DMZ Gateway | 65004 | 198.19.2.200/32 | Lo1 = 10.100.4.1 (GRE hub src) |
+| Core-01 | NX-OSv | Core Router | 65002 | — | Enterprise IP Core · Lo2 = 198.19.1.254/32 (Enterprise Anycast RP) |
+| Core-02 | NX-OSv | Core Router | 65002 | — | Enterprise IP Core · Lo2 = 198.19.1.254/32 (Enterprise Anycast RP) |
 
 **Three ASN domains** define the BGP control plane:
 
 - **ASN 65001** — Campus fabric: Spines as iBGP route reflectors, Leaves/Borders as clients
 - **ASN 65002** — Enterprise IP Core: eBGP peering from Spines via L3OUT sub-interfaces
-- **ASN 65003** — DMZ fabric: eBGP EVPN peering from Borders over GRE overlay (`ebgp-multihop 255`)
+- **ASN 65003** — DMZ fabric (Location A, `dmz1`): eBGP EVPN peering from Borders over GRE overlay (`ebgp-multihop 255`)
+- **ASN 65004** — DMZ fabric (Location B, `dmz2`): second, geographically separate DMZ gateway peering the same Borders and extending the same `vrf blue` / `vrf green`
 
 **Three tenants** provide traffic segmentation:
 
@@ -50,7 +52,9 @@ Logical spine-leaf architecture with border connections and three tenant VRFs.
 
 ![CML Lab Topology](DIAGRAMS/cisco_evpn_cml.png)
 
-Cisco Modeling Labs emulation using virtual Catalyst 9000 instances.
+> Diagram source: [`DIAGRAMS/cisco_evpn_cml.drawio`](DIAGRAMS/cisco_evpn_cml.drawio)
+
+Cisco Modeling Labs emulation using virtual Catalyst 9000 instances. Beyond the campus spine-leaf fabric, the lab models the surrounding services: a shared-services firewall fronting `vrf-blue` and `vrf-green`; dual DMZ gateways in two separate physical locations — `dmz1` (Location A, ASN 65003) and `dmz2` (Location B, ASN 65004) — each extending the same `vrf blue` + `vrf green` over EVPN but presenting **location-unique** shared-services subnets (`dmz1`: green `198.18.143.x` / blue `198.18.144.x`; `dmz2`: green `198.18.145.x` / blue `198.18.146.x`); the Enterprise Core (`core1`/`core2`, ASN 65002) with an Enterprise Anycast RP on `Lo2 198.19.1.254`; a `dhcp-server` serving per-DMZ scopes (`dmz1` green `198.18.143.100` / blue `198.18.144.100`; `dmz2` green `198.18.145.100` / blue `198.18.146.100`; plus underlay `198.19.2.78`); and the three tenant client groups — red (`198.18.101/102.x`), blue (`198.18.201.x`), and green (`198.18.221.x`).
 
 ![BGP ASN Relationships](DIAGRAMS/cisco_evpn_ASN.png)
 
@@ -64,13 +68,15 @@ BGP control plane: three ASN domains (campus, core, DMZ) and their peering relat
 
 Borders peer with the DMZ gateway over a **GRE underlay** to decouple EVPN session stability from physical path topology:
 
-- **GRE source addressing**: All GRE tunnel sources are allocated from `10.100.2.0/29`, intentionally outside the `198.19.1.0/24` fabric loopback space to avoid conflicts with core router Loopback0 addresses. See `DEFN_LOOP_GRE_SRC` and `DEFN_LOOP_GRE_PEER` in `DEFN-LOOPBACKS.j2`.
-- **Tunnel underlay (OSPF 100)**: `FABRIC-BORDER-DMZ-TUNNELS.j2` renders per-border GRE tunnels and OSPF 100 adjacencies. The DMZ OSPF 100 router-id is `198.19.1.200` (Lo0), redistributed into OSPF 100 locally by the DMZ — never injected into OSPF 1 from the spine side.
-- **Spine MCLUSTER-LOOPBACKS**: Only the DMZ `Loopback1` (`10.100.2.1/32`) is redistributed into OSPF 1 via `ip prefix-list MCLUSTER-LOOPBACKS` on spines. This ensures borders have a specific route to the GRE hub. Injecting `198.19.1.200` into OSPF 1 would decouple `fall-over` detection from tunnel state.
+- **GRE source addressing**: Border GRE tunnel sources (`Loopback1`) are allocated from `10.100.2.0/29` (Border-01 `10.100.2.5`, Border-02 `10.100.2.6`), intentionally outside the `198.19.1.0/24` fabric loopback space to avoid conflicts with core router Loopback0 addresses. DMZ GRE hub sources sit in adjacent space — `dmz1` = `10.100.2.1`, `dmz2` = `10.100.4.1`. See `DEFN_LOOP_GRE_SRC` / `DEFN_LOOP_GRE_PEER` (per-border) and `DEFN_LOOP_MCLUSTER[*].gre_src` (per-DMZ) in `DEFN-LOOPBACKS.j2`.
+- **Tunnel underlay (OSPF 100)**: `FABRIC-BORDER-DMZ-TUNNELS.j2` renders per-border GRE tunnels (`Tunnel10`→dmz1, `Tunnel20`→dmz2) and OSPF 100 adjacencies. Each DMZ's OSPF 100 router-id is its Lo0 (`dmz1` `198.19.1.200`, `dmz2` `198.19.2.200`), redistributed into OSPF 100 locally by the DMZ — never injected into OSPF 1 from the spine side.
+- **Spine MCLUSTER-LOOPBACKS**: Only each DMZ's `Loopback1` (`dmz1` `10.100.2.1/32`, `dmz2` `10.100.4.1/32`) is redistributed into OSPF 1 via `ip prefix-list MCLUSTER-LOOPBACKS` on spines. This ensures borders have a specific route to each GRE hub. Injecting the DMZ Lo0 (`198.19.1.200` / `198.19.2.200`) into OSPF 1 would decouple `fall-over` detection from tunnel state.
 - **EVPN session sourcing**: Borders source from `Loopback2` (DEFN_LOOP_NAME `DMZ_OVERLAY`) with `ebgp-multihop 255`. DMZ peers to border Lo2 addresses (`10.101.1.2` / `10.101.2.2`).
 - **EVPN-only peer**: The DMZ neighbor is activated only under `address-family l2vpn evpn` with `rewrite-evpn-rt-asn`; it is not activated in IPv4 unicast.
 
-> **Operator note**: The DMZ gateway is not provisioned by this template set. On the DMZ side: configure Lo0 = 198.19.1.200/32 (OSPF 100 RID, EVPN update-source), Lo1 = 10.100.2.1/32 (GRE hub source), tunnel destinations = 10.100.2.5 / 10.100.2.6, and EVPN neighbors = 10.101.1.2 / 10.101.2.2.
+> **Operator note**: The DMZ gateways are not provisioned by this template set. Configure them to mirror the live design:
+> - `dmz1` (ASN 65003): Lo0 = `198.19.1.200/32` (OSPF 100 RID, EVPN update-source), Lo1 = `10.100.2.1/32` (GRE hub source), `Tunnel10/11` destinations = `10.100.2.5` / `10.100.2.6`, EVPN neighbors = `10.101.1.2` / `10.101.2.2`.
+> - `dmz2` (ASN 65004): Lo0 = `198.19.2.200/32`, Lo1 = `10.100.4.1/32`, `Tunnel10/11` addresses `10.100.102.1` / `10.100.103.1`, destinations = `10.100.2.5` / `10.100.2.6`, EVPN neighbors = `10.101.1.2` / `10.101.2.2` (shared border Lo2s). Both DMZs also peer the cores directly over their `/30` uplinks (`remote-as 65002`).
 
 ### 1.4 Platform and Software Requirements
 
@@ -480,7 +486,7 @@ VRF DEFINITION
 |----------|-----------------|
 | `FABRIC-VRF.j2` | `vrf definition`, RD/RT |
 | `FABRIC-LOOPBACKS.j2` | `interface Loopback0/901-903`, PIM, OSPF |
-| `FABRIC-BORDER-DMZ-TUNNELS.j2` | `interface Tunnel10` (one per DMZ peer), `router ospf 100` |
+| `FABRIC-BORDER-DMZ-TUNNELS.j2` | `interface Tunnel10`/`Tunnel20` (one per DMZ peer), `router ospf 100` |
 | `FABRIC-L3OUT.j2` | Dot1Q sub-interfaces, Null0 routes |
 | `FABRIC-NVE.j2` | `interface nve1`, L3VNI VLANs/SVIs, `vlan configuration` |
 | `FABRIC-MCAST.j2` | `ip pim`, `ip msdp`, VRF MDT |

@@ -6,6 +6,7 @@ leaf2,198.18.128.104,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|leaf
 border1,198.18.128.105,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|border
 border2,198.18.128.106,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|border
 dmz1,198.18.128.107,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|dmz
+dmz2,198.18.128.114,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|dmz
 core1,198.18.128.108,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|core
 core2,198.18.128.109,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|core
 dhcp-server,198.18.128.110,22,net-admin,env:IOSXE_PASS,iosxe,router,infra|dhcp

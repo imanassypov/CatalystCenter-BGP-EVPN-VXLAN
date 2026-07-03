@@ -20,7 +20,8 @@
 {# Iterate via DEFN_NODE_ROLES['MCLUSTER'] list in FABRIC templates                      #}
 {% set DEFN_LOOP_MCLUSTER =
     {
-      'dmz1.dcloud.cisco.com': {'ip': '198.19.1.200', 'asn': '65003', 'gre_src': '10.100.2.1'}
+      'dmz1.dcloud.cisco.com': {'ip': '198.19.1.200', 'asn': '65003', 'gre_src': '10.100.2.1'},
+      'dmz2.dcloud.cisco.com': {'ip': '198.19.2.200', 'asn': '65004', 'gre_src': '10.100.4.1'}
     }
 %}
 {% set DEFN_LOOP_OVERLAY =
