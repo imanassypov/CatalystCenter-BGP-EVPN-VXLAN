@@ -5776,3 +5776,211 @@
 
 06-30-2026 19:15:50 INFO  NetworkSwitchProfile: set_operation_result: 2061: Switch Profile created/updated successfully for '[{'profile_name': 'BGP-EVPN-Switching', 'status': "Network profile 'BGP-EVPN-Switching' created successfully.", 'template_assign_status': ["Template 'BGP-EVPN-BUILD.j2' successfully attached to the network profile"], 'site_assign_status': "Site(s) '['Global/PODS/POD 0/Building P0/Floor 1']' Successfully Associated"}]'. 
 
+07-06-2026 11:36:28 INFO  NetworkSwitchProfile: validate_input: 489: Successfully validated playbook configuration parameters using 'validate_input': [{'profile_name': 'BGP-EVPN-Switching', 'site_names': ['Global/PODS/POD 0/Building P0/Floor 1'], 'onboarding_templates': None, 'day_n_templates': ['BGP-EVPN-BUILD.j2']}] 
+
+07-06-2026 11:36:28 INFO  NetworkSwitchProfile: get_want: 624: Validating input data and update to want for: [{'profile_name': 'BGP-EVPN-Switching', 'site_names': ['Global/PODS/POD 0/Building P0/Floor 1'], 'onboarding_templates': None, 'day_n_templates': ['BGP-EVPN-BUILD.j2']}] 
+
+07-06-2026 11:36:28 INFO  NetworkSwitchProfile: input_data_validation: 509: Validating input data from Playbook config: [{'profile_name': 'BGP-EVPN-Switching', 'site_names': ['Global/PODS/POD 0/Building P0/Floor 1'], 'onboarding_templates': None, 'day_n_templates': ['BGP-EVPN-BUILD.j2']}] 
+
+07-06-2026 11:36:28 INFO  NetworkSwitchProfile: input_data_validation: 607: Successfully validated config params: [{'profile_name': 'BGP-EVPN-Switching', 'site_names': ['Global/PODS/POD 0/Building P0/Floor 1'], 'onboarding_templates': None, 'day_n_templates': ['BGP-EVPN-BUILD.j2']}] 
+
+07-06-2026 11:36:28 INFO  NetworkSwitchProfile: get_want: 634: Desired State (want): {
+    "switch_profile": [
+        {
+            "profile_name": "BGP-EVPN-Switching",
+            "site_names": [
+                "Global/PODS/POD 0/Building P0/Floor 1"
+            ],
+            "onboarding_templates": null,
+            "day_n_templates": [
+                "BGP-EVPN-BUILD.j2"
+            ]
+        }
+    ]
+} 
+
+07-06-2026 11:36:28 INFO  NetworkSwitchProfile: get_have: 649: Collecting template and swith profile related information for: [{'profile_name': 'BGP-EVPN-Switching', 'site_names': ['Global/PODS/POD 0/Building P0/Floor 1'], 'onboarding_templates': None, 'day_n_templates': ['BGP-EVPN-BUILD.j2']}] 
+
+07-06-2026 11:36:28 INFO  NetworkSwitchProfile: get_network_profile: 231: Fetching network profiles for profile type: Switching 
+
+07-06-2026 11:36:30 INFO  NetworkSwitchProfile: execute_get_request: 2129: Response received from GET API call to Function: 'retrieves_the_list_of_network_profiles_for_sites' from Family: 'site_design' is Response: {'response': [], 'version': '1.0'} 
+
+07-06-2026 11:36:30 WARNING  NetworkSwitchProfile: execute_get_request: 2147: Empty 'response' key in the API response from GET API call to Function: 'retrieves_the_list_of_network_profiles_for_sites' from Family: 'site_design'. 
+
+07-06-2026 11:36:30 ERROR  NetworkSwitchProfile: get_network_profile: 251: Error on retrieving Switching profile list: Unable to get the profile list. 'NoneType' object has no attribute 'get' 
+
+07-06-2026 11:36:30 WARNING  NetworkSwitchProfile: get_have: 711: No existing switch profile(s) found. 
+
+07-06-2026 11:36:30 INFO  NetworkSwitchProfile: check_site_template: 39: Check given template exist in the Catalyst Center for None, ['BGP-EVPN-BUILD.j2'] 
+
+07-06-2026 11:36:30 INFO  NetworkSwitchProfile: get_templates_details: 159: Fetching details for templates: ['BGP-EVPN-BUILD.j2'] 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: get_templates_details: 197: Final validated template details: [
+    {
+        "template_name": "BGP-EVPN-BUILD.j2",
+        "template_exist": true,
+        "template_id": "0295ecde-270b-47cf-823d-2ff988d91478",
+        "template_info": {
+            "name": "BGP-EVPN-BUILD.j2",
+            "projectName": "Building P0",
+            "projectId": "25febb04-c89c-470e-b889-60cc4539a69e",
+            "templateId": "0295ecde-270b-47cf-823d-2ff988d91478",
+            "versionsInfo": [
+                {
+                    "id": "073378fc-5aff-49f5-8d74-edb409fc1381",
+                    "description": "Composite template synced from Git repository",
+                    "author": "admin",
+                    "version": "1",
+                    "versionTime": 1783352179003
+                }
+            ],
+            "composite": true,
+            "tags": [],
+            "softwareType": "IOS",
+            "deviceTypes": [
+                {
+                    "productFamily": "Switches and Hubs",
+                    "productSeries": "Cisco Catalyst 9500 Series Switches"
+                },
+                {
+                    "productFamily": "Switches and Hubs",
+                    "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+                },
+                {
+                    "productFamily": "Switches and Hubs",
+                    "productSeries": "Cisco Catalyst 9300 Series Switches"
+                },
+                {
+                    "productFamily": "Switches and Hubs",
+                    "productSeries": "Cisco Catalyst 9400 Series Switches"
+                }
+            ]
+        }
+    }
+] 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: execute_get_request: 2129: Response received from GET API call to Function: 'get_sites' from Family: 'site_design' is Response: {'response': [{'id': '5bddd7a4-bd8f-407e-90be-6271d80c047f', 'parentId': '0467c46a-f340-486e-b35f-be2e8c09bf2c', 'name': 'Floor 1', 'nameHierarchy': 'Global/PODS/POD 0/Building P0/Floor 1', 'type': 'floor', 'floorNumber': 1, 'rfModel': 'Cubes And Walled Offices', 'width': 100.0, 'length': 100.0, 'height': 10.0, 'unitsOfMeasure': 'feet'}], 'version': '1.0'} 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: check_site_template: 62: Site 'Global/PODS/POD 0/Building P0/Floor 1' existence: True, Site ID: 5bddd7a4-bd8f-407e-90be-6271d80c047f 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: execute_get_request: 2129: Response received from GET API call to Function: 'get_sites' from Family: 'site_design' is Response: {'response': [], 'version': '1.0'} 
+
+07-06-2026 11:36:31 WARNING  NetworkSwitchProfile: execute_get_request: 2147: Empty 'response' key in the API response from GET API call to Function: 'get_sites' from Family: 'site_design'. 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: check_site_template: 81: Found Site ID(s) list: [
+    {
+        "site_names": "Global/PODS/POD 0/Building P0/Floor 1",
+        "site_exist": true,
+        "site_id": "5bddd7a4-bd8f-407e-90be-6271d80c047f"
+    }
+] 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: get_have: 801: Current State (have): {
+    "switch_profile": [
+        {
+            "profile_name": "BGP-EVPN-Switching",
+            "day_n_templates": [
+                {
+                    "template_name": "BGP-EVPN-BUILD.j2",
+                    "template_exist": true,
+                    "template_id": "0295ecde-270b-47cf-823d-2ff988d91478",
+                    "template_info": {
+                        "name": "BGP-EVPN-BUILD.j2",
+                        "projectName": "Building P0",
+                        "projectId": "25febb04-c89c-470e-b889-60cc4539a69e",
+                        "templateId": "0295ecde-270b-47cf-823d-2ff988d91478",
+                        "versionsInfo": [
+                            {
+                                "id": "073378fc-5aff-49f5-8d74-edb409fc1381",
+                                "description": "Composite template synced from Git repository",
+                                "author": "admin",
+                                "version": "1",
+                                "versionTime": 1783352179003
+                            }
+                        ],
+                        "composite": true,
+                        "tags": [],
+                        "softwareType": "IOS",
+                        "deviceTypes": [
+                            {
+                                "productFamily": "Switches and Hubs",
+                                "productSeries": "Cisco Catalyst 9500 Series Switches"
+                            },
+                            {
+                                "productFamily": "Switches and Hubs",
+                                "productSeries": "Cisco Catalyst 9000 Series Virtual Switches"
+                            },
+                            {
+                                "productFamily": "Switches and Hubs",
+                                "productSeries": "Cisco Catalyst 9300 Series Switches"
+                            },
+                            {
+                                "productFamily": "Switches and Hubs",
+                                "productSeries": "Cisco Catalyst 9400 Series Switches"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "site_response": [
+                {
+                    "site_names": "Global/PODS/POD 0/Building P0/Floor 1",
+                    "site_exist": true,
+                    "site_id": "5bddd7a4-bd8f-407e-90be-6271d80c047f"
+                }
+            ]
+        }
+    ],
+    "switch_profile_list": []
+} 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: get_diff_merged: 1352: Starting to create/update switch profile for: [{'profile_name': 'BGP-EVPN-Switching', 'site_names': ['Global/PODS/POD 0/Building P0/Floor 1'], 'onboarding_templates': None, 'day_n_templates': ['BGP-EVPN-BUILD.j2']}] 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: create_switch_profile: 823: Starting switch profile creation/update process. 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: create_switch_profile: 859: Creating switch profile with parameters: {
+    "name": "BGP-EVPN-Switching",
+    "namespace": "switching",
+    "profileAttributes": []
+} 
+
+07-06-2026 11:36:31 INFO  NetworkSwitchProfile: create_switch_profile: 883: Creating new switch profile. Target URL: https://198.18.129.100/api/v1/siteprofile 
+
+07-06-2026 11:36:33 INFO  NetworkSwitchProfile: create_switch_profile: 899: Switch profile created successfully: {
+    "response": {
+        "taskId": "019f3812-f2f7-70d8-bcee-d68c5fada2db",
+        "url": "/api/v1/task/019f3812-f2f7-70d8-bcee-d68c5fada2db"
+    },
+    "version": "1.0"
+} 
+
+07-06-2026 11:36:33 INFO  NetworkSwitchProfile: execute_process_task_data: 721: Task ID: 019f3812-f2f7-70d8-bcee-d68c5fada2db, Status: SUCCESS, Attempts remaining: 1200 
+
+07-06-2026 11:36:33 INFO  NetworkSwitchProfile: get_diff_merged: 1447: Started attaching template(s) for the profile: BGP-EVPN-Switching 
+
+07-06-2026 11:36:33 INFO  NetworkSwitchProfile: attach_networkprofile_cli_template: 315: Attaching CLI template 'BGP-EVPN-BUILD.j2' (ID: 0295ecde-270b-47cf-823d-2ff988d91478) to profile 'BGP-EVPN-Switching' (ID: 614cbcfc-9b4a-4cc3-9d6b-682e3f2a8ef9) 
+
+07-06-2026 11:36:33 INFO  NetworkSwitchProfile: get_taskid_post_api_call: 2175: Requested payload for the the function: 'attach_network_profile_to_a_day_n_cli_template' is: '{'profileId': '614cbcfc-9b4a-4cc3-9d6b-682e3f2a8ef9', 'template_id': '0295ecde-270b-47cf-823d-2ff988d91478'}' 
+
+07-06-2026 11:36:34 INFO  NetworkSwitchProfile: get_taskid_post_api_call: 2205: Task ID received from API call to Function: 'attach_network_profile_to_a_day_n_cli_template' from Family: 'configuration_templates', Task ID: 019f3812-f768-7626-aaac-7b5fc832b3a9 
+
+07-06-2026 11:36:34 INFO  NetworkSwitchProfile: execute_process_task_data: 721: Task ID: 019f3812-f768-7626-aaac-7b5fc832b3a9, Status: SUCCESS, Attempts remaining: 1200 
+
+07-06-2026 11:36:34 INFO  NetworkSwitchProfile: assign_site_to_network_profile: 587: Assigning site Global/PODS/POD 0/Building P0/Floor 1: 5bddd7a4-bd8f-407e-90be-6271d80c047f to profile BGP-EVPN-Switching:614cbcfc-9b4a-4cc3-9d6b-682e3f2a8ef9. 
+
+07-06-2026 11:36:34 INFO  NetworkSwitchProfile: get_taskid_post_api_call: 2175: Requested payload for the the function: 'assign_a_network_profile_for_sites_to_the_given_site' is: '{'profile_id': '614cbcfc-9b4a-4cc3-9d6b-682e3f2a8ef9', 'id': '5bddd7a4-bd8f-407e-90be-6271d80c047f'}' 
+
+07-06-2026 11:36:34 INFO  NetworkSwitchProfile: get_taskid_post_api_call: 2205: Task ID received from API call to Function: 'assign_a_network_profile_for_sites_to_the_given_site' from Family: 'site_design', Task ID: 019f3812-fa43-76f5-a728-99b9e92ead1c 
+
+07-06-2026 11:36:35 INFO  NetworkSwitchProfile: execute_process_task_data: 721: Task ID: 019f3812-fa43-76f5-a728-99b9e92ead1c, Status: SUCCESS, Attempts remaining: 1200 
+
+07-06-2026 11:36:35 INFO  NetworkSwitchProfile: get_diff_merged: 1531: Network profile 'BGP-EVPN-Switching' created successfully. 
+
+07-06-2026 11:36:35 INFO  NetworkSwitchProfile: get_diff_merged: 1537: Templates assigned successfully for: '["Template 'BGP-EVPN-BUILD.j2' successfully attached to the network profile"]'. 
+
+07-06-2026 11:36:35 INFO  NetworkSwitchProfile: get_diff_merged: 1555: Switch Profile created/updated successfully for '[{'profile_name': 'BGP-EVPN-Switching', 'status': "Network profile 'BGP-EVPN-Switching' created successfully.", 'template_assign_status': ["Template 'BGP-EVPN-BUILD.j2' successfully attached to the network profile"], 'site_assign_status': "Site(s) '['Global/PODS/POD 0/Building P0/Floor 1']' Successfully Associated"}]'. 
+
+07-06-2026 11:36:35 INFO  NetworkSwitchProfile: get_diff_merged: 1564: Switch Profile created/updated successfully for '[{'profile_name': 'BGP-EVPN-Switching', 'status': "Network profile 'BGP-EVPN-Switching' created successfully.", 'template_assign_status': ["Template 'BGP-EVPN-BUILD.j2' successfully attached to the network profile"], 'site_assign_status': "Site(s) '['Global/PODS/POD 0/Building P0/Floor 1']' Successfully Associated"}]'. 
+
+07-06-2026 11:36:35 INFO  NetworkSwitchProfile: set_operation_result: 2061: Switch Profile created/updated successfully for '[{'profile_name': 'BGP-EVPN-Switching', 'status': "Network profile 'BGP-EVPN-Switching' created successfully.", 'template_assign_status': ["Template 'BGP-EVPN-BUILD.j2' successfully attached to the network profile"], 'site_assign_status': "Site(s) '['Global/PODS/POD 0/Building P0/Floor 1']' Successfully Associated"}]'. 
+

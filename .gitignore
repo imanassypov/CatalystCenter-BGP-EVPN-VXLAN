@@ -1,6 +1,8 @@
 .DS_Store
 *.pptx
 .github/copilot-instructions.md
+# LinkedIn blog drafts (local-only, not part of the fabric repo)
+Linkedin Blogposts/
 # Ansible runtime artifacts
 .ansible/
 Campus BGP EVPN Splunk Assurance/packaging/dist/

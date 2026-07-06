@@ -1434,3 +1434,37 @@
 
 06-30-2026 19:15:14 INFO  Discovery: get_diff_merged: 2056: Discovery Created Successfully 
 
+07-06-2026 11:11:14 INFO  Discovery: validate_input: 873: Successfully validated playbook configuration parameters using 'validate_input': [{'cdp_level': 16, 'start_index': 1, 'records_to_return': 100, 'discovery_specific_credentials': {'net_conf_port': '830'}, 'ip_filter_list': None, 'lldp_level': 16, 'discovery_name': 'Global/PODS/POD 0/Building P0/Floor 1', 'netconf_port': None, 'preferred_mgmt_ip_method': 'UseLoopBack', 'retry': 5, 'timeout': '3', 'global_credentials': {'cli_credentials_list': [{'description': 'CLI-net-admin', 'username': 'net-admin'}], 'snmp_v2_read_credential_list': [{'description': 'RO'}], 'snmp_v2_write_credential_list': [{'description': 'RW'}], 'net_conf_port_list': [{'description': 'NETCONF-netadmin'}]}, 'protocol_order': 'ssh', 'use_global_credentials': True, 'ip_address_list': ['198.19.1.1', '198.19.1.2', '198.19.1.3', '198.19.1.4', '198.19.1.5', '198.19.1.6'], 'discovery_type': 'MULTI RANGE'}] 
+
+07-06-2026 11:11:14 INFO  Discovery: validate_ip4_address_list: 916: All the IP addresses passed are correct 
+
+07-06-2026 11:11:14 INFO  Discovery: get_devices_list_info: 1224: Details of the device list passed: ['198.19.1.1', '198.19.1.2', '198.19.1.3', '198.19.1.4', '198.19.1.5', '198.19.1.6'] 
+
+07-06-2026 11:11:14 INFO  Discovery: preprocess_device_discovery: 1249: Discovery type passed for the discovery is MULTI RANGE 
+
+07-06-2026 11:11:14 INFO  Discovery: preprocess_device_discovery: 1299: Collected IP address/addresses are 198.19.1.1-198.19.1.1,198.19.1.2-198.19.1.2,198.19.1.3-198.19.1.3,198.19.1.4-198.19.1.4,198.19.1.5-198.19.1.5,198.19.1.6-198.19.1.6 
+
+07-06-2026 11:11:16 INFO  Discovery: handle_global_credentials: 1154: Fetched Global credentials IDs are {'cliCredential': ['5e4d2c81-9251-444f-a1ec-bd1bc645a237'], 'snmpV2cRead': ['cac02b03-4e89-4002-95d4-7adcaf06f363'], 'snmpV2cWrite': ['57f7141b-5dad-47c0-b628-956047cf091f'], 'netconfCredential': ['da43e855-1e8a-44ef-9c1b-a396a5fef6ed']} 
+
+07-06-2026 11:11:16 INFO  Discovery: create_params: 1613: The payload/object created for calling the start discovery API is {'cdpLevel': 16, 'discoveryType': 'MULTI RANGE', 'ipAddressList': '198.19.1.1-198.19.1.1,198.19.1.2-198.19.1.2,198.19.1.3-198.19.1.3,198.19.1.4-198.19.1.4,198.19.1.5-198.19.1.5,198.19.1.6-198.19.1.6', 'ipFilterList': None, 'lldpLevel': 16, 'name': 'Global/PODS/POD 0/Building P0/Floor 1', 'preferredMgmtIPMethod': 'UseLoopBack', 'protocolOrder': 'ssh', 'retry': 5, 'timeout': '3', 'netconfPort': '830', 'globalCredentialIdList': ['5e4d2c81-9251-444f-a1ec-bd1bc645a237', 'cac02b03-4e89-4002-95d4-7adcaf06f363', '57f7141b-5dad-47c0-b628-956047cf091f', 'da43e855-1e8a-44ef-9c1b-a396a5fef6ed']} 
+
+07-06-2026 11:11:16 INFO  Discovery: create_discovery: 1654: Task Id of the API task created is 019f37fb-cf82-73b2-b3cb-7c19319ce6da 
+
+07-06-2026 11:11:16 INFO  Discovery: get_merged_task_status: 1686: Task status for the task id 019f37fb-cf82-73b2-b3cb-7c19319ce6da is {'version': 1783350677378, 'startTime': 1783350677378, 'progress': 'Inventory service initiating discovery.', 'serviceType': 'Inventory service', 'isError': False, 'instanceTenantId': '6803f0faea124277dd9d2794', 'id': '019f37fb-cf82-73b2-b3cb-7c19319ce6da'}, is_error: False 
+
+07-06-2026 11:11:16 INFO  Discovery: get_merged_task_status: 1704: Task status for the task id (before checking status) 019f37fb-cf82-73b2-b3cb-7c19319ce6da is {'version': 1783350677378, 'startTime': 1783350677378, 'progress': 'Inventory service initiating discovery.', 'serviceType': 'Inventory service', 'isError': False, 'instanceTenantId': '6803f0faea124277dd9d2794', 'id': '019f37fb-cf82-73b2-b3cb-7c19319ce6da'} 
+
+07-06-2026 11:11:16 WARNING  Discovery: get_merged_task_status: 1718: The progress status is Inventory service initiating discovery., continue to check the status after 3 seconds. Putting into sleep for 3 seconds 
+
+07-06-2026 11:11:20 INFO  Discovery: get_merged_task_status: 1686: Task status for the task id 019f37fb-cf82-73b2-b3cb-7c19319ce6da is {'version': 1783350678469, 'data': '1', 'startTime': 1783350677378, 'lastUpdate': 1783350678469, 'progress': '1', 'serviceType': 'Discovery Service', 'isError': False, 'instanceTenantId': '6803f0faea124277dd9d2794', 'id': '019f37fb-cf82-73b2-b3cb-7c19319ce6da'}, is_error: False 
+
+07-06-2026 11:11:20 INFO  Discovery: get_merged_task_status: 1704: Task status for the task id (before checking status) 019f37fb-cf82-73b2-b3cb-7c19319ce6da is {'version': 1783350678469, 'data': '1', 'startTime': 1783350677378, 'lastUpdate': 1783350678469, 'progress': '1', 'serviceType': 'Discovery Service', 'isError': False, 'instanceTenantId': '6803f0faea124277dd9d2794', 'id': '019f37fb-cf82-73b2-b3cb-7c19319ce6da'} 
+
+07-06-2026 11:11:20 INFO  Discovery: get_merged_task_status: 1714: The discovery process is completed 
+
+07-06-2026 11:11:53 INFO  Discovery: get_discovery_device_info: 1935: All devices in the range are reachable 
+
+07-06-2026 11:11:53 INFO  Discovery: get_discovery_device_info: 1964: Discovery network device with id 1 got completed 
+
+07-06-2026 11:11:53 INFO  Discovery: get_diff_merged: 2056: Discovery Created Successfully 
+
