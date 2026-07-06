@@ -1,0 +1,24 @@
+---
+# =============================================================================
+# yangsuite_docker / deploy_compose.yml
+# =============================================================================
+
+- name: Build and start YANG Suite Docker Compose stack
+  ansible.builtin.command:
+    argv: "{{ ['docker', 'compose', 'up', '-d'] + (['--build'] if yangsuite_compose_build | bool else []) }}"
+    chdir: "{{ yangsuite_docker_dir }}"
+  register: yangsuite_compose_up
+  changed_when: >
+    yangsuite_compose_up.rc == 0 and (
+      'Built' in yangsuite_compose_up.stdout
+      or 'Creating' in yangsuite_compose_up.stdout
+      or 'Recreating' in yangsuite_compose_up.stdout
+      or 'Starting' in yangsuite_compose_up.stdout
+      or yangsuite_git.changed | default(false)
+    )
+  failed_when: yangsuite_compose_up.rc != 0
+
+- name: Show docker compose output when changed
+  ansible.builtin.debug:
+    var: yangsuite_compose_up.stdout_lines
+  when: yangsuite_compose_up.changed

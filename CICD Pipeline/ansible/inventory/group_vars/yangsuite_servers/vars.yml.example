@@ -1,0 +1,14 @@
+---
+# Non-secret YANG Suite config — copy to vars.yml (gitignored):
+#   cp vars.yml.example vars.yml
+
+yangsuite_server_ip: "198.18.134.28"
+
+# Space-separated hosts for DJANGO_ALLOWED_HOSTS (must include browser URL host/IP)
+# yangsuite_allowed_hosts: "localhost {{ yangsuite_server_ip }} yangsuite.lab.example.com"
+
+# Optional overrides (see roles/yangsuite_docker/defaults/main.yml)
+# yangsuite_repo_version: main
+# yangsuite_install_dir: /opt/yangsuite
+# yangsuite_generate_self_signed_certs: true
+# yangsuite_manage_ufw: true

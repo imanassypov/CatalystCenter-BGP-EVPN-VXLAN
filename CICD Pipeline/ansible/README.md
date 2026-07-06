@@ -22,6 +22,11 @@ cp inventory/group_vars/image_servers/vars.yml.example inventory/group_vars/imag
 cp inventory/group_vars/image_servers/vault.yml.example inventory/group_vars/image_servers/vault.yml
 ansible-vault encrypt inventory/group_vars/image_servers/vault.yml --vault-password-file ../.vault_pass
 
+# YANG Suite (NETCONF/YANG lab utility)
+cp inventory/group_vars/yangsuite_servers/vars.yml.example inventory/group_vars/yangsuite_servers/vars.yml
+cp inventory/group_vars/yangsuite_servers/vault.yml.example inventory/group_vars/yangsuite_servers/vault.yml
+ansible-vault encrypt inventory/group_vars/yangsuite_servers/vault.yml --vault-password-file ../.vault_pass
+
 ansible-playbook playbooks/01_site_hierarchy.yml
 ```
 
@@ -33,8 +38,8 @@ CICD Pipeline/
 ├── Settings/settings.json       # SSOT for all stages
 └── ansible/
     ├── inventory/               # hosts + group_vars (vault, connection)
-    ├── playbooks/               # 01–11, site.yml, deploy_http_image_server.yml
-    ├── roles/                   # site_hierarchy, swim, template_sync, …
+    ├── playbooks/               # 01–11, site.yml, deploy_* utilities
+    ├── roles/                   # site_hierarchy, swim, template_sync, http_image_server, yangsuite_docker, …
     ├── config-backups/          # stage 11 output (gitignored timestamps)
     ├── logs/                    # SWIM evidence JSON (gitignored)
     └── docs/swim/               # SWIM reference diagrams
@@ -62,6 +67,7 @@ ansible-playbook playbooks/site.yml
 | `10_deploy_composite.yml` | 10 | Composite template deploy |
 | `11_backup_lab_configs.yml` | 11 | IOS-XE/NX-OS config backup |
 | `deploy_http_image_server.yml` | 6 prep | HTTP image server |
+| `deploy_yangsuite.yml` | util | Cisco YANG Suite (Docker) |
 
 ### SWIM (stage 6)
 
@@ -72,6 +78,15 @@ ansible-playbook playbooks/06_swim_import_and_tag.yml
 ansible-playbook playbooks/06_swim_distribute.yml
 ansible-playbook playbooks/06_swim_activate.yml
 ansible-playbook playbooks/06_swim_postcheck.yml
+```
+
+### YANG Suite (Docker)
+
+Deploys [Cisco YANG Suite](https://developer.cisco.com/docs/yangsuite/) from the upstream [CiscoDevNet/yangsuite](https://github.com/CiscoDevNet/yangsuite) repository. Replaces the interactive `start_yang_suite.sh` prompts with Ansible templates (`setup.env`, self-signed nginx certs, `docker compose up`).
+
+```bash
+ansible-playbook playbooks/deploy_yangsuite.yml
+# UI: https://<yangsuite_server_ip>:8443/
 ```
 
 ## Common Overrides

@@ -1,0 +1,14 @@
+---
+# SECRETS — copy to vault.yml and encrypt:
+#   cp vault.yml.example vault.yml
+#   ansible-vault encrypt vault.yml --vault-password-file ../../../.vault_pass
+#
+# YS admin username must NOT be "admin" (upstream Django constraint).
+
+vault_yangsuite_server_user: "ubuntu"
+vault_yangsuite_server_password: "CHANGE_ME"
+vault_yangsuite_server_become_password: "CHANGE_ME"
+
+vault_yangsuite_admin_user: "netadmin"
+vault_yangsuite_admin_password: "CHANGE_ME"
+vault_yangsuite_admin_email: "netadmin@example.com"

@@ -1,0 +1,39 @@
+---
+# =============================================================================
+# yangsuite_docker / main.yml  —  Cisco YANG Suite (Docker Compose)
+# =============================================================================
+# Automates the Docker install documented at:
+#   https://developer.cisco.com/docs/yangsuite/
+#   https://github.com/CiscoDevNet/yangsuite
+#
+# Playbook: playbooks/deploy_yangsuite.yml
+# Inventory: yangsuite_servers group
+#
+# Required group_vars:
+#   yangsuite_servers/vault.yml — SSH + YS admin credentials
+#   yangsuite_servers/vars.yml  — yangsuite_server_ip (optional overrides)
+# =============================================================================
+
+- name: Pre-flight validation
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Install Docker engine and Compose plugin
+  ansible.builtin.import_tasks: install_docker.yml
+
+- name: Clone CiscoDevNet/yangsuite repository
+  ansible.builtin.import_tasks: clone_repository.yml
+
+- name: Render setup.env and TLS material for nginx
+  ansible.builtin.import_tasks: configure_env_and_certs.yml
+
+- name: Patch docker-compose port bindings for co-hosted lab
+  ansible.builtin.import_tasks: patch_compose_ports.yml
+
+- name: Build and start Docker Compose stack
+  ansible.builtin.import_tasks: deploy_compose.yml
+
+- name: Open firewall for YANG Suite ports when ufw is active
+  ansible.builtin.import_tasks: configure_firewall.yml
+
+- name: Verify HTTPS UI and report access URLs
+  ansible.builtin.import_tasks: verify.yml

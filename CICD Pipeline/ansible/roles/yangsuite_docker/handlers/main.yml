@@ -1,0 +1,6 @@
+---
+- name: Restart YANG Suite Docker Compose stack
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ yangsuite_docker_dir }}"
+  changed_when: true

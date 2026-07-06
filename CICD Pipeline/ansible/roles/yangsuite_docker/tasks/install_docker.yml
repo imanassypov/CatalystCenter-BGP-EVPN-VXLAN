@@ -1,0 +1,45 @@
+---
+# =============================================================================
+# yangsuite_docker / install_docker.yml
+# =============================================================================
+
+- name: Check whether Docker CLI is already installed
+  ansible.builtin.command: docker --version
+  register: yangsuite_docker_cli_check
+  changed_when: false
+  failed_when: false
+
+- name: Check whether Docker Compose plugin is available
+  ansible.builtin.command: docker compose version
+  register: yangsuite_docker_compose_check
+  changed_when: false
+  failed_when: false
+
+- name: Refresh apt cache (best effort)
+  ansible.builtin.apt:
+    update_cache: true
+  register: apt_cache_update
+  failed_when: false
+  when: yangsuite_docker_cli_check.rc != 0 or yangsuite_docker_compose_check.rc != 0
+
+- name: Install containerd (docker.io dependency on Ubuntu 20.04)
+  ansible.builtin.apt:
+    name: containerd
+    state: present
+    update_cache: false
+  when: yangsuite_docker_cli_check.rc != 0
+
+- name: Install Docker engine and Compose plugin
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+    update_cache: false
+  when: yangsuite_docker_cli_check.rc != 0 or yangsuite_docker_compose_check.rc != 0
+
+- name: Ensure Docker service is enabled and running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true

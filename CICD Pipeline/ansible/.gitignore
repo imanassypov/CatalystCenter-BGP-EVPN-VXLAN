@@ -10,3 +10,4 @@ inventory/group_vars/**/vault.yml
 !inventory/group_vars/**/vault.yml.example
 inventory/group_vars/**/vault.yml.placeholder.bak
 inventory/group_vars/image_servers/vars.yml
+inventory/group_vars/yangsuite_servers/vars.yml

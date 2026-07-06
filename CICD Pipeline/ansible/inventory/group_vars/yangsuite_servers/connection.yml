@@ -1,0 +1,7 @@
+---
+# SSH/become credentials — loaded from group_vars/yangsuite_servers/vault.yml (encrypted).
+# Password SSH auth requires sshpass on the control node (brew install sshpass).
+ansible_user: "{{ vault_yangsuite_server_user }}"
+ansible_ssh_pass: "{{ vault_yangsuite_server_password }}"
+ansible_become: false
+ansible_python_interpreter: /usr/bin/python3.8
