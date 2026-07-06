@@ -3,9 +3,10 @@
 # backup_configs / main.yml
 # =============================================================================
 # Library role — no default tasks. Playbook 11 invokes task files directly:
-#   set_timestamp   → localhost fact backup_timestamp
-#   backup_iosxe    → per iosxe host
-#   backup_nxos     → per nxos host + retention prune
+#   set_timestamp            → localhost fact backup_timestamp
+#   load_device_credentials  → settings.json → iosxe/nxos host facts
+#   backup_iosxe             → per iosxe host
+#   backup_nxos              → per nxos host + retention prune
 # =============================================================================
 
 - name: backup_configs | use import_role with tasks_from in playbooks

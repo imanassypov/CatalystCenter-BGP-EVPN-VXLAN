@@ -1,6 +1,6 @@
 ---
-# Device SSH credentials — loaded from group_vars/iosxe/vault.yml (encrypted).
-# Until merged into catalyst_center/vault.yml, symlink to 11.0-Backup-My-Configs/vault.yml.
+# Device SSH credentials — templated from host facts set by
+# backup_configs.load_device_credentials (reads settings.json SSOT).
 ansible_connection: network_cli
 ansible_user: "{{ vault_device_username }}"
 ansible_password: "{{ vault_device_password }}"

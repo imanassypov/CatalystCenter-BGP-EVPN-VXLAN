@@ -1,0 +1,30 @@
+---
+# =============================================================================
+# http_image_server / configure_nginx.yml  —  Appendix A.3
+# =============================================================================
+
+- name: Deploy the SWIM images nginx server block
+  ansible.builtin.template:
+    src: swim-images.conf.j2
+    dest: /etc/nginx/sites-available/swim-images
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable the SWIM images server block
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/swim-images
+    dest: /etc/nginx/sites-enabled/swim-images
+    state: link
+  notify: Reload nginx
+
+- name: Disable the default nginx server block
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Validate the nginx configuration
+  ansible.builtin.command: nginx -t
+  changed_when: false

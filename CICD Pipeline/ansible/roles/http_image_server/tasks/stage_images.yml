@@ -1,0 +1,73 @@
+---
+# =============================================================================
+# http_image_server / stage_images.yml  —  Appendix A.2
+# =============================================================================
+
+# Task: Check whether each image already exists on the target
+# Post: remote_images.results[].stat.exists per filename under image_dir
+- name: Check whether each image already exists on the target
+  ansible.builtin.stat:
+    path: "{{ image_dir }}/{{ item | basename }}"
+    get_checksum: false
+  loop: "{{ image_local_paths }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  register: remote_images
+
+# Task: Build the per-image staging plan
+# Post: image_plan:
+#         - { path, filename, local_exists, remote_exists }
+- name: Build the per-image staging plan
+  ansible.builtin.set_fact:
+    image_plan: >-
+      {{ image_plan | default([]) + [{
+           'path': item.0.item,
+           'filename': item.0.item | basename,
+           'local_exists': item.0.stat.exists,
+           'remote_exists': item.1.stat.exists
+         }] }}
+  loop: "{{ local_images.results | zip(remote_images.results) | list }}"
+  loop_control:
+    label: "{{ item.0.item | basename }}"
+
+- name: Fail if any image is missing on both the target and the control node
+  ansible.builtin.fail:
+    msg: >-
+      Image '{{ item.filename }}' is not present on {{ image_server_ip }}
+      and the local source '{{ item.path }}' does not exist on the
+      control node. Nothing to upload.
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  when:
+    - not item.remote_exists
+    - not item.local_exists
+
+# rsync + resume for low-MTU VPN; copy module stalls on large .bin over dCloud.
+- name: Upload images to the server (missing on target, rsync + resume)
+  ansible.posix.synchronize:
+    src: "{{ item.path }}"
+    dest: "{{ image_dir }}/{{ item.filename }}"
+    mode: push
+    rsync_opts:
+      - "--partial"
+      - "--append"
+      - "--timeout={{ image_rsync_timeout }}"
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  when:
+    - not item.remote_exists
+    - item.local_exists
+  register: rsync_upload
+  until: rsync_upload is succeeded
+  retries: "{{ image_rsync_retries }}"
+  delay: "{{ image_rsync_delay }}"
+
+- name: Enforce ownership and permissions on the image directory
+  ansible.builtin.file:
+    path: "{{ image_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: true

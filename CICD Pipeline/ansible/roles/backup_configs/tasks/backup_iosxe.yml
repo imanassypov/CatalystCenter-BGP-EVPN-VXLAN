@@ -5,7 +5,7 @@
 # SSH to each iosxe inventory host, collect show running-config, write to the
 # Ansible control node under backup_output_dir.
 #
-# Host vars: ansible_host, vault_device_username/password from vault.yml
+# Host vars: ansible_host; vault_device_* from settings.json (load_device_credentials)
 # Play var:  backup_output_dir = backup_root_dir/backup_timestamp (from play 1)
 # =============================================================================
 

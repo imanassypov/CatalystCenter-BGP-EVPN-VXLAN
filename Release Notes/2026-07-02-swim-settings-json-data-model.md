@@ -38,7 +38,9 @@ unchanged — only the *source* of `swim_details` changed.
 
 ### Files added
 
-- `CICD Pipeline/6.0-Cisco-Catalyst-Center-SWIM/tasks/load_swim_details.yml`
+> **Note (2026-07):** Numbered stage directories (`1.0`–`11.0`) were removed; paths below are historical. Current code lives under `CICD Pipeline/ansible/roles/swim/` and `playbooks/06_swim_*.yml`.
+
+- `CICD Pipeline/ansible/roles/swim/tasks/load_swim_details.yml`
   - Resolves `settings_json_path`, loads and validates `settings.json`, derives `site_name`
     from the hierarchy fields, and synthesises `swim_details` (`import_images`,
     `golden_tag_images`, `distribute_images`, `activate_images`, `rollback_images.{tag,activate}`).
@@ -49,18 +51,18 @@ unchanged — only the *source* of `swim_details` changed.
   - Added a `swim` block to the project entry: `image_server_base_url`,
     `device_family_identifier`, `device_family_name`, `device_series_name`, `device_role`,
     `upgrade_image`, `rollback_image`, and an `activation` sub-block.
-- `CICD Pipeline/6.0-Cisco-Catalyst-Center-SWIM/inventory/group_vars/catc/connection.yml`
+- `CICD Pipeline/ansible/inventory/group_vars/catalyst_center/connection.yml`
   - Added `settings_json_path: "../../Settings/settings.json"`.
-- `CICD Pipeline/6.0-Cisco-Catalyst-Center-SWIM/playbooks/{00_preflight,10_import_and_tag,20_distribute,30_activate,35_rollback,40_postcheck}.yml`
+- `CICD Pipeline/ansible/playbooks/06_swim_{preflight,import_and_tag,distribute,activate,rollback,postcheck}.yml`
   - Removed `vars_files: [../vars/images.yml]`; added
     `import_tasks: ../tasks/load_swim_details.yml` as the first task.
-- `CICD Pipeline/6.0-Cisco-Catalyst-Center-SWIM/README.md`
+- `CICD Pipeline/ansible/README.md`
   - Rewrote §7 to describe the `swim` block and the synthesis task; updated the TOC,
     repository layout, connection-params table, and Appendix A/B references.
 
 ### Files removed
 
-- `CICD Pipeline/6.0-Cisco-Catalyst-Center-SWIM/vars/images.yml` (and the `vars/` directory)
+- Removed standalone `vars/images.yml` — image paths are in `settings.json` `swim` section and `inventory/group_vars/image_servers/vars.yml`
   - No longer consumed; superseded by the `swim` block in `settings.json`.
 
 ### Validation evidence
@@ -82,4 +84,4 @@ unchanged — only the *source* of `swim_details` changed.
   fields and a `swim` block); the synthesis and derived compliance-site list pick it up
   automatically.
 - The image-server base URL in `settings.json` (`image_server_base_url`) should match the host
-  provisioned by `CICD Pipeline/utils/ansible-image-server-setup`.
+  provisioned by `CICD Pipeline/ansible/playbooks/deploy_http_image_server.yml` (role: `http_image_server`).

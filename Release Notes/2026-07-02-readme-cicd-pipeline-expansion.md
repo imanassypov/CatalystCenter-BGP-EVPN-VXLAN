@@ -8,24 +8,26 @@ complete, numbered collection of CICD playbooks instead of only the template Git
 - Added an ordered stage table (1.0 → 11.0) with folder links, primary playbook filename, and a
   one-line purpose for each stage.
 - Documented supporting directories: `Settings/` (`settings.json` source-of-truth) and
-  `utils/ansible-image-server-setup/` (HTTP image server for SWIM).
+  `ansible/playbooks/deploy_http_image_server.yml` (HTTP image server for SWIM).
 - Preserved the detailed Template GitOps (7.0) walkthrough as a nested subsection.
 
 ## Stage inventory (authoritative playbook filenames)
 
+> **Superseded (2026-07):** Per-stage playbooks were consolidated under `CICD Pipeline/ansible/playbooks/`. The table below reflects the layout at the time of this note.
+
 | Stage | Playbook |
 |-------|----------|
-| 1.0 Site Hierarchy | `site_hierarchy.yml` |
-| 2.0 Settings | `network_settings.yml` |
-| 3.0 Credentials | `credentials.yml` |
-| 4.0 Device Discovery | `device_discovery.yml` |
-| 5.0 Assign To Site | `assign_to_site.yml` |
-| 6.0 SWIM | `playbooks/00_preflight.yml` → `10_import_and_tag.yml` → `20_distribute.yml` → `30_activate.yml` → `40_postcheck.yml` (rollback: `35_rollback.yml`) |
-| 7.0 Templates (GitOps) | `ansible-git-catc.yml` |
-| 8.0 Network Profile | `network_profile.yml` |
-| 9.0 Provision Devices | `provision_devices.yml` |
-| 10.0 Provision Composite | `deploy_composite_template.yml` |
-| 11.0 Backup My Configs | `backup-lab-configs.yml` |
+| 1.0 Site Hierarchy | `playbooks/01_site_hierarchy.yml` |
+| 2.0 Settings | `playbooks/02_network_settings.yml` |
+| 3.0 Credentials | `playbooks/03_credentials.yml` |
+| 4.0 Device Discovery | `playbooks/04_device_discovery.yml` |
+| 5.0 Assign To Site | `playbooks/05_assign_to_site.yml` |
+| 6.0 SWIM | `06_swim_preflight.yml` → `06_swim_import_and_tag.yml` → `06_swim_distribute.yml` → `06_swim_activate.yml` → `06_swim_postcheck.yml` (rollback: `06_swim_rollback.yml`) |
+| 7.0 Templates (GitOps) | `playbooks/07_template_sync.yml` |
+| 8.0 Network Profile | `playbooks/08_network_profile.yml` |
+| 9.0 Provision Devices | `playbooks/09_provision_devices.yml` |
+| 10.0 Provision Composite | `playbooks/10_deploy_composite.yml` |
+| 11.0 Backup My Configs | `playbooks/11_backup_lab_configs.yml` |
 
 ## Motivation
 

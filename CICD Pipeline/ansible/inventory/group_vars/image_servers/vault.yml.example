@@ -5,11 +5,7 @@
 #   cp vault.yml.example vault.yml
 #   ansible-vault encrypt vault.yml
 #
-# vars.yml maps these into the connection variables:
-#   ansible_user            <- vault_image_server_user
-#   ansible_ssh_pass        <- vault_image_server_password
-#   ansible_become_password <- vault_image_server_become_password
-#
+# connection.yml maps these into Ansible SSH/become variables:
 # NOTE: password SSH auth requires 'sshpass' on the control node
 #       (brew install sshpass / apt install sshpass). If you use SSH keys
 #       instead, drop vault_image_server_password and remove ansible_ssh_pass

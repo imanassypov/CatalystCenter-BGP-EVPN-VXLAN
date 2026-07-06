@@ -1,0 +1,19 @@
+---
+# Target Ubuntu host — override in inventory/group_vars/image_servers/vars.yml
+image_server_ip: "198.18.134.28"
+
+# nginx layout: http://{{ image_server_ip }}/{{ image_url_subdir }}/<file.bin>
+image_web_root: /var/www/html
+image_url_subdir: images
+image_dir: "{{ image_web_root }}/{{ image_url_subdir }}"
+
+# Absolute paths on the control node; must be set before run (vars.yml or -e)
+image_local_paths: []
+
+# rsync resume tuning (low-MTU dCloud VPN)
+image_rsync_retries: 30
+image_rsync_delay: 5
+image_rsync_timeout: 60
+
+# Open TCP/80 in ufw when ufw is installed and active
+manage_ufw: true

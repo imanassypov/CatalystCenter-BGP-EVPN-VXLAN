@@ -3,7 +3,7 @@
 # ============================================================================
 # Processes one composite template deploy entry from devices.json.
 #
-# Input variable (set by loop in deploy_composite_template.yml):
+# Input variable (set by loop in playbooks/10_deploy_composite.yml):
 #   deploy_entry.site            — site hierarchy path (informational)
 #   deploy_entry.template_name   — composite template name in Catalyst Center
 #   deploy_entry.project_name    — CatC project that owns the template

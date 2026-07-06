@@ -1,0 +1,70 @@
+---
+# =============================================================================
+# http_image_server / verify.yml  —  Appendix A.5
+# =============================================================================
+
+- name: Flush handlers before verification
+  ansible.builtin.meta: flush_handlers
+
+- name: Verify each image is served over HTTP (from the server itself)
+  ansible.builtin.uri:
+    url: "http://localhost/{{ image_url_subdir }}/{{ item.filename }}"
+    method: HEAD
+    status_code: 200
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  register: http_check
+  when: item.remote_exists or item.local_exists
+
+- name: Verify TCP/80 reachability to the image server (from the control node)
+  ansible.builtin.wait_for:
+    host: "{{ image_server_ip }}"
+    port: 80
+    timeout: 10
+    state: started
+  delegate_to: localhost
+  become: false
+
+- name: Verify each image is reachable over HTTP on the public IP (from the control node)
+  ansible.builtin.uri:
+    url: "http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ item.filename }}"
+    method: HEAD
+    status_code: 200
+    return_content: false
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  register: http_check_remote
+  delegate_to: localhost
+  become: false
+  when: item.remote_exists or item.local_exists
+
+- name: Assert each served image is a binary download
+  ansible.builtin.assert:
+    that:
+      - item.status == 200
+      - "'application/octet-stream' in (item.content_type | default(''))"
+    fail_msg: >-
+      The image URL for '{{ item.item.filename | default('n/a') }}'
+      responded but not as application/octet-stream
+      (got '{{ item.content_type | default('n/a') }}').
+      Catalyst Center remote import expects a binary download.
+    success_msg: >-
+      Image '{{ item.item.filename | default('n/a') }}' reachable over HTTP
+      as application/octet-stream
+      ({{ item.content_length | default('n/a') }} bytes).
+  loop: "{{ http_check_remote.results }}"
+  loop_control:
+    label: "{{ item.item.filename | default('n/a') }}"
+  when: item is not skipped
+
+- name: Report the published image URLs
+  ansible.builtin.debug:
+    msg: >-
+      Image server ready:
+      http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ item.filename }}
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  when: item.remote_exists or item.local_exists

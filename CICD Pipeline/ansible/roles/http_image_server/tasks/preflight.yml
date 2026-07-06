@@ -1,0 +1,32 @@
+---
+# =============================================================================
+# http_image_server / preflight.yml
+# =============================================================================
+
+# Task: Assert image_local_paths is configured
+# Pre:  image_local_paths may be [] or placeholder paths
+# Post: unchanged on success; play fails with actionable message
+- name: Assert image_local_paths is a non-empty list
+  ansible.builtin.assert:
+    that:
+      - image_local_paths is defined
+      - image_local_paths is sequence
+      - image_local_paths is not string
+      - image_local_paths | length > 0
+      - "'/path/to/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin' not in image_local_paths"
+    fail_msg: >-
+      Set image_local_paths to absolute .bin paths on the control node
+      (inventory/group_vars/image_servers/vars.yml or -e override).
+
+# Task: Stat each local image on the control node
+# Pre:  image_local_paths: ["/abs/a.SSA.bin", "/abs/b.SPA.bin"]
+# Post: local_images.results[].stat.exists → bool per file
+- name: Stat each local image on the control node
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ image_local_paths }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  delegate_to: localhost
+  become: false
+  register: local_images

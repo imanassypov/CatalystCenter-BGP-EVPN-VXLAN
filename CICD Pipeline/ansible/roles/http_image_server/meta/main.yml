@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: http_image_server
+  description: Deploy nginx HTTP server for Catalyst Center SWIM remote image import
+  license: proprietary
+  min_ansible_version: "2.14"
+
+dependencies: []
+
+collections:
+  - ansible.posix
+  - community.general

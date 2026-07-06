@@ -1,16 +1,22 @@
 ---
-- name: Initialize shared backup timestamp
+- name: Initialize backup run (timestamp + device credentials from settings.json)
   hosts: localhost
   gather_facts: false
   tasks:
     - ansible.builtin.import_role:
         name: backup_configs
         tasks_from: set_timestamp
+    - ansible.builtin.import_role:
+        name: catc_common
+        tasks_from: load_settings
+    - ansible.builtin.import_role:
+        name: backup_configs
+        tasks_from: load_device_credentials
 
 - name: Backup running-config from IOS-XE devices
   hosts: iosxe
   gather_facts: false
-  # Device SSH creds: inventory/group_vars/iosxe/vault.yml (vault_device_*)
+  # Device SSH creds: settings.json → load_device_credentials (play 1)
   vars:
     backup_output_dir: "{{ backup_root_dir }}/{{ hostvars['localhost']['backup_timestamp'] }}"
   tasks:
@@ -21,7 +27,7 @@
 - name: Backup running-config from NX-OS devices
   hosts: nxos
   gather_facts: false
-  # Device SSH creds: inventory/group_vars/nxos/vault.yml (vault_device_*)
+  # Device SSH creds: settings.json → load_device_credentials (play 1)
   vars:
     backup_output_dir: "{{ backup_root_dir }}/{{ hostvars['localhost']['backup_timestamp'] }}"
   tasks:
