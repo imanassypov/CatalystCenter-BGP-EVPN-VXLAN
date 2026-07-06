@@ -42,8 +42,16 @@
     url: "{{ git_api_base }}/repos/{{ git_repo_slug }}"
     method: GET
     headers: "{{ git_auth_header | combine({'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}) }}"
-    status_code: [200, 404]
+    status_code: [200, 401, 404]
   register: git_repo_check
+
+- name: Fail if GitHub token is invalid
+  ansible.builtin.fail:
+    msg: >-
+      GitHub rejected git_token (HTTP 401 Bad credentials).
+      For public repositories, remove git_token from catalyst_center/vault.yml.
+      For private repositories, create a new PAT with repo scope and update vault.
+  when: git_repo_check.status == 401
 
 - name: Fail if GitHub repository not found
   ansible.builtin.fail:
