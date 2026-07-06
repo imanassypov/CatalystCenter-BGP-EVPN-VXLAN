@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MCP SSH server for IOS-XE routers and Splunk/Telegraf troubleshooting.
+"""MCP SSH server for IOS-XE / NX-OS routers and Splunk/Telegraf troubleshooting.
 
 Environment variables:
 - MCP_SSH_INVENTORY: Absolute/relative path to CSV inventory file.
@@ -13,8 +13,8 @@ CSV columns:
 - username (required)
 - password (optional, plain value or env:VAR_NAME)
 - key_path (optional, plain value or env:VAR_NAME)
-- platform (optional, e.g. iosxe, linux)
-- role (optional, e.g. router, hf)
+- platform (optional, e.g. iosxe, nxos, linux)
+- role (optional, e.g. router, core, hf)
 - tags (optional, pipe-delimited)
 - proxy_jump (optional, name of another inventory device to SSH-tunnel through)
 """
@@ -111,6 +111,20 @@ def _load_inventory() -> dict[str, Device]:
 
 def _is_iosxe(device: Device) -> bool:
     return device.platform in {"iosxe", "ios_xe", "ios", "cisco_ios", "cat9k"}
+
+
+def _is_nxos(device: Device) -> bool:
+    return device.platform in {"nxos", "nx-os", "nx_os", "cisco_nxos", "nexus", "n9kv", "n9k"}
+
+
+def _uses_network_cli(device: Device) -> bool:
+    """True for Cisco CLI devices (IOS-XE and NX-OS).
+
+    Both platforms are driven through an interactive shell, disable paging with
+    ``terminal length 0``, and share the ``configure terminal`` / ``end`` config
+    grammar. Non-CLI hosts (e.g. Linux) use SSH exec mode instead.
+    """
+    return _is_iosxe(device) or _is_nxos(device)
 
 
 def _load_private_key(key_path: str) -> paramiko.PKey:
@@ -260,7 +274,7 @@ def _run_shell_command(client: paramiko.SSHClient, device: Device, command: str,
     if channel.recv_ready():
         channel.recv(65535)
 
-    if _is_iosxe(device):
+    if _uses_network_cli(device):
         channel.send("terminal length 0\n")
         _read_channel_until_idle(channel, idle_seconds=0.4, hard_timeout=3)
 
@@ -292,7 +306,7 @@ def _run_commands(
     client = _connect(device, timeout, inventory)
     try:
         for command in commands:
-            if _is_iosxe(device):
+            if _uses_network_cli(device):
                 results.append(_run_shell_command(client, device, command, timeout))
             else:
                 results.append(_run_exec_command(client, command, timeout))

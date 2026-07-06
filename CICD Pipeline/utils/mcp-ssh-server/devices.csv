@@ -7,10 +7,9 @@ border1,198.18.128.105,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|border
 border2,198.18.128.106,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|border
 dmz1,198.18.128.107,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|dmz
 dmz2,198.18.128.114,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|dmz
-core1,198.18.128.108,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|core
-core2,198.18.128.109,22,net-admin,env:IOSXE_PASS,iosxe,router,evpn|core
+core1,198.18.128.108,22,net-admin,env:IOSXE_PASS,nxos,core,core
+core2,198.18.128.109,22,net-admin,env:IOSXE_PASS,nxos,core,core
 dhcp-server,198.18.128.110,22,net-admin,env:IOSXE_PASS,iosxe,router,infra|dhcp
 fw-shared-services,198.18.134.200,22,net-admin,env:IOSXE_PASS,iosxe,router,infra|firewall
 script-server,198.18.134.28,22,root,,linux,bastion,infra|jump,env:SSH_BASTION_KEY,
 splunk,18.224.25.161,22,ec2-user,,linux,splunk,splunk|sh|hf|otel,env:SSH_KEY_PATH,script-server
-splunk-sh,10.0.10.101,22,cisco,env:HF_PASS,linux,sh,splunk|searchhead
