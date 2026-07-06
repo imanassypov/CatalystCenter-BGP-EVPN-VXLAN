@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 7.0 — Cisco Catalyst Center: Network Switching Profile Automation
 
 > **Playbook:** `network_profile.yml`  

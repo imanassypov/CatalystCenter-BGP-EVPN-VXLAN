@@ -1,0 +1,6 @@
+---
+skip_list:
+  - yaml[line-length]
+  - name[casing]
+  - role-name[path]
+  - var-naming[no-role-prefix]

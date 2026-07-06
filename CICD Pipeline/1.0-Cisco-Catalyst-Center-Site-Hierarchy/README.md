@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 1.0 - Cisco Catalyst Center Site Hierarchy Automation
 
 > Playbook: site_hierarchy.yml  

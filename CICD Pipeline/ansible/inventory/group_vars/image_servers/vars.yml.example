@@ -1,0 +1,15 @@
+---
+image_server_ip: "198.18.134.28"
+ansible_user: "{{ vault_image_server_user }}"
+ansible_ssh_pass: "{{ vault_image_server_password }}"
+ansible_become: true
+ansible_become_method: sudo
+ansible_become_password: "{{ vault_image_server_become_password }}"
+ansible_python_interpreter: /usr/bin/python3.8
+image_web_root: /var/www/html
+image_url_subdir: images
+image_dir: "{{ image_web_root }}/{{ image_url_subdir }}"
+image_local_paths:
+  - "/path/to/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin"
+  - "/path/to/cat9kv-universalk9.17.15.03.SPA.bin"
+manage_ufw: true

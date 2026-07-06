@@ -1,0 +1,67 @@
+---
+# =============================================================================
+# swim / import_and_tag.yml  —  Stage 6.0: remote import + golden tag
+# =============================================================================
+# Consumes swim_details.import_images and swim_details.golden_tag_images
+# (from load_swim_details.yml). Requires HTTP image server (deploy_http_image_server).
+#
+# Pre:  swim_details.import_images[].import_image_details.url_details.source_url
+# Post: images in CatC repository; golden tags applied per site/role
+# =============================================================================
+
+- name: Load SWIM image details from settings.json
+  ansible.builtin.import_tasks: load_swim_details.yml
+
+- name: Import image into Catalyst Center repository
+  cisco.catalystcenter.swim_workflow_manager:
+    catalystcenter_host: "{{ catalystcenter_host }}"
+    catalystcenter_username: "{{ catalystcenter_username }}"
+    catalystcenter_password: "{{ catalystcenter_password }}"
+    catalystcenter_verify: "{{ catalystcenter_verify }}"
+    catalystcenter_port: "{{ catalystcenter_port }}"
+    catalystcenter_version: "{{ catalystcenter_version }}"
+    catalystcenter_log: "{{ catalystcenter_log }}"
+    catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+    catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+    catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+    validate_response_schema: "{{ validate_response_schema }}"
+    catalystcenter_api_task_timeout: "{{ catalystcenter_api_task_timeout }}"
+    catalystcenter_task_poll_interval: "{{ catalystcenter_task_poll_interval }}"
+    config_verify: true
+    state: merged
+    config:
+      - import_image_details: "{{ item.import_image_details }}"
+  loop: "{{ swim_details.import_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: import_result
+
+- name: Tag image golden per family, role, and site
+  cisco.catalystcenter.swim_workflow_manager:
+    catalystcenter_host: "{{ catalystcenter_host }}"
+    catalystcenter_username: "{{ catalystcenter_username }}"
+    catalystcenter_password: "{{ catalystcenter_password }}"
+    catalystcenter_verify: "{{ catalystcenter_verify }}"
+    catalystcenter_port: "{{ catalystcenter_port }}"
+    catalystcenter_version: "{{ catalystcenter_version }}"
+    catalystcenter_log: "{{ catalystcenter_log }}"
+    catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+    catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+    catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+    validate_response_schema: "{{ validate_response_schema }}"
+    catalystcenter_api_task_timeout: "{{ catalystcenter_api_task_timeout }}"
+    catalystcenter_task_poll_interval: "{{ catalystcenter_task_poll_interval }}"
+    config_verify: true
+    state: merged
+    config:
+      - tagging_details: "{{ item.tagging_details }}"
+  loop: "{{ swim_details.golden_tag_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: tag_result
+
+- name: Write import and tag evidence
+  ansible.builtin.copy:
+    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-10_import_and_tag.json"
+    content: "{{ {'import': import_result, 'tag': tag_result} | to_nice_json }}"
+    mode: "0640"

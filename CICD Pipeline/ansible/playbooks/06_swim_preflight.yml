@@ -1,0 +1,13 @@
+---
+- name: SWIM pre-flight checks
+  hosts: catalyst_center
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  tasks:
+    - ansible.builtin.import_role:
+        name: swim
+        tasks_from: preflight

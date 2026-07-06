@@ -1,0 +1,9 @@
+---
+- name: Deploy HTTP image-distribution server for Catalyst Center SWIM
+  hosts: image_servers
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../inventory/group_vars/image_servers/vault.yml
+  roles:
+    - role: http_image_server

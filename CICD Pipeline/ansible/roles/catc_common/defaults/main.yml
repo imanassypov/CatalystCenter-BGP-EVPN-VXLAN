@@ -1,0 +1,15 @@
+---
+settings_json_path: "../../Settings/settings.json"
+catc_debug: false
+
+# Site hierarchy building defaults
+default_building_address: "1 Cisco Way, San Jose, CA 95134"
+default_building_country: "United States"
+default_building_latitude: 37.3382
+default_building_longitude: -121.8863
+default_floor_rf_model: "Cubes And Walled Offices"
+default_floor_units_of_measure: "feet"
+default_floor_width: 100
+default_floor_length: 100
+default_floor_height: 10
+default_floor_number: 1

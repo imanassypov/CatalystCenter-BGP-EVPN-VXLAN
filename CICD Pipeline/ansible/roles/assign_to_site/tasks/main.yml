@@ -1,0 +1,103 @@
+---
+# =============================================================================
+# assign_to_site / main.yml  —  Pipeline stage 5.0
+# =============================================================================
+# Associates discovered devices (by management IP) with their target site in
+# Catalyst Center. Groups IPs by reconstructed hierarchy path, resolves site
+# UUID once per site, then calls assign_device_to_site.
+#
+# Prerequisites:
+#   catc_common.load_settings → settings_data
+#   Stage 1 hierarchy + stage 4 discovery completed
+# =============================================================================
+
+# Task: Build per-site assignment map
+# Purpose: Aggregate device_list IPs under each site path (deepest hierarchy level).
+# Pre:  settings_data.project[0].device_list: "198.19.1.3,198.19.1.4"
+# Post: site_device_map:
+#         "Global/PODS/POD 0/Building P0/Floor 1":
+#           - "198.19.1.3"
+#           - "198.19.1.4"
+- name: Build per-site assignment map
+  ansible.builtin.set_fact:
+    site_device_map: >-
+      {%- set ns = namespace(result={}) -%}
+      {%- for entry in settings_data.project -%}
+        {%- if entry.device_list -%}
+          {%- set ips = entry.device_list.split(',') | map('trim') | list -%}
+          {%- set parent = entry.HierarchyParent | default('Global') -%}
+          {%- set area   = entry.HierarchyArea   | default('') -%}
+          {%- set bldg   = entry.HierarchyBldg   | default('') -%}
+          {%- set floor  = entry.HierarchyFloor  | default('') -%}
+          {%- if floor -%}
+            {%- set site = parent + '/' + area + '/' + bldg + '/' + floor -%}
+          {%- elif bldg -%}
+            {%- set site = parent + '/' + area + '/' + bldg -%}
+          {%- elif area -%}
+            {%- set site = parent + '/' + area -%}
+          {%- else -%}
+            {%- set site = parent -%}
+          {%- endif -%}
+          {%- if site in ns.result -%}
+            {%- set ns.result = ns.result | combine({site: ns.result[site] + ips}) -%}
+          {%- else -%}
+            {%- set ns.result = ns.result | combine({site: ips}) -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ns.result }}
+
+- name: --DEBUG-- Per-site assignment map
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    msg: "{{ site_device_map }}"
+
+- name: Validate assignment map is non-empty
+  ansible.builtin.assert:
+    that: site_device_map | length > 0
+    fail_msg: "No entries with device_list found in input JSON."
+    success_msg: "{{ site_device_map | length }} site(s) to assign devices to."
+
+# Task: Look up site UUID for each target site
+# Purpose: GET site by nameHierarchy → siteId for assign_device_to_site.
+# Pre:  site_device_map keys are full paths
+# Post: site_info_results.results[].dnac_response.response[0].id → site UUID
+- name: "Look up site UUIDs"
+  cisco.dnac.site_info:
+    name: "{{ item.key }}"
+  loop: "{{ site_device_map | dict2items }}"
+  register: site_info_results
+
+- name: --DEBUG-- Site info results
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    msg: "{{ site_info_results }}"
+
+# Task: Assign devices to site
+# Purpose: POST assign API — bind each IP to the resolved siteId.
+# Pre:  site_info_results + site_device_map
+# Post: assignment_results — per-site dnac_response (async task IDs)
+- name: Assign devices to site
+  cisco.dnac.assign_device_to_site:
+    siteId: "{{ item.dnac_response.response[0].id }}"
+    device: >-
+      {%- set ns = namespace(result=[]) -%}
+      {%- for ip in site_device_map[item.item.key] -%}
+        {%- set ns.result = ns.result + [{'ip': ip}] -%}
+      {%- endfor -%}
+      {{ ns.result }}
+  loop: "{{ site_info_results.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  register: assignment_results
+
+- name: --DEBUG-- Assignment results
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    msg: "{{ assignment_results }}"
+
+- name: Site assignment complete
+  ansible.builtin.debug:
+    msg:
+      - "Device-to-site assignment submitted successfully"
+      - "Sites processed: {{ site_device_map.keys() | list | join(', ') }}"

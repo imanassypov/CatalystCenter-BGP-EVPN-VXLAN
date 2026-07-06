@@ -1,0 +1,48 @@
+---
+# =============================================================================
+# catc_common / build_hierarchy_paths.yml
+# =============================================================================
+# Derives the deepest CatC site path per settings.json project entry.
+# Used when a stage needs one site name per row (network settings, profiles)
+# rather than the expanded area/building/floor list from site_hierarchy.
+#
+# Play-level inputs:
+#   settings_data  — loaded by load_settings (required)
+#   catc_debug     — optional
+#
+# Play-level outputs:
+#   site_names     — list[str], one path per project[] row (deepest level wins)
+# =============================================================================
+
+# Task: Build site name list from project entries
+# Purpose: Collapse split hierarchy fields into CatC nameHierarchy strings.
+#          Depth rule: Floor > Building > Area > Parent only.
+# Pre:  settings_data.project:
+#         - { HierarchyParent: Global, HierarchyArea: PODS,
+#             HierarchyBldg: "POD 0", HierarchyFloor: "Floor 1" }
+# Post: site_names:
+#         - "Global/PODS/POD 0/Building P0/Floor 1"
+- name: Build site name list from project entries
+  ansible.builtin.set_fact:
+    site_names: >-
+      {%- set ns = namespace(result=[]) -%}
+      {%- for entry in settings_data.project -%}
+        {%- if entry.HierarchyFloor -%}
+          {%- set s = entry.HierarchyParent + '/' + entry.HierarchyArea + '/' + entry.HierarchyBldg + '/' + entry.HierarchyFloor -%}
+        {%- elif entry.HierarchyBldg -%}
+          {%- set s = entry.HierarchyParent + '/' + entry.HierarchyArea + '/' + entry.HierarchyBldg -%}
+        {%- elif entry.HierarchyArea -%}
+          {%- set s = entry.HierarchyParent + '/' + entry.HierarchyArea -%}
+        {%- else -%}
+          {%- set s = entry.HierarchyParent -%}
+        {%- endif -%}
+        {%- set ns.result = ns.result + [s] -%}
+      {%- endfor -%}
+      {{ ns.result }}
+
+# Task: DEBUG | Site names derived from settings.json
+# Pre/Post: unchanged — diagnostic only
+- name: "DEBUG | Site names derived from settings.json"
+  ansible.builtin.debug:
+    var: site_names
+  when: catc_debug | default(false) | bool

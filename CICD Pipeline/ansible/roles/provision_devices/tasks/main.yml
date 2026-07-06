@@ -1,0 +1,81 @@
+---
+# =============================================================================
+# provision_devices / main.yml  —  Pipeline stage 9.0
+# =============================================================================
+# Provisions fabric devices to sites via SDA provisionDevices API.
+# Groups management IPs by site path, resolves site + device UUIDs, skips
+# already-provisioned devices unless force_reprovision=true.
+#
+# Prerequisites (playbook pre_tasks):
+#   catc_common.auth_token    → _catc_token
+#   catc_common.load_settings → settings_data
+#
+# Per-site logic: tasks/provision_site.yml
+# =============================================================================
+
+# ── Step 3: Build per-site device map ─────────────────────────────────────
+#
+# Iterate every project entry that has a non-empty device_list.
+# The site hierarchy path is reconstructed from the split
+# HierarchyParent/Area/Bldg/Floor fields, matching the pattern used
+# across all other playbooks in this lab series.
+#
+# Result: { "<site_path>": ["ip1", "ip2", ...], ... }
+#
+- name: Build per-site device map
+  ansible.builtin.set_fact:
+    _site_device_map: >-
+      {%- set ns = namespace(result={}) -%}
+      {%- for entry in settings_data.project -%}
+        {%- if entry.device_list is defined and entry.device_list -%}
+          {%- set ips = entry.device_list.split(',') | map('trim') | reject('equalto', '') | list -%}
+          {%- set parent = entry.HierarchyParent | default('Global') -%}
+          {%- set area   = entry.HierarchyArea   | default('') -%}
+          {%- set bldg   = entry.HierarchyBldg   | default('') -%}
+          {%- set floor  = entry.HierarchyFloor  | default('') -%}
+          {%- if floor -%}
+            {%- set site_path = parent + '/' + area + '/' + bldg + '/' + floor -%}
+          {%- elif bldg -%}
+            {%- set site_path = parent + '/' + area + '/' + bldg -%}
+          {%- elif area -%}
+            {%- set site_path = parent + '/' + area -%}
+          {%- else -%}
+            {%- set site_path = parent -%}
+          {%- endif -%}
+          {%- if site_path in ns.result -%}
+            {%- set ns.result = ns.result | combine({site_path: ns.result[site_path] + ips}) -%}
+          {%- else -%}
+            {%- set ns.result = ns.result | combine({site_path: ips}) -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ns.result }}
+
+- name: --DEBUG-- Per-site device map
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    var: _site_device_map
+
+- name: Validate site device map is non-empty
+  ansible.builtin.assert:
+    that: _site_device_map | length > 0
+    fail_msg: "No entries with device_list found in input JSON."
+    success_msg: >-
+      {{ _site_device_map | length }} site(s) /
+      {{ _site_device_map.values() | map('length') | sum }} device(s) to provision.
+
+# ── Step 4: Process each site ─────────────────────────────────────────────
+#
+# For each site:
+#   a. Resolve the site UUID via the Sites REST API.
+#   b. Resolve device UUIDs for every target management IP.
+#   c. Check which devices are already provisioned at the site.
+#   d. Submit POST /dna/intent/api/v1/sda/provisionDevices for any that are not.
+#   e. Poll the returned async task until completion and report status.
+#
+- name: Process device provisioning for each site
+  ansible.builtin.include_tasks: provision_site.yml
+  loop: "{{ _site_device_map | dict2items }}"
+  loop_control:
+    loop_var: site_entry
+    label: "{{ site_entry.key }}"

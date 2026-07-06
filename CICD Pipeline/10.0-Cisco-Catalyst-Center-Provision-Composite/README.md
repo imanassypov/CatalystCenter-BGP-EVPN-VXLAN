@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 9.0 — Cisco Catalyst Center: Composite Template Deployment
 
 > **Playbook:** `deploy_composite_template.yml`  

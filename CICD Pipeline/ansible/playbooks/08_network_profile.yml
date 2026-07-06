@@ -1,0 +1,25 @@
+---
+- name: Create and Assign Network Switching Profiles from settings.json
+  hosts: catalyst_center
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    catc_debug: "{{ lookup('env', 'DEBUG') | default(false) | bool }}"
+  module_defaults:
+    cisco.dnac.network_profile_switching_workflow_manager:
+      dnac_host: "{{ dnac_host }}"
+      dnac_username: "{{ catc_username }}"
+      dnac_password: "{{ catc_password }}"
+      dnac_verify: "{{ dnac_verify }}"
+      dnac_port: "{{ dnac_port }}"
+      dnac_version: "{{ dnac_version }}"
+      dnac_debug: "{{ dnac_debug }}"
+      dnac_log_level: "{{ dnac_log_level }}"
+      dnac_log: "{{ dnac_log }}"
+  pre_tasks:
+    - ansible.builtin.import_role:
+        name: catc_common
+        tasks_from: load_settings
+  roles:
+    - role: network_profile
