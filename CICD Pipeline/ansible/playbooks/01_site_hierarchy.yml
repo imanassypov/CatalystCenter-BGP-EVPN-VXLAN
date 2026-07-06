@@ -1,0 +1,24 @@
+---
+- name: Build Catalyst Center Site Hierarchy from settings.json
+  hosts: catalyst_center
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  module_defaults:
+    cisco.catalystcenter.sites_info: &catc_auth
+      catalystcenter_host: "{{ catc_host }}"
+      catalystcenter_username: "{{ catc_username }}"
+      catalystcenter_password: "{{ catc_password }}"
+      catalystcenter_verify: "{{ catc_verify }}"
+      catalystcenter_port: "{{ catc_port }}"
+      catalystcenter_version: "{{ catc_version }}"
+      catalystcenter_debug: "{{ catc_debug }}"
+    cisco.catalystcenter.areas: *catc_auth
+    cisco.catalystcenter.buildings: *catc_auth
+    cisco.catalystcenter.floors: *catc_auth
+  pre_tasks:
+    - ansible.builtin.import_role:
+        name: catc_common
+        tasks_from: load_settings
+  roles:
+    - role: site_hierarchy

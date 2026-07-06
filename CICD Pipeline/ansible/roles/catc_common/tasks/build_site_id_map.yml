@@ -1,0 +1,59 @@
+---
+# =============================================================================
+# catc_common / build_site_id_map.yml
+# =============================================================================
+# Queries Catalyst Center for all existing sites and builds a lookup table
+# nameHierarchy → site UUID. Required before create/update/delete loops that
+# need parentId or id for areas, buildings, and floors.
+#
+# Play-level inputs:
+#   catc_debug — optional
+#   module_defaults on cisco.catalystcenter.sites_info (from playbook)
+#
+# Play-level outputs:
+#   site_id_map — dict[str, str]  full path → UUID
+#   _site_id_map — alias (same content; legacy name used in some roles)
+# =============================================================================
+
+# Task: Phase A — Fetch all existing sites from Catalyst Center
+# Purpose: GET /dna/intent/api/v1/sites (unfiltered) via collection module.
+# Pre:  site_id_map undefined
+# Post: catc_all_sites (register):
+#         catc_all_sites.catalystcenter_response.response:
+#           - { id: "abc-…", nameHierarchy: "Global/PODS", type: "area", … }
+#           - { id: "def-…", type: "global" }   # no nameHierarchy on Global root
+- name: "Phase A — Fetch all existing sites from Catalyst Center"
+  cisco.catalystcenter.sites_info:
+  register: catc_all_sites
+
+# Task: DEBUG | catc_all_sites raw response
+# Pre/Post: unchanged — diagnostic only
+- name: "DEBUG | catc_all_sites raw response"
+  ansible.builtin.debug:
+    var: catc_all_sites.catalystcenter_response
+  when: catc_debug | default(false) | bool
+
+# Task: Phase A — Build site_id_map (nameHierarchy → UUID)
+# Purpose: O(1) lookup for parentId/id in site create loops.
+#          Global root UUID is injected under key "Global" (no nameHierarchy in API).
+# Pre:  catc_all_sites.catalystcenter_response.response → list of site objects
+# Post: site_id_map / _site_id_map:
+#         Global:                          "00000000-0000-0000-0000-000000000001"
+#         "Global/PODS":                   "11111111-1111-1111-1111-111111111111"
+#         "Global/PODS/POD 0/Building P0": "22222222-2222-2222-2222-222222222222"
+- name: "Phase A — Build site_id_map (nameHierarchy → UUID)"
+  vars:
+    _all_sites: "{{ catc_all_sites.catalystcenter_response.response | default([]) }}"
+    _named_map: "{{ _all_sites | selectattr('nameHierarchy', 'defined') | list
+                     | items2dict(key_name='nameHierarchy', value_name='id') }}"
+    _global_id: "{{ (_all_sites | selectattr('type', 'equalto', 'global')
+                      | map(attribute='id') | list | first) | default('') }}"
+  ansible.builtin.set_fact:
+    site_id_map: "{{ _named_map | combine({'Global': _global_id}) }}"
+    _site_id_map: "{{ _named_map | combine({'Global': _global_id}) }}"
+
+# Task: Phase A — site_id_map summary
+# Pre/Post: unchanged — prints map size and contents
+- name: "Phase A — site_id_map ({{ site_id_map | length }} existing sites)"
+  ansible.builtin.debug:
+    msg: "{{ site_id_map }}"

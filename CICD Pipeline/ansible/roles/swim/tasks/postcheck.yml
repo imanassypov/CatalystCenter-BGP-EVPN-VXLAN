@@ -1,0 +1,56 @@
+---
+# =============================================================================
+# swim / postcheck.yml  —  Stage 6.0: post-activation IMAGE compliance verify
+# =============================================================================
+# Pre:  activate.yml completed; devices reloaded
+# Post: compliance report per site (IMAGE category)
+# =============================================================================
+
+- name: Load SWIM image details from settings.json
+  ansible.builtin.import_tasks: load_swim_details.yml
+
+- name: Derive compliance sites from golden tag images
+  ansible.builtin.set_fact:
+    swim_compliance_sites: >-
+      {{ swim_details.golden_tag_images
+         | map(attribute='tagging_details.site_name')
+         | unique | list }}
+
+- name: Run image compliance on activation sites
+  cisco.catalystcenter.network_compliance_workflow_manager:
+    catalystcenter_host: "{{ catalystcenter_host }}"
+    catalystcenter_username: "{{ catalystcenter_username }}"
+    catalystcenter_password: "{{ catalystcenter_password }}"
+    catalystcenter_verify: "{{ catalystcenter_verify }}"
+    catalystcenter_port: "{{ catalystcenter_port }}"
+    catalystcenter_version: "{{ catalystcenter_version }}"
+    catalystcenter_log: "{{ catalystcenter_log }}"
+    catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+    catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+    catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+    validate_response_schema: "{{ validate_response_schema }}"
+    catalystcenter_api_task_timeout: "{{ catalystcenter_api_task_timeout }}"
+    catalystcenter_task_poll_interval: "{{ catalystcenter_task_poll_interval }}"
+    state: merged
+    config:
+      - site_name: "{{ item }}"
+        run_compliance: true
+        run_compliance_categories:
+          - IMAGE
+        sync_device_config: false
+  loop: "{{ swim_compliance_sites }}"
+  loop_control:
+    label: "{{ item }}"
+  register: post_compliance
+
+- name: Ensure compliance workflow execution succeeded
+  ansible.builtin.assert:
+    that:
+      - post_compliance is succeeded
+    fail_msg: "Image compliance workflow call failed for one or more sites."
+
+- name: Write post-check evidence
+  ansible.builtin.copy:
+    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-40_postcheck.json"
+    content: "{{ post_compliance | to_nice_json }}"
+    mode: "0640"

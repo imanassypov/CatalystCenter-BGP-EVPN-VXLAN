@@ -1,0 +1,97 @@
+---
+# =============================================================================
+# network_profile / main.yml  —  Pipeline stage 8.0
+# =============================================================================
+# Creates or updates Catalyst Center switching network profiles and binds them
+# to sites. Maps settings.json network_profile block to
+# network_profile_switching_workflow_manager config schema.
+#
+# Prerequisites: catc_common.load_settings → settings_data
+#                Stage 7 templates synced (Day0/Day-N template names referenced)
+# =============================================================================
+
+# Task: Build network profile config list
+# Purpose: Transform PascalCase JSON (DayNTemplateNames) to WFM string lists.
+# Pre:  settings_data.project[0].network_profile:
+#         profile_name: "BGP-EVPN-Switching"
+#         DayNTemplateNames:
+#           - { TemplateName: "Building-P0-Composite", Project: "Building P0" }
+# Post: profile_list:
+#         - profile_name: "BGP-EVPN-Switching"
+#           site_names: ["Global/PODS/POD 0/Building P0/Floor 1"]
+#           day_n_templates: ["Building-P0-Composite"]
+#           onboarding_templates: []   # from Day0TemplateNames if present
+- name: Build network profile config list
+  ansible.builtin.set_fact:
+    profile_list: >-
+      {%- set ns = namespace(result=[]) -%}
+      {%- for entry in settings_data.project -%}
+        {%- if entry.network_profile is defined and entry.network_profile -%}
+          {%- set prof = entry.network_profile -%}
+          {%- set parent = entry.HierarchyParent | default('Global') -%}
+          {%- set area   = entry.HierarchyArea   | default('') -%}
+          {%- set bldg   = entry.HierarchyBldg   | default('') -%}
+          {%- set floor  = entry.HierarchyFloor  | default('') -%}
+          {%- if floor -%}
+            {%- set site_path = parent + '/' + area + '/' + bldg + '/' + floor -%}
+          {%- elif bldg -%}
+            {%- set site_path = parent + '/' + area + '/' + bldg -%}
+          {%- elif area -%}
+            {%- set site_path = parent + '/' + area -%}
+          {%- else -%}
+            {%- set site_path = parent -%}
+          {%- endif -%}
+          {%- set cfg = {'profile_name': prof.profile_name, 'site_names': [site_path]} -%}
+          {%- if prof.DayNTemplateNames is defined and prof.DayNTemplateNames -%}
+            {%- set tnames = prof.DayNTemplateNames
+                | selectattr('TemplateName', 'defined')
+                | selectattr('TemplateName', 'ne', none)
+                | map(attribute='TemplateName') | list -%}
+            {%- if tnames | length > 0 -%}
+              {%- set cfg = cfg | combine({'day_n_templates': tnames}) -%}
+            {%- endif -%}
+          {%- endif -%}
+          {%- if prof.Day0TemplateNames is defined and prof.Day0TemplateNames -%}
+            {%- set tnames0 = prof.Day0TemplateNames
+                | selectattr('TemplateName', 'defined')
+                | selectattr('TemplateName', 'ne', none)
+                | map(attribute='TemplateName') | list -%}
+            {%- if tnames0 | length > 0 -%}
+              {%- set cfg = cfg | combine({'onboarding_templates': tnames0}) -%}
+            {%- endif -%}
+          {%- endif -%}
+          {%- set ns.result = ns.result + [cfg] -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ns.result }}
+
+- name: --DEBUG-- Network profile config list
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    msg: "{{ profile_list }}"
+
+- name: Validate profile list is non-empty
+  ansible.builtin.assert:
+    that: profile_list | length > 0
+    fail_msg: "No entries with network_profile found in input JSON."
+    success_msg: "{{ profile_list | length }} network profile(s) to create/update."
+
+# Task: Create/update switching network profile
+# Pre:  profile_list as above
+# Post: profile_results — dnac_response from WFM (profile UUID, assignment status)
+- name: Create/update switching network profile
+  cisco.dnac.network_profile_switching_workflow_manager:
+    state: merged
+    config: "{{ profile_list }}"
+  register: profile_results
+
+- name: --DEBUG-- Profile results
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    msg: "{{ profile_results }}"
+
+- name: Network profile creation complete
+  ansible.builtin.debug:
+    msg:
+      - "Switching network profile(s) created/updated successfully"
+      - "Profiles processed: {{ profile_list | map(attribute='profile_name') | join(', ') }}"

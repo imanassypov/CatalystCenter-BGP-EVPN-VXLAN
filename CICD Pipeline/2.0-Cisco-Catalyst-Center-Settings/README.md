@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 2.0 — Cisco Catalyst Center: Network Settings Automation
 
 > **Playbook:** `network_settings.yml`  

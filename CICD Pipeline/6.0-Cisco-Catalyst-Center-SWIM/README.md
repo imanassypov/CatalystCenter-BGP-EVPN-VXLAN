@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # Catalyst Center SWIM Automation for Catalyst 9000 (Virtual)
 
 Operationalize **Software Image Management (SWIM)** on Cisco Catalyst Center using the

@@ -1,0 +1,260 @@
+---
+# =============================================================================
+# http_image_server / main.yml  —  SWIM utility (not a numbered stage)
+# =============================================================================
+# Deploys nginx on image_servers group hosts to serve IOS-XE .bin images over
+# HTTP for Catalyst Center remote SWIM import (settings.json swim.image_server_base_url).
+#
+# Inputs (group_vars/image_servers): image_local_paths, image_dir, image_server_ip
+# Output: http://{{ image_server_ip }}/{{ image_url_subdir }}/<image.bin>
+# =============================================================================
+
+# ---- Pre-flight: local images must exist if the server doesn't have them --
+- name: Assert image_local_paths is a non-empty list
+  ansible.builtin.assert:
+    that:
+      - image_local_paths is defined
+      - image_local_paths is sequence
+      - image_local_paths is not string
+      - image_local_paths | length > 0
+      - "'/path/to/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin' not in image_local_paths"
+    fail_msg: >-
+      Set image_local_paths to a list of absolute paths to the .bin images
+      on the control node (edit inventory/group_vars/image_servers/vars.yml
+      or pass -e '{"image_local_paths":["/abs/a.bin","/abs/b.bin"]}').
+
+- name: Stat each local image on the control node
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ image_local_paths }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  delegate_to: localhost
+  become: false
+  register: local_images
+
+# ---- A.1  Install nginx --------------------------------------------------
+# Best-effort cache refresh. Ignored on failure because unrelated broken
+# third-party repos (e.g. expired Grafana/Jenkins GPG keys) make apt-get
+# update exit non-zero even though the Ubuntu archive itself is reachable.
+- name: Refresh apt cache (best effort)
+  ansible.builtin.apt:
+    update_cache: true
+  register: apt_cache_update
+  failed_when: false
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: false
+
+- name: Ensure nginx is enabled and running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+# ---- A.2  Create the image directory ------------------------------------
+- name: Create the image web-root directory
+  ansible.builtin.file:
+    path: "{{ image_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+# ---- A.2  Stage the images (only those missing on the target) ------------
+- name: Check whether each image already exists on the target
+  ansible.builtin.stat:
+    path: "{{ image_dir }}/{{ item | basename }}"
+    get_checksum: false
+  loop: "{{ image_local_paths }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  register: remote_images
+
+- name: Build the per-image staging plan
+  ansible.builtin.set_fact:
+    image_plan: >-
+      {{ image_plan | default([]) + [{
+           'path': item.0.item,
+           'filename': item.0.item | basename,
+           'local_exists': item.0.stat.exists,
+           'remote_exists': item.1.stat.exists
+         }] }}
+  loop: "{{ local_images.results | zip(remote_images.results) | list }}"
+  loop_control:
+    label: "{{ item.0.item | basename }}"
+
+- name: Fail if any image is missing on both the target and the control node
+  ansible.builtin.fail:
+    msg: >-
+      Image '{{ item.filename }}' is not present on {{ image_server_ip }}
+      and the local source '{{ item.path }}' does not exist on the
+      control node. Nothing to upload.
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  when:
+    - not item.remote_exists
+    - not item.local_exists
+
+# Transfer with rsync instead of copy: the control node reaches the target
+# over a low-MTU dCloud VPN tunnel (utun MTU ~1095) where a single one-shot
+# SFTP push (the copy module) wedges on a stalled TCP session and never
+# completes. rsync with --timeout aborts a stalled session, --partial keeps
+# the bytes already transferred, and --append resumes from there; the
+# until/retries loop re-attempts until the whole image is present.
+# (--append-verify is unavailable on the macOS openrsync control node.)
+- name: Upload images to the server (missing on target, rsync + resume)
+  ansible.posix.synchronize:
+    src: "{{ item.path }}"
+    dest: "{{ image_dir }}/{{ item.filename }}"
+    mode: push
+    rsync_opts:
+      - "--partial"
+      - "--append"
+      - "--timeout=60"
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  when:
+    - not item.remote_exists
+    - item.local_exists
+  register: rsync_upload
+  until: rsync_upload is succeeded
+  retries: 30
+  delay: 5
+
+- name: Enforce ownership and permissions on the image directory
+  ansible.builtin.file:
+    path: "{{ image_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: true
+
+# ---- A.3  Dedicated server block with directory browsing -----------------
+- name: Deploy the SWIM images nginx server block
+  ansible.builtin.template:
+    src: swim-images.conf.j2
+    dest: /etc/nginx/sites-available/swim-images
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable the SWIM images server block
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/swim-images
+    dest: /etc/nginx/sites-enabled/swim-images
+    state: link
+  notify: Reload nginx
+
+- name: Disable the default nginx server block
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Validate the nginx configuration
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+# ---- A.4  Open the firewall (only if ufw is active) ----------------------
+- name: Check whether ufw is installed
+  ansible.builtin.stat:
+    path: /usr/sbin/ufw
+  register: ufw_bin
+
+- name: Query ufw status
+  ansible.builtin.command: ufw status
+  register: ufw_status
+  changed_when: false
+  failed_when: false
+  when:
+    - manage_ufw | bool
+    - ufw_bin.stat.exists
+
+- name: Allow HTTP (TCP/80) through ufw
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+  when:
+    - manage_ufw | bool
+    - ufw_bin.stat.exists
+    - ufw_status.stdout is defined
+    - "'Status: active' in ufw_status.stdout"
+
+# Apply any pending nginx reload before verification.
+- name: Flush handlers before verification
+  ansible.builtin.meta: flush_handlers
+
+# ---- A.5  Verify ---------------------------------------------------------
+- name: Verify each image is served over HTTP (from the server itself)
+  ansible.builtin.uri:
+    url: "http://localhost/{{ image_url_subdir }}/{{ item.filename }}"
+    method: HEAD
+    status_code: 200
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  register: http_check
+  when: item.remote_exists or item.local_exists
+
+# Reachability that actually matters: an external HTTP client (the control
+# node, standing in for Catalyst Center) reaching the server on its public
+# IP:80. Mirrors the second curl in Appendix A.5.
+- name: Verify TCP/80 reachability to the image server (from the control node)
+  ansible.builtin.wait_for:
+    host: "{{ image_server_ip }}"
+    port: 80
+    timeout: 10
+    state: started
+  delegate_to: localhost
+  become: false
+
+- name: Verify each image is reachable over HTTP on the public IP (from the control node)
+  ansible.builtin.uri:
+    url: "http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ item.filename }}"
+    method: HEAD
+    status_code: 200
+    return_content: false
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  register: http_check_remote
+  delegate_to: localhost
+  become: false
+  when: item.remote_exists or item.local_exists
+
+- name: Assert each served image is a binary download
+  ansible.builtin.assert:
+    that:
+      - item.status == 200
+      - "'application/octet-stream' in (item.content_type | default(''))"
+    fail_msg: >-
+      The image URL for '{{ item.item.filename | default('n/a') }}'
+      responded but not as application/octet-stream
+      (got '{{ item.content_type | default('n/a') }}').
+      Catalyst Center remote import expects a binary download.
+    success_msg: >-
+      Image '{{ item.item.filename | default('n/a') }}' reachable over HTTP
+      as application/octet-stream
+      ({{ item.content_length | default('n/a') }} bytes).
+  loop: "{{ http_check_remote.results }}"
+  loop_control:
+    label: "{{ item.item.filename | default('n/a') }}"
+  when: item is not skipped
+
+- name: Report the published image URLs
+  ansible.builtin.debug:
+    msg: >-
+      Image server ready:
+      http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ item.filename }}
+  loop: "{{ image_plan }}"
+  loop_control:
+    label: "{{ item.filename }}"
+  when: item.remote_exists or item.local_exists

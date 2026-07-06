@@ -1,0 +1,55 @@
+---
+# =============================================================================
+# backup_configs / backup_iosxe.yml  —  Stage 11.0 (play 2 of 3)
+# =============================================================================
+# SSH to each iosxe inventory host, collect show running-config, write to the
+# Ansible control node under backup_output_dir.
+#
+# Host vars: ansible_host, vault_device_username/password from vault.yml
+# Play var:  backup_output_dir = backup_root_dir/backup_timestamp (from play 1)
+# =============================================================================
+
+# Task: Ensure timestamped backup directory exists on controller
+# Pre:  backup_output_dir: "/…/config-backups/20260706-161042"
+# Post: directory created on localhost (mode 0750)
+- name: Ensure timestamped backup directory exists on controller
+  ansible.builtin.file:
+    path: "{{ backup_output_dir }}"
+    state: directory
+    mode: "0750"
+  delegate_to: localhost
+  run_once: true
+
+# Task: Collect running configuration from IOS-XE
+# Pre:  device reachable via SSH (inventory iosxe group)
+# Post: run_cfg.stdout[0]: full running-config text (or run_cfg.failed on error)
+- name: Collect running configuration from IOS-XE
+  cisco.ios.ios_command:
+    commands:
+      - show running-config
+  register: run_cfg
+  changed_when: false
+  ignore_errors: true
+
+# Task: Fail if config collection truly failed (not a benign CML warning)
+# Purpose: CML labs sometimes return a warning string in msg while stdout exists;
+#          only fail on genuine collection errors.
+- name: Fail if config collection truly failed (not a benign CML warning)
+  ansible.builtin.fail:
+    msg: "{{ run_cfg.msg | default('ios_command failed with no message') }}"
+  when:
+    - run_cfg.failed | default(false)
+    - "'Error using the collection' not in (run_cfg.msg | default(''))"
+
+# Task: Save IOS-XE config to local backup file
+# Pre:  run_cfg with stdout or fallback msg
+# Post: file {{ backup_output_dir }}/{{ inventory_hostname }}.cfg on controller
+- name: Save IOS-XE config to local backup file
+  ansible.builtin.copy:
+    content: |
+      ! Host: {{ inventory_hostname }}
+      ! Collected: {{ hostvars['localhost']['backup_timestamp'] }}
+      {{ run_cfg.stdout[0] if (run_cfg.stdout is defined and run_cfg.stdout | length > 0) else run_cfg.msg | default('! Config unavailable') }}
+    dest: "{{ backup_output_dir }}/{{ inventory_hostname }}.cfg"
+    mode: "0600"
+  delegate_to: localhost

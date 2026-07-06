@@ -1,0 +1,86 @@
+---
+# =============================================================================
+# deploy_composite / main.yml  —  Pipeline stage 10.0
+# =============================================================================
+# Deploys Day-N composite configuration templates to target devices listed in
+# settings.json network_profile.DayNTemplateNames where DeployTemplate=true.
+#
+# Prerequisites (playbook pre_tasks):
+#   catc_common.auth_token      → _catc_token
+#   catc_common.load_settings   → settings_data
+#
+# Per-entry work delegated to deploy_entry.yml (template version resolution,
+# target device UUID lookup, configuration_template_deploy_v2 or raw REST).
+# =============================================================================
+
+# Task: Build DayN composite template deploy entries
+# Purpose: Flatten nested DayNTemplateNames[] into a linear deploy queue.
+# Pre:  settings_data.project[].network_profile.DayNTemplateNames:
+#         - TemplateName: "Building-P0-Composite"
+#           Project: "Building P0"
+#           DeployTemplate: true
+#           TemplateTarget: ["198.19.1.3", "198.19.1.4"]
+# Post: _deploy_entries:
+#         - site: "Global/PODS/POD 0/Building P0/Floor 1"
+#           template_name: "Building-P0-Composite"
+#           project_name: "Building P0"
+#           template_target: ["198.19.1.3", "198.19.1.4"]
+#           template_tag: ""
+- name: Build DayN composite template deploy entries
+  ansible.builtin.set_fact:
+    _deploy_entries: >-
+      {%- set ns = namespace(result=[]) -%}
+      {%- for entry in settings_data.project -%}
+        {%- set parent = entry.HierarchyParent | default('Global') -%}
+        {%- set area   = entry.HierarchyArea   | default('') -%}
+        {%- set bldg   = entry.HierarchyBldg   | default('') -%}
+        {%- set floor  = entry.HierarchyFloor  | default('') -%}
+        {%- if floor -%}
+          {%- set site_path = parent + '/' + area + '/' + bldg + '/' + floor -%}
+        {%- elif bldg -%}
+          {%- set site_path = parent + '/' + area + '/' + bldg -%}
+        {%- elif area -%}
+          {%- set site_path = parent + '/' + area -%}
+        {%- else -%}
+          {%- set site_path = parent -%}
+        {%- endif -%}
+        {%- set prof = entry.network_profile | default({}) -%}
+        {%- for tpl in (prof.DayNTemplateNames | default([])) -%}
+          {%- if tpl.DeployTemplate and tpl.TemplateName is not none -%}
+            {%- set deploy_entry = {
+              'site':            site_path,
+              'template_name':   tpl.TemplateName,
+              'project_name':    tpl.Project,
+              'template_target': tpl.TemplateTarget | default([]),
+              'template_tag':    tpl.TemplateTag | default('')
+            } -%}
+            {%- set ns.result = ns.result + [deploy_entry] -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ ns.result }}
+
+# Task: Validate deploy entries exist
+# Pre:  _deploy_entries may be []
+# Post: unchanged on success; play fails if no DeployTemplate=true entries found
+- name: Validate deploy entries exist
+  ansible.builtin.assert:
+    that: _deploy_entries | length > 0
+    fail_msg: "No DayNTemplateNames entries with DeployTemplate=true found in input JSON."
+    success_msg: "{{ _deploy_entries | length }} composite deployment(s) to process."
+
+# Task: DEBUG — deploy queue
+- name: --DEBUG-- Deploy entries
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    var: _deploy_entries
+
+# Task: Process composite template deployment for each entry
+# Pre:  _deploy_entries list; _catc_token from auth_token
+# Post: per-entry registers in deploy_entry.yml (_template_version_map, deploy results)
+- name: Process composite template deployment for each entry
+  ansible.builtin.include_tasks: deploy_entry.yml
+  loop: "{{ _deploy_entries }}"
+  loop_control:
+    loop_var: deploy_entry
+    label: "{{ deploy_entry.template_name }} → {{ deploy_entry.site }}"

@@ -1,0 +1,12 @@
+---
+# Full pipeline orchestrator (stages 1–10).
+# SWIM (06_swim_*) and config backup (11) are manual/opt-in — destructive or lab-specific.
+- import_playbook: 01_site_hierarchy.yml
+- import_playbook: 02_network_settings.yml
+- import_playbook: 03_credentials.yml
+- import_playbook: 04_device_discovery.yml
+- import_playbook: 05_assign_to_site.yml
+- import_playbook: 07_template_sync.yml
+- import_playbook: 08_network_profile.yml
+- import_playbook: 09_provision_devices.yml
+- import_playbook: 10_deploy_composite.yml

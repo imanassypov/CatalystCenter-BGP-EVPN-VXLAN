@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 8.0 — Cisco Catalyst Center: Device Provisioning
 
 > **Playbook:** `provision_devices.yml`  

@@ -1,0 +1,10 @@
+---
+# =============================================================================
+# swim / main.yml
+# =============================================================================
+# Stub entry — playbooks 06_swim_*.yml invoke action task files directly via
+# import_role tasks_from: preflight | import_and_tag | distribute | …
+# =============================================================================
+
+- name: Dispatch SWIM action
+  ansible.builtin.include_tasks: "{{ swim_action }}.yml"

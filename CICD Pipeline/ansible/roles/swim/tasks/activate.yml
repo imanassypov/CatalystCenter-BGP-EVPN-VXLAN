@@ -1,0 +1,40 @@
+---
+# =============================================================================
+# swim / activate.yml  —  Stage 6.0: activate golden image (reload scheduled)
+# =============================================================================
+# Pre:  swim_details.activate_images (image distributed to target devices)
+# Post: activation workflow started; devices reload per device_upgrade_mode
+# =============================================================================
+
+- name: Load SWIM image details from settings.json
+  ansible.builtin.import_tasks: load_swim_details.yml
+
+- name: Activate golden image
+  cisco.catalystcenter.swim_workflow_manager:
+    catalystcenter_host: "{{ catalystcenter_host }}"
+    catalystcenter_username: "{{ catalystcenter_username }}"
+    catalystcenter_password: "{{ catalystcenter_password }}"
+    catalystcenter_verify: "{{ catalystcenter_verify }}"
+    catalystcenter_port: "{{ catalystcenter_port }}"
+    catalystcenter_version: "{{ catalystcenter_version }}"
+    catalystcenter_log: "{{ catalystcenter_log }}"
+    catalystcenter_log_level: "{{ catalystcenter_log_level }}"
+    catalystcenter_log_file_path: "{{ catalystcenter_log_file_path }}"
+    catalystcenter_log_append: "{{ catalystcenter_log_append }}"
+    validate_response_schema: "{{ validate_response_schema }}"
+    catalystcenter_api_task_timeout: 7200
+    catalystcenter_task_poll_interval: 60
+    config_verify: true
+    state: merged
+    config:
+      - image_activation_details: "{{ item.image_activation_details }}"
+  loop: "{{ swim_details.activate_images }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: activate_result
+
+- name: Write activation evidence
+  ansible.builtin.copy:
+    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-30_activate.json"
+    content: "{{ activate_result | to_nice_json }}"
+    mode: "0640"

@@ -1,0 +1,95 @@
+---
+# Catalyst Center connection — cisco.catalystcenter modules (stages 1, 2, 6)
+catc_host: 198.18.129.100
+catc_port: 443
+catc_version: "2.3.7.9"
+catc_verify: false
+catc_debug: false
+
+# Catalyst Center connection — cisco.dnac modules (stages 3-5, 7-10)
+dnac_host: 198.18.129.100
+dnac_port: 443
+dnac_version: "2.3.7.9"
+dnac_verify: false
+dnac_debug: false
+dnac_log: true
+dnac_log_level: INFO
+
+# SWIM-specific cisco.catalystcenter params (stage 6)
+catalystcenter_host: 198.18.129.100
+catalystcenter_username: "{{ catc_username }}"
+catalystcenter_password: "{{ catc_password }}"
+catalystcenter_port: "443"
+catalystcenter_version: "2.3.7.9"
+catalystcenter_verify: false
+catalystcenter_debug: false
+catalystcenter_log: true
+catalystcenter_log_level: INFO
+catalystcenter_log_append: true
+catalystcenter_log_file_path: "{{ playbook_dir }}/../logs/catc-swim.log"
+validate_response_schema: true
+catalystcenter_api_task_timeout: 3600
+catalystcenter_task_poll_interval: 30
+
+# Central data model — relative to playbooks/ directory
+settings_json_path: "../../Settings/settings.json"
+
+# Site hierarchy defaults (stage 1)
+default_building_address: "1 Cisco Way, San Jose, CA 95134"
+default_building_country: "United States"
+default_building_latitude: 37.3382
+default_building_longitude: -121.8863
+default_floor_rf_model: "Cubes And Walled Offices"
+default_floor_units_of_measure: "feet"
+default_floor_width: 100
+default_floor_length: 100
+default_floor_height: 10
+default_floor_number: 1
+
+# Device discovery credential descriptions (stage 4)
+discovery_cli_credentials:
+  cli_credentials_list:
+    - description: CLI-net-admin
+      username: net-admin
+discovery_snmp_read_credentials:
+  snmp_v2_read_credential_list:
+    - description: RO
+discovery_snmp_write_credentials:
+  snmp_v2_write_credential_list:
+    - description: RW
+discovery_netconf_credentials:
+  net_conf_port_list:
+    - description: NETCONF-netadmin
+
+# Template sync / GitHub (stage 7)
+git_repo: "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
+git_branch: main
+git_repo_subfolders:
+  - path: "Catalyst Center Templates/Site BGP EVPN Templates"
+    project_name: "Building P0"
+  - path: "Catalyst Center Templates/DMZ BGP EVPN Templates"
+    project_name: "DMZ 01"
+template_extension: j2
+include_diff_header: false
+default_software_type: IOS
+default_software_variant: XE
+default_template_version: "1.0"
+default_device_types:
+  - product_family: "Switches and Hubs"
+    product_series: "Cisco Catalyst 9500 Series Switches"
+  - product_family: "Switches and Hubs"
+    product_series: "Cisco Catalyst 9000 Series Virtual Switches"
+  - product_family: "Switches and Hubs"
+    product_series: "Cisco Catalyst 9300 Series Switches"
+  - product_family: "Switches and Hubs"
+    product_series: "Cisco Catalyst 9400 Series Switches"
+catc_template_summary_maxchar: 1024
+
+# Provision devices (stage 9)
+force_reprovision: false
+task_poll_retries: 60
+task_poll_delay: 10
+
+# Deploy composite (stage 10)
+force_push_template: true
+member_template_params: {}

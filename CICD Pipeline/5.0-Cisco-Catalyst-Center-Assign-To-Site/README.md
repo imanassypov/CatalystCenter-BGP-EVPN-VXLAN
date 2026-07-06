@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 5.0 — Cisco Catalyst Center: Assign Devices to Site Automation
 
 > **Playbook:** `assign_to_site.yml`  

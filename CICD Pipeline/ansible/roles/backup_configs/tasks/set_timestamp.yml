@@ -1,0 +1,15 @@
+---
+# =============================================================================
+# backup_configs / set_timestamp.yml  —  Stage 11.0 (play 1 of 3)
+# =============================================================================
+# Creates a shared timestamp fact on localhost used by iosxe/nxos backup plays
+# so all device configs land in the same directory:
+#   {{ backup_root_dir }}/{{ backup_timestamp }}/
+# =============================================================================
+
+# Task: Set shared backup timestamp
+# Pre:  backup_root_dir from group_vars (e.g. ../config-backups)
+# Post: backup_timestamp: "20260706-161042"  (hostvars['localhost']['backup_timestamp'])
+- name: Set shared backup timestamp
+  ansible.builtin.set_fact:
+    backup_timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"

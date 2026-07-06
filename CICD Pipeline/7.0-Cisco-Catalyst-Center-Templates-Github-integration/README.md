@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 6.0 — Cisco Catalyst Center: Template GitHub Sync
 
 > **Playbook:** `ansible-git-catc.yml`  

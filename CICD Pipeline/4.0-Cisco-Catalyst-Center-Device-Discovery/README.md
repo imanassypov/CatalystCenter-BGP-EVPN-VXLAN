@@ -1,3 +1,5 @@
+> **Deprecated:** Playbooks moved to [`../ansible/playbooks/`](../ansible/playbooks/). See [`../ansible/README.md`](../ansible/README.md).
+
 # 4.0 — Cisco Catalyst Center: Device Discovery Automation
 
 > **Playbook:** `device_discovery.yml`  

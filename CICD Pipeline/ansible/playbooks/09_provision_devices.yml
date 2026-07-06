@@ -1,0 +1,18 @@
+---
+- name: Provision Devices to Site in Catalyst Center from settings.json
+  hosts: catalyst_center
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    catc_debug: "{{ lookup('env', 'DEBUG') | default(false) | bool }}"
+  pre_tasks:
+    - ansible.builtin.import_role:
+        name: catc_common
+        tasks_from: auth_token
+
+    - ansible.builtin.import_role:
+        name: catc_common
+        tasks_from: load_settings
+  roles:
+    - role: provision_devices

@@ -1,0 +1,19 @@
+---
+# =============================================================================
+# catc_common / main.yml
+# =============================================================================
+# Intentionally empty default entry point. This role is a library of task files;
+# playbooks MUST invoke a specific tasks_from file:
+#
+#   load_settings.yml        — read settings.json → settings_data
+#   build_hierarchy_paths.yml — settings_data → site_names[]
+#   build_site_id_map.yml    — CatC API → site_id_map{}
+#   auth_token.yml           — CatC auth → _catc_token
+#
+# Using roles: without tasks_from runs this stub (Ansible 2.17 ignores tasks_from
+# in static roles: lists — use import_role in pre_tasks instead).
+# =============================================================================
+
+- name: catc_common | no default action
+  ansible.builtin.debug:
+    msg: "Use import_role with tasks_from: load_settings, build_hierarchy_paths, build_site_id_map, or auth_token."

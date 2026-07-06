@@ -1,0 +1,13 @@
+---
+# =============================================================================
+# backup_configs / main.yml
+# =============================================================================
+# Library role — no default tasks. Playbook 11 invokes task files directly:
+#   set_timestamp   → localhost fact backup_timestamp
+#   backup_iosxe    → per iosxe host
+#   backup_nxos     → per nxos host + retention prune
+# =============================================================================
+
+- name: backup_configs | use import_role with tasks_from in playbooks
+  ansible.builtin.debug:
+    msg: "Invoke set_timestamp, backup_iosxe, or backup_nxos via import_role tasks_from."
