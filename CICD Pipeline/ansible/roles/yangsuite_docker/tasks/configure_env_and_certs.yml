@@ -1,0 +1,46 @@
+---
+# =============================================================================
+# yangsuite_docker / configure_env_and_certs.yml
+# =============================================================================
+# Replaces interactive start_yang_suite.sh env + certificate prompts.
+
+- name: Render YANG Suite setup.env
+  ansible.builtin.template:
+    src: setup.env.j2
+    dest: "{{ yangsuite_docker_dir }}/yangsuite/setup.env"
+    mode: "0600"
+  no_log: true
+  notify: Restart YANG Suite Docker Compose stack
+
+- name: Check for existing nginx self-signed certificate
+  ansible.builtin.stat:
+    path: "{{ yangsuite_docker_dir }}/nginx/{{ item }}"
+  loop:
+    - nginx-self-signed.cert
+    - nginx-self-signed.key
+  register: yangsuite_cert_stats
+
+- name: Generate self-signed nginx certificate (lab)
+  ansible.builtin.command:
+    argv:
+      - openssl
+      - req
+      - -x509
+      - -nodes
+      - -days
+      - "{{ yangsuite_cert_days | string }}"
+      - -newkey
+      - "rsa:{{ yangsuite_cert_key_bits }}"
+      - -keyout
+      - "{{ yangsuite_docker_dir }}/nginx/nginx-self-signed.key"
+      - -out
+      - "{{ yangsuite_docker_dir }}/nginx/nginx-self-signed.cert"
+      - -subj
+      - "/CN={{ yangsuite_server_ip }}"
+  when:
+    - yangsuite_generate_self_signed_certs | bool
+    - not (
+        yangsuite_cert_stats.results[0].stat.exists
+        and yangsuite_cert_stats.results[1].stat.exists
+      )
+  notify: Restart YANG Suite Docker Compose stack

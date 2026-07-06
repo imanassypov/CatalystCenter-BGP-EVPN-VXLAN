@@ -1,0 +1,25 @@
+---
+# =============================================================================
+# Deploy Cisco YANG Suite (Docker Compose)
+#
+# Implements the Docker install from Cisco DevNet documentation:
+#   https://developer.cisco.com/docs/yangsuite/
+#   https://github.com/CiscoDevNet/yangsuite
+#
+# UI: https://{{ yangsuite_server_ip }}:8443/
+# HTTP port 80 redirects to HTTPS 8443 (nginx container).
+#
+# Prerequisites:
+#   cp inventory/group_vars/yangsuite_servers/vars.yml.example vars.yml
+#   cp inventory/group_vars/yangsuite_servers/vault.yml.example vault.yml
+#   ansible-vault encrypt inventory/group_vars/yangsuite_servers/vault.yml
+#
+# Run:
+#   ansible-playbook playbooks/deploy_yangsuite.yml
+# =============================================================================
+- name: Deploy Cisco YANG Suite (Docker Compose)
+  hosts: yangsuite_servers
+  become: true
+  gather_facts: true
+  roles:
+    - role: yangsuite_docker

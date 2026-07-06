@@ -1,0 +1,42 @@
+---
+# =============================================================================
+# yangsuite_docker / clone_repository.yml
+# =============================================================================
+
+- name: Install git for repository clone
+  ansible.builtin.apt:
+    name: git
+    state: present
+    update_cache: false
+
+- name: Check whether yangsuite repository is already cloned
+  ansible.builtin.stat:
+    path: "{{ yangsuite_install_dir }}/.git"
+  register: yangsuite_repo_stat
+
+- name: Clone CiscoDevNet/yangsuite
+  ansible.builtin.git:
+    repo: "{{ yangsuite_repo_url }}"
+    version: "{{ yangsuite_repo_version }}"
+    dest: "{{ yangsuite_install_dir }}"
+    update: "{{ yangsuite_repo_force | bool }}"
+    force: "{{ yangsuite_repo_force | bool }}"
+  register: yangsuite_git
+  when: not yangsuite_repo_stat.stat.exists or yangsuite_repo_force | bool
+
+- name: Record existing yangsuite repository (local port patches preserved)
+  ansible.builtin.set_fact:
+    yangsuite_git:
+      changed: false
+  when:
+    - yangsuite_repo_stat.stat.exists
+    - not (yangsuite_repo_force | bool)
+
+- name: Ensure ys-data and ys-backup directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ yangsuite_docker_dir }}/ys-data"
+    - "{{ yangsuite_docker_dir }}/ys-backup"

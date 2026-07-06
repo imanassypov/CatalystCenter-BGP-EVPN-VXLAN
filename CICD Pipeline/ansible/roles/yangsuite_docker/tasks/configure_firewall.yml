@@ -1,0 +1,27 @@
+---
+# =============================================================================
+# yangsuite_docker / configure_firewall.yml
+# =============================================================================
+
+- name: Detect whether ufw is installed and active
+  ansible.builtin.command:
+    cmd: ufw status
+  register: ufw_status
+  changed_when: false
+  failed_when: false
+
+- name: Open YANG Suite ports in ufw
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: >-
+    {{
+      ([yangsuite_https_port, yangsuite_restconf_port]
+       + ([yangsuite_http_port] if yangsuite_publish_http | bool else []))
+      + (yangsuite_firewall_extra_ports | default([]))
+    }}
+  when:
+    - yangsuite_manage_ufw | bool
+    - ufw_status.rc == 0
+    - "'Status: active' in ufw_status.stdout"

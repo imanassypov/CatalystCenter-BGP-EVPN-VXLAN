@@ -1,0 +1,40 @@
+---
+# Target Ubuntu host — override in inventory/group_vars/yangsuite_servers/vars.yml
+yangsuite_server_ip: "198.18.134.28"
+
+# Upstream Cisco YANG Suite (Docker) — https://github.com/CiscoDevNet/yangsuite
+yangsuite_repo_url: "https://github.com/CiscoDevNet/yangsuite.git"
+yangsuite_repo_version: "main"
+yangsuite_repo_force: false
+yangsuite_install_dir: /opt/yangsuite
+yangsuite_docker_dir: "{{ yangsuite_install_dir }}/docker"
+
+# Django ALLOWED_HOSTS (space-separated per upstream setup.env)
+# Include localhost plus the IP/FQDN used in the browser URL.
+yangsuite_allowed_hosts: "localhost {{ yangsuite_server_ip }}"
+
+# Self-signed TLS for nginx (lab only — use CA-signed certs in production)
+yangsuite_generate_self_signed_certs: true
+yangsuite_cert_days: 365
+yangsuite_cert_key_bits: 2048
+
+# Published ports (docker-compose.yml defaults; override via docker-compose.override.yml)
+# Co-hosted with SWIM image server: disable HTTP redirect; use non-conflicting RESTCONF port.
+yangsuite_publish_http: false
+yangsuite_http_port: 8080
+yangsuite_https_port: 8443
+yangsuite_restconf_port: 8444
+
+# Optional gNMI / gRPC MDT ports exposed by the yangsuite service
+yangsuite_firewall_extra_ports:
+  - 50051
+  - 50052
+  - 9339
+  - 57344
+  - 57345
+
+yangsuite_compose_build: true
+yangsuite_compose_pull: missing
+
+# Open inbound TCP in ufw when ufw is active
+yangsuite_manage_ufw: true

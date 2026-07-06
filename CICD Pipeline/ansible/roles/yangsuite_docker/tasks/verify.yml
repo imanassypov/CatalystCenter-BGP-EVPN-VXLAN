@@ -1,0 +1,60 @@
+---
+# =============================================================================
+# yangsuite_docker / verify.yml
+# =============================================================================
+
+- name: Flush handlers before verification
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for YANG Suite HTTPS port on the server
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ yangsuite_https_port }}"
+    timeout: 180
+    state: started
+
+- name: Verify YANG Suite HTTPS responds on server IP (self-signed cert)
+  ansible.builtin.uri:
+    url: "https://{{ yangsuite_server_ip }}:{{ yangsuite_https_port }}/"
+    validate_certs: false
+    status_code: [200, 301, 302, 303, 307, 308]
+  register: yangsuite_https_local
+  until: yangsuite_https_local.status in [200, 301, 302, 303, 307, 308]
+  retries: 12
+  delay: 10
+
+- name: Verify TCP reachability from control node
+  ansible.builtin.wait_for:
+    host: "{{ yangsuite_server_ip }}"
+    port: "{{ yangsuite_https_port }}"
+    timeout: 30
+    state: started
+  delegate_to: localhost
+  become: false
+
+- name: Verify YANG Suite HTTPS from control node (self-signed cert)
+  ansible.builtin.uri:
+    url: "https://{{ yangsuite_server_ip }}:{{ yangsuite_https_port }}/"
+    validate_certs: false
+    status_code: [200, 301, 302, 303, 307, 308]
+  delegate_to: localhost
+  become: false
+  register: yangsuite_https_remote
+  until: yangsuite_https_remote.status in [200, 301, 302, 303, 307, 308]
+  retries: 6
+  delay: 5
+
+- name: Report YANG Suite access URLs
+  ansible.builtin.debug:
+    msg:
+      - "YANG Suite UI: https://{{ yangsuite_server_ip }}:{{ yangsuite_https_port }}/"
+      - "RESTCONF (host): https://{{ yangsuite_server_ip }}:{{ yangsuite_restconf_port }}/"
+      - >-
+        HTTP redirect: {{
+          'http://' ~ yangsuite_server_ip ~ ':' ~ yangsuite_http_port ~ '/'
+          if yangsuite_publish_http | bool
+          else '(disabled — use HTTPS URL above)'
+        }}
+      - "Login user: {{ vault_yangsuite_admin_user }}"
+      - "Configure devices at Setup → Device profile; download YANG at Setup → YANG files and repositories"
+      - "Docs: https://developer.cisco.com/docs/yangsuite/"
