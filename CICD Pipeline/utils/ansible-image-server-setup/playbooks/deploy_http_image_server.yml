@@ -115,19 +115,32 @@
         - not item.remote_exists
         - not item.local_exists
 
-    - name: Upload images to the server (missing on target)
-      ansible.builtin.copy:
+    # Transfer with rsync instead of copy: the control node reaches the target
+    # over a low-MTU dCloud VPN tunnel (utun MTU ~1095) where a single one-shot
+    # SFTP push (the copy module) wedges on a stalled TCP session and never
+    # completes. rsync with --timeout aborts a stalled session, --partial keeps
+    # the bytes already transferred, and --append resumes from there; the
+    # until/retries loop re-attempts until the whole image is present.
+    # (--append-verify is unavailable on the macOS openrsync control node.)
+    - name: Upload images to the server (missing on target, rsync + resume)
+      ansible.posix.synchronize:
         src: "{{ item.path }}"
         dest: "{{ image_dir }}/{{ item.filename }}"
-        owner: www-data
-        group: www-data
-        mode: "0644"
+        mode: push
+        rsync_opts:
+          - "--partial"
+          - "--append"
+          - "--timeout=60"
       loop: "{{ image_plan }}"
       loop_control:
         label: "{{ item.filename }}"
       when:
         - not item.remote_exists
         - item.local_exists
+      register: rsync_upload
+      until: rsync_upload is succeeded
+      retries: 30
+      delay: 5
 
     - name: Enforce ownership and permissions on the image directory
       ansible.builtin.file:
