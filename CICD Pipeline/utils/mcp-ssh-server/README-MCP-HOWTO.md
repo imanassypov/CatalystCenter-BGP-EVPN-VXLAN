@@ -85,8 +85,8 @@ The `evpn-ssh` server starts automatically. No manual process management require
 | `username` | Yes | SSH username |
 | `password` | No | Plain password or `env:VAR_NAME` to resolve from environment |
 | `key_path` | No | Path to SSH private key or `env:VAR_NAME` |
-| `platform` | No | `iosxe` for Cisco routers, `linux` for the Splunk/OTel host |
-| `role` | No | `router`, `splunk` — used by `run_command_by_role` and `run_hf_command` |
+| `platform` | No | `iosxe` for Catalyst IOS-XE routers, `nxos` for Nexus (NX-OS) cores, `linux` for the Splunk/OTel host |
+| `role` | No | `router`, `core`, `splunk` — used by `run_command_by_role` and `run_hf_command` |
 | `tags` | No | Pipe-delimited tags for filtering (e.g. `evpn\|spine`) |
 
 ### Current Inventory
@@ -100,8 +100,8 @@ The `evpn-ssh` server starts automatically. No manual process management require
 | border1 | 198.18.128.105 | net-admin | iosxe | router | evpn, border |
 | border2 | 198.18.128.106 | net-admin | iosxe | router | evpn, border |
 | dmz1 | 198.18.128.107 | net-admin | iosxe | router | evpn, dmz |
-| core1 | 198.18.128.108 | net-admin | iosxe | router | evpn, core |
-| core2 | 198.18.128.109 | net-admin | iosxe | router | evpn, core |
+| core1 | 198.18.128.108 | net-admin | nxos | core | core |
+| core2 | 198.18.128.109 | net-admin | nxos | core | core |
 | dhcp-server | 198.18.128.110 | net-admin | iosxe | router | infra, dhcp |
 | fw-shared-services | 198.18.134.200 | net-admin | iosxe | router | infra, firewall |
 | splunk | 18.224.25.161 | cisco | linux | splunk | splunk, sh, hf, otel |
@@ -271,6 +271,12 @@ run_command_by_role role=router command="show telemetry ietf subscription all"
 ### IOS-XE devices (`platform=iosxe`)
 - The server opens an interactive shell and sends `terminal length 0` before each command to suppress `--More--` pagination.
 - Output includes the shell prompt lines; strip or grep as needed.
+
+### NX-OS devices (`platform=nxos`)
+- Handled through the same interactive-shell path as IOS-XE: the server sends `terminal length 0` to disable paging and shares the `configure terminal` / `end` config grammar, so multi-line config sequences work the same way.
+- Recognized platform aliases: `nxos`, `nx-os`, `nx_os`, `cisco_nxos`, `nexus`, `n9kv`, `n9k`.
+- Save running config with `copy running-config startup-config` (NX-OS has no `write memory` alias by default).
+- The Nexus 9000v cores use `role=core`; target them together with `run_command_by_role role=core ...`.
 
 ### Linux/HF devices (`platform=linux`)
 - The server uses SSH exec mode (non-interactive).
