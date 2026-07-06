@@ -11,7 +11,7 @@
 # process-subfolder.yml
 # Syncs a single repository subfolder (`subfolder_item`) into its own Catalyst
 # Center Template-Programmer Project. Included once per entry in
-# `normalized_subfolders` by ansible-git-catc.yml. The repository file tree
+# `normalized_subfolders` by playbooks/07_template_sync.yml. The repository file tree
 # (`repo_tree_response`) is fetched once at the play level and re-filtered here
 # per subfolder.
 

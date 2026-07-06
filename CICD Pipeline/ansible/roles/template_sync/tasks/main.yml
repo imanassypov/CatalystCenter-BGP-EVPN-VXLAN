@@ -82,7 +82,7 @@
 # of { path, project_name } entries) defines what to sync.
 - name: Fail if git_repo_subfolders is not defined
   ansible.builtin.fail:
-    msg: "git_repo_subfolders must be defined in inventory.yml as a non-empty list of { path, project_name } entries."
+    msg: "git_repo_subfolders must be defined in group_vars as a non-empty list of { path, project_name } entries."
   when: git_repo_subfolders is not defined or git_repo_subfolders | length == 0
 
 - name: Build normalized subfolder list

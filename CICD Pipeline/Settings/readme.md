@@ -335,12 +335,14 @@ All three automation paths read `settings.json` from GitHub and iterate over eve
 
 | Tooling Stage | Cisco Workflow | Ansible Playbook | Python Script | Fields Used |
 |---------------|---------------|-----------------|--------------|-------------|
-| Build Hierarchy | `GitOps-BuildHierarchy-v3` | `site_hierarchy.yml` | `site_hierarchy.py` | `HierarchyParent/Area/Bldg/Floor`, `HierarchyBldgAddress` |
-| Network Settings | `GitOps-BuildSettings-v3` | `network_settings.yml` | `network_settings.py` | `network_settings.*` |
-| Device Credentials | `GitOps-BuildSettings-v3` | `credentials.yml` | `credentials.py` | `device_credentials.*` |
-| Device Discovery | `GitOps-DeviceDiscovery-v3` | `device_discovery.yml` | `device_discovery.py` | `device_list`, `device_credentials.*` |
-| Network Profile | `GitOps-BuildNetworkProfile-v3` | `network_profile.yml` | `network_profile.py` | `network_profile.*` |
-| Provisioning | `GitOps-Provisioning-v3` | `provision_devices.yml` + `deploy_composite_template.yml` | `deploy_composite.py` | `device_list`, `network_profile.DayNTemplateNames` |
+| Build Hierarchy | `GitOps-BuildHierarchy-v3` | `playbooks/01_site_hierarchy.yml` | `site_hierarchy.py` | `HierarchyParent/Area/Bldg/Floor`, `HierarchyBldgAddress` |
+| Network Settings | `GitOps-BuildSettings-v3` | `playbooks/02_network_settings.yml` | `network_settings.py` | `network_settings.*` |
+| Device Credentials | `GitOps-BuildSettings-v3` | `playbooks/03_credentials.yml` | `credentials.py` | `device_credentials.*` |
+| Device Discovery | `GitOps-DeviceDiscovery-v3` | `playbooks/04_device_discovery.yml` | `device_discovery.py` | `device_list`, `device_credentials.*` |
+| Network Profile | `GitOps-BuildNetworkProfile-v3` | `playbooks/08_network_profile.yml` | `network_profile.py` | `network_profile.*` |
+| Provisioning | `GitOps-Provisioning-v3` | `playbooks/09_provision_devices.yml` + `playbooks/10_deploy_composite.yml` | `deploy_composite.py` | `device_list`, `network_profile.DayNTemplateNames` |
+
+All Ansible playbooks run from [`CICD Pipeline/ansible/`](../ansible/).
 
 Each tooling path processes one project array element per loop iteration, applying all relevant fields for that site before moving to the next element.
 

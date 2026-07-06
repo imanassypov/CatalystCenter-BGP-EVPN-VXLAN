@@ -1,0 +1,10 @@
+---
+# SSH/become credentials — loaded from group_vars/image_servers/vault.yml (encrypted).
+# Requires sshpass on the control node when using password auth.
+ansible_user: "{{ vault_image_server_user }}"
+ansible_ssh_pass: "{{ vault_image_server_password }}"
+ansible_become: true
+ansible_become_method: sudo
+ansible_become_password: "{{ vault_image_server_become_password }}"
+# Pin interpreter when system python3-apt does not match /usr/bin/python3
+ansible_python_interpreter: /usr/bin/python3.8

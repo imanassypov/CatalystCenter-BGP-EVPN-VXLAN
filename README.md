@@ -110,17 +110,9 @@ Node Configs/                      # Reference device configs (lab output)
 └── cores/                         # Core router configs
 
 CICD Pipeline/                     # Ordered Catalyst Center provisioning stages
-├── 1.0-Cisco-Catalyst-Center-Site-Hierarchy/
-├── 2.0-Cisco-Catalyst-Center-Settings/
-├── 3.0-Cisco-Catalyst-Center-Credentials/
-├── 4.0-Cisco-Catalyst-Center-Device-Discovery/
-├── 5.0-Cisco-Catalyst-Center-Assign-To-Site/
-├── 6.0-Cisco-Catalyst-Center-SWIM/                        # Software Image Management (upgrade)
-├── 7.0-Cisco-Catalyst-Center-Templates-Github-integration/  # GitOps sync: Git → Catalyst Center
-├── 8.0-Cisco-Catalyst-Center-Network-Profile/
-├── 9.0-Cisco-Catalyst-Center-Provision-Devices/
-├── 10.0-Cisco-Catalyst-Center-Provision-Composite/
-└── 11.0-Backup-My-Configs/
+├── ansible/                       # Unified playbooks + roles (stages 1–11)
+├── Settings/                      # settings.json SSOT
+└── utils/mcp-ssh-server/          # MCP stdio server for device CLI triage
 
 Campus BGP EVPN Splunk Assurance/  # Streaming telemetry assurance
 ├── campus_evpn_assurance/         # Packaged Splunk app
@@ -379,32 +371,40 @@ ip msdp peer 198.19.1.X connect-source Loopback0 remote-as 65001
 
 ### 8.1 GitOps Workflow (Ansible)
 
-The [`CICD Pipeline/`](CICD%20Pipeline/) directory holds a numbered, end-to-end collection of Ansible playbooks that build the fabric from an empty Catalyst Center up through provisioned devices and config backup. Each stage is a self-contained project with its own `inventory.yml`, `requirements.yml`, and `vault.yml`, and all stages consume the shared declarative source-of-truth in [`CICD Pipeline/Settings/`](CICD%20Pipeline/Settings/) (`settings.json`).
+All pipeline stages run from [`CICD Pipeline/ansible/`](CICD%20Pipeline/ansible/). Stages consume the shared declarative source-of-truth in [`CICD Pipeline/Settings/`](CICD%20Pipeline/Settings/) (`settings.json`).
 
-Run the stages in numeric order:
+**Quick start:**
+
+```bash
+cd "CICD Pipeline/ansible"
+ansible-galaxy collection install -r collections/requirements.yml
+ansible-playbook playbooks/01_site_hierarchy.yml   # example — run stages in order
+```
+
+See [`CICD Pipeline/ansible/README.md`](CICD%20Pipeline/ansible/README.md) for vault setup and the full playbook index.
 
 | Stage | Playbook | Purpose |
 |-------|----------|---------|
-| [1.0 Site Hierarchy](CICD%20Pipeline/1.0-Cisco-Catalyst-Center-Site-Hierarchy/) | `site_hierarchy.yml` | Create/update the CatC site hierarchy (areas, buildings, floors) |
-| [2.0 Settings](CICD%20Pipeline/2.0-Cisco-Catalyst-Center-Settings/) | `network_settings.yml` | Apply per-site network settings (DNS, DHCP, NTP, SNMP, Syslog, AAA, banner) |
-| [3.0 Credentials](CICD%20Pipeline/3.0-Cisco-Catalyst-Center-Credentials/) | `credentials.yml` | Create/assign device credentials (CLI, SNMPv2c, NETCONF) and bind to sites |
-| [4.0 Device Discovery](CICD%20Pipeline/4.0-Cisco-Catalyst-Center-Device-Discovery/) | `device_discovery.yml` | Discover reachable devices and add them to CatC inventory |
-| [5.0 Assign To Site](CICD%20Pipeline/5.0-Cisco-Catalyst-Center-Assign-To-Site/) | `assign_to_site.yml` | Move discovered devices from Global into their designated site |
-| [6.0 SWIM](CICD%20Pipeline/6.0-Cisco-Catalyst-Center-SWIM/) | `playbooks/00_preflight.yml` → `10_import_and_tag.yml` → `20_distribute.yml` → `30_activate.yml` → `40_postcheck.yml` (rollback: `35_rollback.yml`) | Phased software image lifecycle: preflight/baseline, import + golden tag, distribute, activate (reload), postcheck, and rollback |
-| [7.0 Templates (GitOps)](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/) | `ansible-git-catc.yml` | Sync Jinja2 templates from GitHub into a CatC Template Project (incl. composites) |
-| [8.0 Network Profile](CICD%20Pipeline/8.0-Cisco-Catalyst-Center-Network-Profile/) | `network_profile.yml` | Create switching network profiles and bind Day-N templates to sites |
-| [9.0 Provision Devices](CICD%20Pipeline/9.0-Cisco-Catalyst-Center-Provision-Devices/) | `provision_devices.yml` | Provision devices to their sites (push site settings + licensing) |
-| [10.0 Provision Composite](CICD%20Pipeline/10.0-Cisco-Catalyst-Center-Provision-Composite/) | `deploy_composite_template.yml` | Deploy the composite (multi-member) Day-N template to target devices |
-| [11.0 Backup My Configs](CICD%20Pipeline/11.0-Backup-My-Configs/) | `backup-lab-configs.yml` | Back up `show running-config` from IOS-XE/NX-OS devices to timestamped archives |
+| 1 Site Hierarchy | `playbooks/01_site_hierarchy.yml` | Create/update the CatC site hierarchy (areas, buildings, floors) |
+| 2 Settings | `playbooks/02_network_settings.yml` | Apply per-site network settings (DNS, DHCP, NTP, SNMP, Syslog, AAA, banner) |
+| 3 Credentials | `playbooks/03_credentials.yml` | Create/assign device credentials (CLI, SNMPv2c, NETCONF) and bind to sites |
+| 4 Device Discovery | `playbooks/04_device_discovery.yml` | Discover reachable devices and add them to CatC inventory |
+| 5 Assign To Site | `playbooks/05_assign_to_site.yml` | Move discovered devices from Global into their designated site |
+| 6 SWIM | `06_swim_preflight.yml` → `06_swim_import_and_tag.yml` → `06_swim_distribute.yml` → `06_swim_activate.yml` → `06_swim_postcheck.yml` (rollback: `06_swim_rollback.yml`) | Phased software image lifecycle |
+| 7 Templates (GitOps) | `playbooks/07_template_sync.yml` | Sync Jinja2 templates from GitHub into a CatC Template Project (incl. composites) |
+| 8 Network Profile | `playbooks/08_network_profile.yml` | Create switching network profiles and bind Day-N templates to sites |
+| 9 Provision Devices | `playbooks/09_provision_devices.yml` | Provision devices to their sites (push site settings + licensing) |
+| 10 Provision Composite | `playbooks/10_deploy_composite.yml` | Deploy the composite (multi-member) Day-N template to target devices |
+| 11 Backup My Configs | `playbooks/11_backup_lab_configs.yml` | Back up `show running-config` from IOS-XE/NX-OS devices to timestamped archives |
 
 Supporting directories:
-- [`Settings/`](CICD%20Pipeline/Settings/) — `settings.json`, the single declarative source-of-truth consumed by stages 1.0–5.0 and 8.0
-- [`utils/ansible-image-server-setup/`](CICD%20Pipeline/utils/ansible-image-server-setup/) — `playbooks/deploy_http_image_server.yml` stands up the HTTP image server used as the file source for SWIM image import (stage 6.0)
+- [`Settings/`](CICD%20Pipeline/Settings/) — `settings.json`, the single declarative source-of-truth
+- [`ansible/playbooks/deploy_http_image_server.yml`](CICD%20Pipeline/ansible/playbooks/deploy_http_image_server.yml) — HTTP image server for SWIM import (run before `06_swim_import_and_tag.yml`)
 - [`utils/mcp-ssh-server/`](CICD%20Pipeline/utils/mcp-ssh-server/) — MCP stdio server for live device CLI verification during triage
 
 #### Template GitOps (Stage 7.0) in detail
 
-The GitOps pipeline at [`7.0-Cisco-Catalyst-Center-Templates-Github-integration/`](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/) is the stage that publishes these BGP EVPN templates:
+Template sync is implemented by [`playbooks/07_template_sync.yml`](CICD%20Pipeline/ansible/playbooks/07_template_sync.yml) and the `template_sync` role. It publishes BGP EVPN templates from Git to Catalyst Center:
 
 1. Fetch `.j2` templates from the Git repository
 2. Enrich each template with Git commit metadata (version description + diff header)
@@ -412,7 +412,7 @@ The GitOps pipeline at [`7.0-Cisco-Catalyst-Center-Templates-Github-integration/
 4. Sync to the Catalyst Center Template Project via `cisco.dnac.template_workflow_manager`
 5. Create/update the `BGP-EVPN-BUILD` composite and bind it to a CLI Network Profile
 
-It supports **multiple subfolders** (`git_repo_subfolders` in `inventory.yml`), each synced to its own CatC project. See the [pipeline README](CICD%20Pipeline/7.0-Cisco-Catalyst-Center-Templates-Github-integration/README.md) for configuration details.
+It supports **multiple subfolders** (`git_repo_subfolders` in `inventory/group_vars/catalyst_center/connection.yml`), each synced to its own CatC project. See [`ansible/README.md`](CICD%20Pipeline/ansible/README.md) for configuration details.
 
 ### 8.2 Provisioning Workflow
 
@@ -421,7 +421,7 @@ It supports **multiple subfolders** (`git_repo_subfolders` in `inventory.yml`), 
 | 1 | Verify site hierarchy exists | CatC: Design > Network Hierarchy |
 | 2 | Verify devices discovered + assigned to site | CatC: Provision > Inventory |
 | 3 | Verify underlay OSPF operational | Device CLI: `show ip ospf neighbor` |
-| 4 | Import/sync templates | Ansible `ansible-git-catc.yml` |
+| 4 | Import/sync templates | Ansible `playbooks/07_template_sync.yml` |
 | 5 | Attach composite to CLI Network Profile | CatC: Design > Network Profiles |
 | 6 | Assign profile to building site | CatC: Design > Network Profiles |
 | 7 | Provision devices | CatC: Provision > Inventory (or Ansible playbook) |

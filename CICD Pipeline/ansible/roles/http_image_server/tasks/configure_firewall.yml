@@ -1,0 +1,29 @@
+---
+# =============================================================================
+# http_image_server / configure_firewall.yml  —  Appendix A.4
+# =============================================================================
+
+- name: Check whether ufw is installed
+  ansible.builtin.stat:
+    path: /usr/sbin/ufw
+  register: ufw_bin
+
+- name: Query ufw status
+  ansible.builtin.command: ufw status
+  register: ufw_status
+  changed_when: false
+  failed_when: false
+  when:
+    - manage_ufw | bool
+    - ufw_bin.stat.exists
+
+- name: Allow HTTP (TCP/80) through ufw
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+  when:
+    - manage_ufw | bool
+    - ufw_bin.stat.exists
+    - ufw_status.stdout is defined
+    - "'Status: active' in ufw_status.stdout"

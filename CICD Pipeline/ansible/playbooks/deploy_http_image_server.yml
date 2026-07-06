@@ -1,9 +1,25 @@
 ---
+# =============================================================================
+# Deploy HTTP image-distribution server for Catalyst Center SWIM (Appendix A)
+#
+# Implements nginx-based image hosting for remote SWIM import:
+#   http://{{ image_server_ip }}/{{ image_url_subdir }}/<image_filename>
+#
+# Prerequisites:
+#   cp inventory/group_vars/image_servers/vars.yml.example vars.yml
+#   cp inventory/group_vars/image_servers/vault.yml.example vault.yml
+#   ansible-vault encrypt inventory/group_vars/image_servers/vault.yml
+#
+# Run:
+#   ansible-playbook playbooks/deploy_http_image_server.yml
+#
+# Override image paths at runtime:
+#   ansible-playbook playbooks/deploy_http_image_server.yml \
+#     -e '{"image_local_paths":["/abs/a.SSA.bin","/abs/b.SPA.bin"]}'
+# =============================================================================
 - name: Deploy HTTP image-distribution server for Catalyst Center SWIM
   hosts: image_servers
   become: true
   gather_facts: true
-  vars_files:
-    - ../inventory/group_vars/image_servers/vault.yml
   roles:
     - role: http_image_server

@@ -1,0 +1,31 @@
+---
+# =============================================================================
+# http_image_server / install_nginx.yml  —  Appendix A.1
+# =============================================================================
+
+# Best-effort apt update; third-party repo GPG failures must not block nginx install.
+- name: Refresh apt cache (best effort)
+  ansible.builtin.apt:
+    update_cache: true
+  register: apt_cache_update
+  failed_when: false
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: false
+
+- name: Ensure nginx is enabled and running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Create the image web-root directory
+  ansible.builtin.file:
+    path: "{{ image_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"

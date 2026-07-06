@@ -7,10 +7,5 @@
 catc_username: admin
 catc_password: your_catc_password_here
 
-# Device SSH credentials (stage 11 backup)
-vault_device_username: admin
-vault_device_password: your_device_password_here
-vault_device_enable_password: your_enable_password_here
-
 # GitHub token (stage 7 template sync) — optional if using SSH deploy keys
 # git_token: your_github_token_here
