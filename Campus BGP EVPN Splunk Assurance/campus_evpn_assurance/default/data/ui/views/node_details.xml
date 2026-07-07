@@ -66,6 +66,7 @@
         "primary": "ds_node_details_5"
       },
       "title": "Silent Nodes (>5m)",
+      "description": "Inventory-seeded count of nodes in the selected role with no periodic telemetry heartbeat in the last 5 minutes from any critical subscription path (NVE oper, NVE peer adjacency, or interface oper-state). On-change BGP alone does not keep a node \"alive\".",
       "options": {
         "sparklineDisplay": "off",
         "trendDisplay": "off",
@@ -421,10 +422,10 @@
     "ds_node_details_5": {
       "type": "ds.search",
       "options": {
-        "query": "| mstats latest(\"cisco.negotiated-keepalive-timers.hold-time\") AS val WHERE `evpn_index` earliest=$timeRange.earliest$ BY \"cisco.node_id\" | `evpn_lookup` | where site=\"$site$\" AND role=\"$role$\" | where _time < (now()-300) | stats count AS n",
+        "query": "| inputlookup evpn_device_inventory | where site=\"$site$\" AND role=\"$role$\" | dedup hostname | fields hostname | join type=left hostname [ | mstats count(\"cisco.l2cp-vni-num\") AS n WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper\" BY \"cisco.node_id\" | rename \"cisco.node_id\" AS hostname | stats max(_time) AS t_nve by hostname ] | join type=left hostname [ | mstats count(\"cisco.cp-vnis.\") AS n WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-peer-oper\" BY \"cisco.node_id\" | rename \"cisco.node_id\" AS hostname | stats max(_time) AS t_peer by hostname ] | join type=left hostname [ | mstats count(\"cisco.oper-status_info\") AS n WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-interfaces-oper:interfaces/interface\" BY \"cisco.node_id\" | rename \"cisco.node_id\" AS hostname | stats max(_time) AS t_if by hostname ] | eval cutoff=relative_time(now(), \"-5m\") | eval silent=if(isnull(t_nve) OR t_nve<cutoff OR isnull(t_peer) OR t_peer<cutoff OR isnull(t_if) OR t_if<cutoff, 1, 0) | stats sum(silent) AS n",
         "queryParameters": {
           "earliest": "$timeRange.earliest$",
-          "latest": "now"
+          "latest": "$timeRange.latest$"
         }
       },
       "name": "Silent Nodes (>5m)"
