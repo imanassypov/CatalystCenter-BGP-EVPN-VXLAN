@@ -1,7 +1,5 @@
 <nav search_view="search" color="#1d6fa4">
-  <view name="executive_overview" default="true" label="Executive Overview"/>
-  <view name="spines" label="Spines"/>
-  <view name="leafs" label="Leafs"/>
-  <view name="borders" label="Borders"/>
+  <view name="executive_overview" default="true" label="Summary"/>
+  <view name="node_details" label="Details"/>
   <view name="alerts" label="Alerts"/>
 </nav>

@@ -7,6 +7,27 @@ turns streaming telemetry from a BGP EVPN VXLAN fabric into a role‑aware, at�
 picture for the network engineer on shift. It answers one question continuously: **is the
 overlay fabric healthy right now, and if not, exactly what changed, where, and when?**
 
+### Audience and how to read this document
+
+This guide is written for a **CCIE‑level network engineer** who already understands BGP EVPN
+VXLAN fabrics — VTEPs, L2/L3 VNIs, route reflectors, Type‑2/3/5 routes, and the usual
+`show bgp …` / `show nve …` / `show l2vpn evpn …` troubleshooting workflow — but who may be
+**new to streaming telemetry, OpenTelemetry (OTel), and Cisco Model‑Driven Telemetry (MDT)**.
+
+| You already know… | This document teaches… |
+|---|---|
+| EVPN control‑plane and overlay semantics | How those same operational objects appear as **YANG‑modeled telemetry** and land in Splunk |
+| SNMP polling and periodic `show` commands | **Push‑based MDT** — the switch streams state changes in seconds, not at the next poll |
+| Splunk as a log/search platform | Splunk **metrics indexes**, `mstats`, and how dashboards query numeric time series |
+| gRPC only as a vague “modern API” term | **MDT gRPC dial‑out** (what this fabric uses) vs **gNMI** (a different protocol — not used here) |
+
+**Suggested reading order**
+
+1. **Operators on shift** — [What This Project Is For](#what-this-project-is-for) → [Architecture at a Glance](#architecture-at-a-glance) → [Operator's Guide](#operators-guide-reading-the-dashboards). Skim telemetry sections on first pass; return when wiring collectors.
+2. **Installing the stack** — [`SETUP_GUIDE.md`](SETUP_GUIDE.md) end to end, then [Deployment](#deployment).
+3. **Telemetry / collector engineers** — [From CLI to streaming YANG](#from-cli-to-streaming-yang) → [Telemetry Foundations](#telemetry-foundations--how-the-data-gets-to-splunk) → [Worked Example](#worked-example-one-evpn-metric-end-to-end) → [`otel-collector/README.md`](otel-collector/README.md).
+4. **Splunk app maintainers** — [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) (macros, `mstats` patterns, inventory lookup).
+
 ---
 
 ## Table of Contents
@@ -14,14 +35,15 @@ overlay fabric healthy right now, and if not, exactly what changed, where, and w
 1. [What This Project Is For](#what-this-project-is-for)
 2. [How It Fits: Build vs. Assure](#how-it-fits-build-vs-assure)
 3. [Architecture at a Glance](#architecture-at-a-glance)
-4. [Telemetry Introduction — How the Data Gets to Splunk](#telemetry-introduction--how-the-data-gets-to-splunk)
-5. [Worked Example: One EVPN Metric, End to End](#worked-example-one-evpn-metric-end-to-end)
-6. [Why a Metrics Index (and How You Query It)](#why-a-metrics-index-and-how-you-query-it)
-7. [The Splunk App and Its Dashboards](#the-splunk-app-and-its-dashboards)
-8. [Operator's Guide: Reading the Dashboards](#operators-guide-reading-the-dashboards)
-9. [Deployment](#deployment)
-10. [Repository Layout](#repository-layout)
-11. [Reference Documents](#reference-documents)
+4. [From CLI to Streaming YANG](#from-cli-to-streaming-yang)
+5. [Telemetry Foundations — How the Data Gets to Splunk](#telemetry-foundations--how-the-data-gets-to-splunk)
+6. [Worked Example: One EVPN Metric, End to End](#worked-example-one-evpn-metric-end-to-end)
+7. [Why a Metrics Index (and How You Query It)](#why-a-metrics-index-and-how-you-query-it)
+8. [The Splunk App and Its Dashboards](#the-splunk-app-and-its-dashboards)
+9. [Operator's Guide: Reading the Dashboards](#operators-guide-reading-the-dashboards)
+10. [Deployment](#deployment)
+11. [Repository Layout](#repository-layout)
+12. [Reference Documents](#reference-documents)
 
 ---
 
@@ -38,8 +60,8 @@ scale. **This project replaces that with continuous streaming telemetry and a pu
 Splunk assurance suite** that:
 
 - **Detects service‑impacting state changes in seconds**, not at the next poll interval.
-- **Presents fabric posture top‑down** — one executive view for the whole fabric, then
-  role‑scoped deep‑dive views for Leafs, Spines, and Borders, plus a consolidated Alerts view.
+- **Presents fabric posture top‑down** — a fabric‑wide **Summary** view, a **Details** view
+  scoped by role (leaf / spine / border), and a consolidated **Alerts** triage view.
 - **Pinpoints the failing object** — the exact device, BGP neighbor, VNI, or tenant VRF — so
   triage starts at the cause, not the symptom.
 
@@ -61,13 +83,7 @@ fabric **build** automation:
 
 The two projects bracket the fabric's operational lifecycle:
 
-```mermaid
-flowchart LR
-    A["BUILD<br/>CatalystCenter-BGP-EVPN-VXLAN<br/>(Catalyst Center templates)"]
-      -->|fabric commissioned| B["RUN<br/>Live EVPN VXLAN fabric<br/>(spines · leafs · borders)"]
-    B -->|streams telemetry| C["ASSURE<br/>campus_evpn_assurance<br/>(this project — Splunk dashboards)"]
-    C -->|faults / drift detected| A
-```
+![Build → Run → Assure lifecycle: Catalyst Center templates commission the fabric, telemetry streams to Splunk dashboards, faults feed back to build automation](images/build-assure-lifecycle.png)
 
 | Phase | Project | Question it answers |
 |---|---|---|
@@ -87,9 +103,7 @@ the templates provisioned.
 The pipeline has three tiers: the **fabric** streams telemetry, a **collector** translates it,
 and **Splunk** stores and visualizes it.
 
-![Pipeline flow: Cisco native YANG → gRPC dial-out → OTel Collector → splunk_hec → Splunk index → dashboards](images/pipeline-flow.png)
-
-> Diagram source: [`images/pipeline-flow.mmd`](images/pipeline-flow.mmd)
+![Pipeline flow: Cisco native YANG → MDT gRPC dial-out → OTel Collector → splunk_hec → Splunk index → dashboards](images/pipeline-flow.png)
 
 ### Lab Infrastructure
 
@@ -118,22 +132,43 @@ Each switch is configured with `receiver ip address 18.224.25.161 57444 protocol
 
 ---
 
-## Telemetry Introduction — How the Data Gets to Splunk
+## From CLI to Streaming YANG
 
-> **New to streaming telemetry or OpenTelemetry?** This section explains, in plain language, how
-> data flows from the switches to Splunk and why some confusing terminology (gRPC, MDT, gNMI,
-> OTLP) shows up along the way. If you already know the pipeline, skip to
-> [the worked example](#worked-example-one-evpn-metric-end-to-end).
+If you troubleshoot EVPN fabrics with CLI today, you already inspect the same operational
+objects this project streams. The difference is *delivery*: instead of SSH and human parsing,
+IOS‑XE **pushes** structured updates when state changes (or on a periodic timer).
+
+| Familiar CLI (what you trust today) | YANG operational model streamed | Splunk dashboard (where it surfaces) |
+|---|---|---|
+| `show nve peers` | `Cisco-IOS-XE-nve-oper` → `nve-peer-oper` | **Details** → NVE peer adjacency, reachability |
+| `show nve vni` | `nve-vni-oper`, `nve-vni-oper-counters` | Scorecards, per‑VNI throughput (Sub 40115) |
+| `show bgp … neighbors` | `Cisco-IOS-XE-bgp-oper` → `neighbors/neighbor` | BGP scorecards, Device × Peer matrix |
+| `show l2vpn evpn …` | `Cisco-IOS-XE-evpn-oper`, `evpn-stats` | EVPN route updates, RIB churn (Sub 40113) |
+| `show interfaces …` (Tunnel/NVE) | `Cisco-IOS-XE-interfaces-oper` (Subs 40120/40121) | Tunnel interface Up/Down scorecards |
+
+**Subscriptions** tie it together on the device. Each `telemetry ietf subscription <id>` selects a
+YANG subtree (e.g. `/nve-oper-data/nve-oper/nve-peer-oper`) and a **sensor group** that defines
+*when* to send (on‑change vs periodic). The CLI snippet file
+[`model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](model-config-snippets/telemetry-subscriptions.ios-xe.cfg)
+is the authoritative list of subscription IDs **40101–40121** used by this lab fabric.
+
+> **Mental model:** think of MDT as “`show` commands that run themselves and ship JSON‑like
+> structure to a collector.” Splunk stores the numeric measurements; dashboards are the new
+> always‑on `show` summary.
+
+---
+
+## Telemetry Foundations — How the Data Gets to Splunk
+
+> **New to streaming telemetry or OpenTelemetry?** This section explains how data flows from the
+> switches to Splunk and why terminology (gRPC, MDT, gNMI, OTLP) is easy to conflate. If you
+> already run the pipeline, skip to [the worked example](#worked-example-one-evpn-metric-end-to-end).
 
 ### A telemetry pipeline has two halves
 
 Every telemetry pipeline is two independent halves joined by a **collector** in the middle:
 
-```mermaid
-flowchart LR
-    A[IOS-XE Switches<br/>push telemetry] -->|gRPC dial-out<br/>:57444| B[Collector]
-    B -->|HTTP HEC events<br/>:8088| C[Splunk]
-```
+![Telemetry pipeline halves: IOS-XE switches push over gRPC :57444 to the collector, which forwards HTTP HEC events to Splunk on :8088](images/telemetry-two-halves.png)
 
 - **Left (device → collector):** the switches *stream* their operational data.
 - **Middle (the collector):** software that *catches* the stream and *forwards* it.
@@ -205,13 +240,7 @@ dashboard: the **operational state of an NVE (VXLAN) peer** on the VTEP `leaf1` 
 `2.2.2.2` for VNI `30000`. The peer‑state is an enum we encode numerically as **`1` = UP**
 (`0` = down), which is exactly how you'd alert on a VTEP losing a tunnel peer.
 
-```mermaid
-flowchart LR
-    S["STAGE 1<br/>On the device<br/>(YANG/CLI value)"] -->|gRPC dial-out| W["STAGE 2<br/>On the wire<br/>(Cisco KV-GPB)"]
-    W -->|received + decoded| P["STAGE 3a<br/>Inside collector<br/>(OTel pdata model)"]
-    P -->|splunk_hec exporter| H["STAGE 3b<br/>On the wire to Splunk<br/>(HEC JSON / HTTP)"]
-    H -->|indexed| M["STAGE 4<br/>Splunk metrics store<br/>(metric + dimensions)"]
-```
+![One EVPN metric end to end: device YANG value → Cisco KV-GPB on the wire → OTel pdata in the collector → HEC JSON to Splunk → metrics index point](images/metric-journey.png)
 
 The **same value (`1` = UP)** travels through every stage — only its *packaging* changes.
 
@@ -360,7 +389,7 @@ A fully packaged Splunk app provides the operational health dashboards.
 | Item | Value |
 |---|---|
 | App name | `campus_evpn_assurance` |
-| App version | `1.5.0` (build 56) |
+| App version | `1.5.0` (build 85) |
 | Installed path | `/opt/splunk/etc/apps/campus_evpn_assurance/` |
 | Splunk version | 10.4.0 |
 | Dashboards | **Dashboard Studio** (`<dashboard version="2">`, native `splunk.sankey`) |
@@ -371,15 +400,17 @@ A fully packaged Splunk app provides the operational health dashboards.
 > Dashboard Studio (version 2) ahead of Simple XML deprecation. All Sankey flow diagrams use the
 > **native** `splunk.sankey` visualization — no custom‑visualization app or D3 bundle is required.
 
-The app ships **five views**, navigable as tabs:
+The app ships **three views**, navigable as tabs:
 
-| View | Role filter | Focus |
-|---|---|---|
-| **Executive Overview** | All roles | Fabric‑wide posture: is anything red or churning? |
-| **Leafs** | leaf | Access VTEPs — where hosts attach and most overlay faults surface |
-| **Spines** | spine | Route reflectors / underlay core |
-| **Borders** | border | External / L3 handoff VTEPs |
-| **Alerts** | All roles | Triage landing pad — what fired, when, where |
+| Tab (nav label) | View file | Scope | Focus |
+|---|---|---|---|
+| **Summary** | `executive_overview.xml` | Entire fabric (all roles) | Fabric‑wide posture: is anything red or churning? |
+| **Details** | `node_details.xml` | **Role filter** (leaf / spine / border) | Deep dive on one fabric tier — same panels, scoped by the **Fabric Node Role** dropdown |
+| **Alerts** | `alerts.xml` | All roles | Triage landing pad — what fired, when, where |
+
+> **Design change (v1.5.0):** the former separate Leafs, Spines, and Borders tabs were consolidated
+> into a single **Details** view with a role selector. Operators pick `Leafs`, `Spines`, or
+> `Borders` from the dropdown instead of switching tabs.
 
 ---
 
@@ -394,19 +425,18 @@ what a number or color is telling you when something is wrong.
 The app is a **role‑segmented assurance suite** designed for **top‑down** triage:
 
 ```
-Executive Overview  →  (something is red/non-zero)  →  open the matching role view
-   (fabric posture)            drill down              (Leafs / Spines / Borders)
-                                                              ↓
-                                                       Alerts view
-                                                  (what fired, when, where)
+Summary (fabric posture)  →  (something is red/non-zero)  →  Details (pick role: Leaf / Spine / Border)
+                                                                      ↓
+                                                               Alerts (what fired, when, where)
 ```
 
-Every view shares two global header controls:
+Every view shares global header controls:
 
-| Control | Default | Behaviour |
-|---|---|---|
-| **Site** dropdown | First site alphabetically | Scopes every panel to one site. Populated from the inventory CSV; the default is the first site returned by `... \| stats count by site \| sort site` (`selectFirstSearchResult`), so no site name is hard-wired in the dashboards. |
-| **Time Range** picker | Last 4 hours | **Trend/chart** panels honour this window. **Scorecard cards** and **state tables** deliberately read the *latest snapshot* so they always show current reality regardless of the picker. |
+| Control | Where | Default | Behaviour |
+|---|---|---|---|
+| **Site** dropdown | Summary, Details, Alerts | First site alphabetically | Scopes every panel to one site. Populated from the inventory CSV. |
+| **Time Range** picker | Summary, Details, Alerts | Last 4 hours | **Trend/chart** panels honour this window. **Scorecard cards** and **state tables** read the *latest snapshot* regardless of the picker. |
+| **Fabric Node Role** dropdown | **Details only** | `Leafs` | Filters all panels to `leaf`, `spine`, or `border` devices via the inventory lookup. |
 
 > **Why two time behaviours?** A scorecard answers "is the fabric healthy *right now*?" — it must
 > ignore the picker. A trend answers "what changed *over the window I selected*?" — it must honour
@@ -414,131 +444,97 @@ Every view shares two global header controls:
 
 ### How to read the health scorecard row
 
-Every view opens with the **same six‑tile scorecard row**, scoped to that view's role (the
-Executive view aggregates all roles). Read it left to right as a go/no‑go strip:
+**Summary** and **Details** open with the same scorecard pattern. On **Summary**, tiles aggregate
+the whole fabric; on **Details**, the same tiles are scoped to the selected **Fabric Node Role**.
+Read left to right as a go/no‑go strip:
 
 | Tile | What it counts | Healthy reading | Investigate when |
 |---|---|---|---|
-| **NVE VNIs ▲ Up / ▼ Down** | Latest oper‑state of every VXLAN segment (VNI) on the role | `▼ 0` | `▼` non‑zero → a VNI's core SVI or access VLAN is operationally down |
-| **BGP Sessions ▲ Up / ▼ Down** | Neighbors with a negotiated hold‑time (Established) vs. not | `▼ 0` | `▼` non‑zero → one or more EVPN/underlay peers are not Established |
+| **NVE VNIs ▲ Up / ▼ Down** | Latest oper‑state of every VXLAN segment (VNI) | `▼ 0` | `▼` non‑zero → a VNI's core SVI or access VLAN is operationally down |
+| **BGP Sessions ▲ Up / ▼ Down** | Neighbors with negotiated hold‑time (Established) vs. not | `▼ 0` | `▼` non‑zero → one or more EVPN/underlay peers are not Established |
+| **Tunnel Interfaces ▲ Up / ▼ Down** | Tunnel* interface oper‑state (Subs 40120/40121) | `▼ 0` | `▼` non‑zero → underlay/overlay tunnel interface down |
 | **VTEP Tunnel Peers** | Distinct remote VTEP IPs each device tunnels to, summed | Stable, matches design | Drops below expected mesh → a VTEP went away |
 | **Active L2 VNIs** | Distinct L2 (bridge‑domain) segments | Matches provisioned count | Lower than expected → a segment is missing |
 | **Active VRFs / L3 VNIs** | Distinct L3 (tenant) segments | Matches tenant count | Lower than expected → a tenant VRF dropped |
-| **Silent \<role\> (>5m)** | Devices of this role with no telemetry in 5 min | `0` | Non‑zero → a switch stopped streaming (down, or telemetry broke) |
+| **Silent Devices / Nodes (>5m)** | Devices with no telemetry in 5 min | `0` | Non‑zero → switch stopped streaming (down, or telemetry broke) |
 
-> **Reading the ▲/▼ cards.** The consolidated cards show both halves of a binary state in one
-> tile, e.g. `▲ 14   ▼ 0`. The **▲ (up)** count is your capacity/scale indicator; the **▼ (down)**
-> count is your alarm. A glance across the row — all `▼ 0` and `Silent 0` — means the fabric
-> control plane and overlay are fully converged.
+> **Reading the ▲/▼ cards.** Each tile shows both halves of a binary state, e.g. `▲ 14   ▼ 0`.
+> The **▲ (up)** count is capacity/scale; the **▼ (down)** count is the alarm. All `▼ 0` and
+> `Silent 0` across the row means control plane and overlay are converged.
 
-### View 1 — Executive Overview (fabric posture, all roles)
+### Role-specific expectations (Details view)
 
-**Purpose:** a single screen that answers "is the whole fabric healthy, and is anything churning?"
-without naming individual devices. **Start every shift here.**
+When you change **Fabric Node Role**, the same panels apply — but healthy baselines differ:
 
-![Executive Overview dashboard — fabric-wide scorecard row, BGP session trends, tenant VRF Sankey, VXLAN segment leaderboard, and the BGP Session Health Matrix](images/splunk_executive.png)
+| Role | NVE / L2 VNI tiles | BGP tile | What to focus on |
+|---|---|---|---|
+| **Leafs** | Should show active L2 and L3 VNIs | Sessions to both spines (RRs) | Per‑VNI reachability, MAC/route churn, access overlay faults |
+| **Spines** | **NVE VNIs and L2/L3 VNIs normally `0`** — pure route reflector | Session to every leaf and border | RR peering completeness, prefix distribution, EVPN reflection |
+| **Borders** | **L2 VNIs often low/0**; L3 VNIs match tenant egress | Spine + external eBGP sessions | L3 VNI termination, tenant egress throughput |
 
-| Panel | What it shows | How to read it |
-|---|---|---|
-| **Scorecard row** (6 tiles) | Fabric‑wide aggregate state | All `▼ 0` / `Silent 0` = converged. Any red → drill into the matching role view. |
-| **BGP Sessions Established — Per Device Over Time** | One line per device, Established neighbor count | Flat = stable. A dip then recover = a flap; a drop staying low = a peer down. |
-| **Device Role → Active Tenant VRF** (Sankey) | Which roles host which tenant VRFs (L3 VNI presence) | Leaves/borders should carry tenant VRFs; spines should not. A missing tenant = a provisioning gap. |
-| **VNIs per Tenant (VRF)** | Stacked bar: per tenant, distinct L2 and L3 VNIs fabric‑wide (one bar per tenant, stacked by segment type) | Your segment census — the longest bar is the biggest tenant by overlay footprint; confirm each tenant has its expected L2 count and an L3 VNI. |
-| **Top 3 Busiest VXLAN Segments** | Horizontal bar leaderboard ranked by VXLAN bytes; each bar labelled `VNI <id> <vrf>/<type> @ <device>` | Hot‑spot view — the longest bar is the heaviest segment. An unexpected VNI near the top warrants a look; idle segments correctly show `0`. |
-| **BGP Session Health Matrix — Device × Peer** | Heatmap grid: rows = fabric device, columns = peer; 🟢 = all sessions Up, 🔴 = any session Down, blank = no peering | Scan for any red cell — that device/peer pair has a dropped session. Rows and columns are driven entirely by the inventory lookup, so the grid grows or shrinks automatically as devices are added or decommissioned. External eBGP peers not in the inventory appear by their neighbor IP so no session is hidden. |
-| **VXLAN Overlay Health — Per Device** | Table: per‑device VTEP peers, active L2/L3 VNIs | Confirms each device's overlay footprint matches its role. A leaf with 0 VTEP peers is isolated. |
-| **EVPN Route Advertisement Activity / by Role** | New Type‑2/3/5 route updates per node and per role | Control‑plane work rate. Leaves dominate Type‑2 (host MACs); a skew is a clue. |
-| **BGP Route Instability — Table Version Churn** | Route changes/min per device | Flat ≈ 0 = converged. Sustained spikes = reconvergence churn. |
-| **BGP Session Flaps — New Drops per Device** | `delta(total_dropped)` per device/min | Any non‑zero spike = a session actually dropped that minute. Correlate with the trend dip. |
-| **Spine RR Path Redundancy** | Paths ÷ prefixes per spine per AF | `>1` = multipath redundancy; `=1` = single path. Dual‑spine design expects ~2×. |
-| **BGP Update Rate — Messages Received per Device** | `delta(received/updates)` per device/min | Spots a runaway/chatty peer. Near‑flat in steady state. |
+### View 1 — Summary (fabric posture, all roles)
 
-### View 2 — Leafs (access / host‑facing VTEPs)
+**Purpose:** one screen answering "is the whole fabric healthy, and is anything churning?"
+**Start every shift here.**
 
-**Purpose:** deep dive on the leaves — where hosts attach, MACs are learned, and L2/L3 VNIs are
-locally instantiated. **This is where most overlay faults surface.**
-
-![Leafs dashboard — per-leaf BGP sessions, MAC/MAC-IP route churn, VXLAN throughput and BUM ratio, the Per-VNI Peer Reachability Matrix, and EVPN binding cross-check Sankeys](images/splunk_leafs.png)
+![Summary dashboard — fabric-wide scorecard row, BGP session trends, tenant VRF Sankey, VXLAN segment leaderboard, and the BGP Session Health Matrix](images/splunk_executive.png)
 
 | Panel | What it shows | How to read it |
 |---|---|---|
-| **Scorecard row** (scoped to leaves) | Leaf VNI/BGP/VTEP/scale/silent posture | Same reading as the executive row, leaves only. |
-| **BGP Established Sessions per Leaf** | Line per leaf, Established count | Each leaf should hold steady sessions to both spines (RRs). A drop = lost RR session. |
-| **L3 VNI (VRF) Count per Leaf** | Tenant VRF count per leaf | Confirms each leaf carries its expected tenants. |
-| **BGP EVPN Peering Detail** | Table: per‑neighbor session detail | The per‑leaf truth table — check state and peer AS. |
-| **BGP Session Flaps / Update Rate / Table Version Churn per Leaf** | Per‑leaf delta charts | A single leaf spiking = local instability (endpoint move/flap, chatty host). |
-| **MAC & MAC/IP Route Churn per Leaf** | New Type‑2 MAC vs. MAC/IP advertisements | High MAC churn = host mobility or a flapping access port. |
-| **NVE Peers Over Time — Per Leaf** | VTEP tunnel peer count over time | Should match the mesh size; a step down = a remote VTEP went away. |
-| **VXLAN Throughput / Packet Rate / BUM Ratio per Leaf** | Overlay byte/packet rate, % BUM | Per‑leaf load; high BUM % can indicate flooding (unknown‑unicast, missing MAC learning). |
-| **Per‑VNI VXLAN Throughput — Top Talkers** | Busiest VNIs *on this leaf* | Narrows a hot leaf to the specific segment driving the load. |
-| **Per‑VNI Peer Reachability Matrix per Leaf** | Grid: VNI × remote VTEP, `1` = router‑MAC learned, `0` = gap | **Key fault‑finder.** A `0` where a peer *should* advertise the segment = a missing/asymmetric EVPN binding. |
-| **NVE Peer Adjacency Flow** (Sankey) | Hostname → Peer VTEP → VNI | Which peers each leaf exchanges which VNIs with. |
-| **EVPN VNI Binding Cross‑Check** (Sankey) | Hostname → EVI (VRF) → L3 VNI → L2 VNI → Access VLAN | End‑to‑end binding integrity: a break in the chain shows a mis‑stitched segment. |
+| **Scorecard row** (7 tiles) | Fabric‑wide aggregate state incl. tunnel interfaces | All `▼ 0` / `Silent 0` = converged. Any red → open **Details** with the implicated role. |
+| **BGP Sessions Established — Per Device Over Time** | One line per device, Established neighbor count | Flat = stable. Dip then recover = flap; sustained drop = peer down. |
+| **Tenant VRFs by Device Role** (Sankey) | Which roles host which tenant VRFs (L3 VNI presence) | Leaves/borders carry tenant VRFs; spines should not. Missing tenant = provisioning gap. |
+| **Segment Inventory by Tenant VRF** | Stacked bar per tenant: L2 vs L3 VNI counts | Segment census — confirm each tenant has expected L2 count and an L3 VNI. |
+| **Top 3 Busiest VXLAN Segments** | Leaderboard by VXLAN bytes (Sub 40115) | Hot‑spot view; unexpected VNI at top warrants investigation. |
+| **BGP Session Health Matrix — Device × Peer** | Heatmap: 🟢 all sessions Up, 🔴 any Down, blank = no peering | Scan for red cells. Rows/columns driven by inventory lookup. |
+| **NVE Overlay Counts — Per Device** | Per‑device VTEP peers, active L2/L3 VNIs | Green = role peers agree; yellow = drift; red = zero overlay. |
+| **EVPN Route Updates by Device / by Role** (Sub 40113) | New route advertisement deltas in the time window | Control‑plane work rate — not current RIB size. |
+| **EVPN RIB Churn / BGP Session Drops per Device** | Route table version churn and session drop deltas | Sustained spikes = reconvergence or flapping. |
 
-### View 3 — Spines (route reflectors / underlay core)
+### View 2 — Details (role-scoped deep dive)
 
-**Purpose:** the spines are **BGP EVPN route reflectors** and the underlay core. They normally
-host **no** NVE VNIs, so the VNI tiles read `0` by design.
-
-![Spines dashboard — per-spine Established BGP sessions to every VTEP, EVPN peering detail, and the BGP VRF Prefix Distribution Sankey; NVE/VNI panels are correctly sparse on a pure route reflector](images/splunk_spines.png)
+**Purpose:** the former Leafs / Spines / Borders views in one place. Select **Fabric Node Role**
+and every panel filters to that tier. **Most overlay faults surface on Leafs** — that is the
+default dropdown value.
 
 | Panel | What it shows | How to read it |
 |---|---|---|
-| **Scorecard row** (scoped to spines) | Spine posture | **NVE VNIs and L2/L3 VNIs read `0` — this is correct.** **BGP Sessions** is the tile that matters: a spine holds a session to every leaf and border. |
-| **BGP Established Sessions per Spine** | Established count per spine | Each spine should peer with every VTEP. A drop can isolate a whole leaf/border from route reflection. |
-| **L3 VNI Count per Spine** | VNI counts (expected `0`) | Confirms the spine is a pure RR, not terminating tenants. |
-| **BGP Session State / EVPN Peering Detail** | Per‑neighbor session tables | The RR's session inventory — every VTEP should appear Established. |
-| **NVE Interface / Peer Adjacency / Peers Over Time** | Any VTEP adjacencies | Normally minimal or none on a pure RR spine. |
-| **BGP VRF Prefix Distribution** (Sankey) | Hostname → VRF → Address Family (total prefixes) | The reflected prefix volume per AF passing through the RR. |
-| **NVE VNI Table / Per‑VNI Reachability Matrix** | Per‑VNI detail | Normally empty/sparse on spines. |
+| **Scorecard row** | Role‑scoped posture (same tiles as Summary) | Compare against role expectations above. |
+| **BGP Established Sessions per Node** | Established count per device over time | Leafs: steady sessions to both spines. Spines: session to every VTEP. |
+| **L3 VNI (VRF) Count per Node** | Tenant VRF count per device | Confirms which nodes terminate which tenants. |
+| **BGP EVPN / IPv4 Session State** | Per‑neighbor session tables | Per‑device truth — check state and peer. |
+| **Tunnel Interface Status** | Tunnel* oper‑state detail | Underlay/overlay tunnel health on selected role. |
+| **BGP Session Drops / EVPN RIB Churn per Node** | Per‑node delta charts | Single node spiking = local instability. |
+| **NVE Peers Over Time** | VTEP tunnel peer count | Step down = remote VTEP went away. |
+| **VXLAN Throughput / BUM / Packet Rate per Node** (Sub 40115) | Overlay load and flooding ratio | High BUM % can indicate flooding or missing MAC learning. |
+| **Top VXLAN Segments by Throughput** | Busiest VNIs on this role | Narrows hot nodes to specific segments. |
+| **NVE Peer Adjacency** (Sankey) | Device → VNI → VTEP peer | Which peers exchange which VNIs. |
+| **EVPN VNI Binding — Control Plane / Data Plane (NVE)** (Sankey) | EVI → L3 VNI → L2 VNI → VLAN chain | End‑to‑end binding integrity; a break = mis‑stitched segment. |
 
-### View 4 — Borders (external / L3 handoff VTEPs)
+### View 3 — Alerts (what fired, when, where)
 
-**Purpose:** the borders terminate L3 VNIs and hand tenant traffic off to the outside
-(WAN/core/DC). They carry tenant VRFs and L3 VNIs but typically **no L2 (access) VNIs**.
-
-![Borders dashboard — per-border BGP sessions to spines and external routers, L3 VNI termination Sankey, NVE peer adjacency, and per-VNI VXLAN throughput for tenant egress](images/splunk_borders.png)
-
-| Panel | What it shows | How to read it |
-|---|---|---|
-| **Scorecard row** (scoped to borders) | Border posture | **Active L2 VNIs is normally low/0** (borders don't host access segments); **Active VRFs / L3 VNIs** reflects the tenants handed off. |
-| **BGP Established Sessions per Border** | Established count per border | Borders peer with the spines (RRs) and often an external router. |
-| **L3 VNI Count per Border** | Tenant L3 VNIs terminated | Confirms which tenants this border handles. |
-| **BGP Session State / EVPN Peering Detail** | Per‑neighbor session tables | Watch both fabric‑side (spine) and external‑side sessions. |
-| **NVE Interface / Peer Adjacency / Peers Over Time** | Border overlay state and tunnel peers | The border's overlay reachability into the fabric. |
-| **L3 VNI Termination: L3 VNI → Border** (Sankey) | Which L3 VNIs terminate on which border | Confirms tenant egress placement (2‑column — borders carry L3, not L2). |
-| **NVE Peer Adjacency Flow** (Sankey) | Hostname → VNI → Peer IP | Which peers the border exchanges each VNI with. |
-| **BGP VRF Prefix Distribution** (Sankey) | Hostname → VRF → AF (total prefixes) | Tenant prefix volume the border advertises/receives per AF. |
-| **Per‑VNI VXLAN Throughput — Top Talkers** | Busiest VNIs on this border | The heaviest tenant L3 VNIs egressing here; idle borders show `0`. |
-| **NVE VNI Table / Per‑VNI Reachability Matrix** | Per‑VNI detail and reachability | A `0` where a leaf should reach the border's L3 VNI = a tenant that can't egress. |
-
-### View 5 — Alerts (what fired, when, where)
-
-**Purpose:** the triage landing pad — three alarm counts, an active‑alert table, and a BGP trend
-for context.
-
-![Alerts dashboard — BGP Sessions Not Established and Telemetry Stale scorecards, the NVE VNI down-per-node trend, the consolidated Active Alerts table, and the BGP session trend for flap-vs-outage context](images/splunk_alerts.png)
+**Purpose:** triage landing pad — alarm counts, active‑alert table, BGP trend for context.
 
 | Panel | What it shows | How to read it |
 |---|---|---|
-| **BGP Sessions Not Established** | Count of down BGP sessions, fabric‑wide | `0` = clean. Non‑zero is your first alarm. |
-| **Telemetry Stale Devices (>5 min silent)** | Devices that stopped streaming | Non‑zero → a switch is down or its telemetry pipeline broke (check the collector before assuming a device fault). |
-| **NVE VNI Oper‑State — Down VNIs per Node** | Count/trend of operationally down VNIs | `0` = all segments up. A rise pinpoints when a VNI went down. |
-| **Active Alerts — All Roles** | Consolidated table: BGP down + telemetry stale + VNI oper‑state down, with severity | Your worklist. Each row names the device, role, and specific object (e.g. `VNI 50901 (L3VNI Core, VRF: red)`). |
-| **BGP Sessions Not Established — Detail** | Per‑session breakdown of every down neighbor | Names the exact device/neighbor/VRF behind the count tile. |
-| **BGP Session Trend** | BGP session count over time | Confirms whether an alarm is a momentary flap or a sustained outage. |
+| **BGP Sessions Not Established** | Count of down BGP sessions, fabric‑wide | `0` = clean. Non‑zero = first alarm. |
+| **Telemetry Stale Devices (>5 min silent)** | Devices that stopped streaming | Non‑zero → check collector before assuming device fault. |
+| **NVE VNIs Down Over Time** | Trend of operationally down VNIs | `0` = all segments up. Rise pinpoints when a VNI failed. |
+| **Active Alerts — All Roles** | Consolidated worklist with severity | Each row names device, role, and object (e.g. `VNI 50901`). |
+| **BGP Sessions Not Established — Detail** | Per‑session breakdown of down neighbors | Exact device/neighbor/VRF behind the count tile. |
+| **BGP Session Trend** | BGP session count over time | Confirms flap vs sustained outage. |
 
 ### Recommended triage workflow
 
-1. **Executive Overview** — scan the scorecard row. All `▼ 0` / `Silent 0` = healthy; stop here.
-2. If a card is red, note **which** (BGP? VNI? VTEP? Silent?) and check the matching executive
+1. **Summary** — scan the scorecard row. All `▼ 0` / `Silent 0` = healthy; stop here.
+2. If a card is red, note **which** (BGP? VNI? Tunnel? Silent?) and check the matching Summary
    trend/table for *when* and *how much*.
-3. **Open the role view** (Leafs / Spines / Borders) implicated by the fault.
-4. Use the role view's **per‑device** trends to find the offending switch, then the **Per‑VNI Peer
-   Reachability Matrix** (overlay/binding faults) or **BGP EVPN Peering Detail** (control‑plane
-   faults) to find the exact VNI or neighbor.
-5. **Alerts view** — confirm what fired, the severity, and the precise object in the Active Alerts
-   table.
+3. **Details** — set **Fabric Node Role** to the tier implicated (leaf for overlay faults, spine
+   for RR peering, border for egress).
+4. Use **per‑node** trends to find the offending switch, then **EVPN VNI Binding** Sankeys
+   (overlay/binding faults) or **BGP EVPN Session State** (control‑plane faults) for the exact
+   VNI or neighbor.
+5. **Alerts** — confirm what fired, severity, and the precise object in the Active Alerts table.
 
 ---
 
@@ -576,19 +572,19 @@ campus_evpn_assurance/            # The Splunk app (deployable source)
   app.manifest                    # Modern Splunk packaging manifest (AppInspect)
   README.md                       # In-app documentation shown to installers
   default/
-    app.conf                      # App metadata (version 1.5.0, label, visibility)
+    app.conf                      # App metadata (version 1.5.0, build 85)
     macros.conf                   # evpn_index, evpn_lookup, evpn_lb macros
     transforms.conf               # evpn_device_inventory lookup definition
     ui-prefs.conf                 # enable_javascript = true
     data/ui/
-      nav/default.xml             # Tab navigation (5 views)
+      nav/default.xml             # Tab navigation (Summary · Details · Alerts)
       views/                      # Dashboard Studio version-2 views:
-        executive_overview.xml    #   Fabric-wide posture
-        leafs.xml · spines.xml · borders.xml   # Role-scoped deep dives
+        executive_overview.xml    #   Summary — fabric-wide posture
+        node_details.xml          #   Details — role-scoped deep dive (leaf/spine/border)
         alerts.xml                #   Triage landing pad
   lookups/evpn_device_inventory.csv   # Source of truth: hostname → site/role/loopback
   metadata/default.meta
-  static/                         # Launcher icons (appIcon[_2x], appIconAlt[_2x])
+  appserver/static/dashboard.css  # Shared Dashboard Studio stylesheet
 
 packaging/                        # Build scripts for the .spl and handoff bundle
   build-app.sh                    # Builds campus_evpn_assurance-<version>.spl
@@ -604,22 +600,24 @@ otel-collector/                   # OpenTelemetry Collector config + notes
   receiver_yang_26_05_27.tar.gz   # Patched yang_grpc receiver source bundle
   systemd/override.conf.example   # Reversible ExecStart override for the custom binary
 
-model-config-snippets/            # IOS-XE telemetry subscription CLI
-Model Maps/                       # YANG model reference (NVE, EVPN, route stats)
-telegraf/                         # Alternative collector reference
+model-config-snippets/            # IOS-XE telemetry subscription CLI (Subs 40101–40121)
+telegraf/                         # Alternative Telegraf collector reference (lab)
 tools/                            # validate_studio.py (+ migration helper)
+images/                           # Diagram PNGs (+ .mmd sources); see images/README.md
+  regenerate-diagrams.sh          # Rebuild all diagram PNGs from Mermaid sources
 ```
 
 ---
 
 ## Reference Documents
 
-- **Companion build framework:**
-  [CatalystCenter‑BGP‑EVPN‑VXLAN](https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN)
-  — Catalyst Center templates that provision the fabric this suite assures.
-- **YANG model maps:** [`Model Maps/`](Model%20Maps/) — NVE, EVPN Manager, and EVPN Route
-  Statistics component maps that define the telemetry subscription baseline.
-- **Collector configuration:** [`otel-collector/`](otel-collector/) — the running
-  `yang_grpc` receiver config and the numeric‑key receiver patch notes.
-- **Telemetry subscription CLI:**
-  [`model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](model-config-snippets/telemetry-subscriptions.ios-xe.cfg).
+| Document | Contents |
+|---|---|
+| [`SETUP_GUIDE.md`](SETUP_GUIDE.md) | Install Splunk app + patched `otelcol-yangfix`, HEC, device subscriptions |
+| [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) | App macros, `mstats` query patterns, inventory lookup, troubleshooting |
+| [`otel-collector/README.md`](otel-collector/README.md) | Live collector config, numeric YANG key patch, build/rollback, troubleshooting |
+| [`telegraf/README.md`](telegraf/README.md) | Alternative Telegraf-based collector reference (separate lab deployment) |
+| [`Model Maps/README.md`](Model Maps/README.md) | CLI ⇄ Cisco YANG xpath mappings (internal reference; gitignored in some clones) |
+| [`images/README.md`](images/README.md) | Diagram asset list and PNG regeneration |
+| [`model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](model-config-snippets/telemetry-subscriptions.ios-xe.cfg) | IOS-XE subscription IDs 40101–40121 and MDT receiver stanza |
+| **Companion build framework:** [CatalystCenter‑BGP‑EVPN‑VXLAN](https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN) | Catalyst Center templates that provision the fabric this suite assures |

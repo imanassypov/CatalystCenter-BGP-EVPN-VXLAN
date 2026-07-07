@@ -5,6 +5,14 @@ This guide installs both parts of the assurance stack:
 1. the Splunk app `campus_evpn_assurance`, and
 2. the patched OpenTelemetry collector that terminates Cisco IOS-XE MDT gRPC dial-out.
 
+> **Before you start:** if you are new to streaming telemetry or OpenTelemetry, read
+> [`README.md`](README.md) sections
+> [Audience and how to read this document](README.md#audience-and-how-to-read-this-document),
+> [From CLI to Streaming YANG](README.md#from-cli-to-streaming-yang), and
+> [Telemetry Foundations](README.md#telemetry-foundations--how-the-data-gets-to-splunk)
+> for the EVPN-to-MDT mental model. This guide assumes you understand *why* the collector
+> listens on gRPC `:57444` and writes to Splunk HEC `:8088`.
+
 The patched receiver source bundle `otel-collector/receiver_yang_26_05_27.tar.gz`
 is included in this repository and is shipped inside the handoff bundle built by
 `packaging/build-handoff-bundle.sh`.
@@ -189,6 +197,7 @@ From Splunk, confirm metrics are landing:
 
 ```spl
 | mstats latest("cisco.cp-vnis.") WHERE index=evpn_assurance BY "cisco.node_id"
+| `evpn_lookup`
 ```
 
 ## 6. Apply the IOS-XE telemetry subscriptions
@@ -200,7 +209,32 @@ and point the MDT receiver to the collector host:
 receiver ip address <collector-ip> 57444 protocol grpc-tcp
 ```
 
-## 7. Roll back to the stock collector
+## 7. Verify the Splunk app dashboards
+
+Open the **Campus EVPN Assurance** app in Splunk Web. You should see three tabs:
+
+| Tab | Purpose |
+|---|---|
+| **Summary** | Fabric-wide posture — scorecards and trends |
+| **Details** | Role-scoped deep dive (use **Fabric Node Role**: Leafs / Spines / Borders) |
+| **Alerts** | Active alarms and BGP session detail |
+
+1. Confirm the **Site** dropdown lists your inventory sites.
+2. On **Summary**, scorecard tiles should show non-zero ▲ counts when telemetry is flowing.
+3. On **Details**, switch **Fabric Node Role** and confirm panels filter to that tier.
+4. If panels are empty, see [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) troubleshooting
+   and the operator guide in [`README.md`](README.md#operators-guide-reading-the-dashboards).
+
+Optional: on the **Splunk host**, validate all Dashboard Studio views and panel SPL:
+
+```bash
+cd "Campus BGP EVPN Splunk Assurance"
+python3 tools/validate_studio.py <splunk-admin-user> '<password>'
+```
+
+The script checks `executive_overview` (Summary), `node_details` (Details), and `alerts`.
+
+## 8. Roll back to the stock collector
 
 If you need to back out the custom build:
 
@@ -214,3 +248,14 @@ sudo systemctl restart splunk-otel-collector.service
 This returns the service to the untouched rpm-provided `/usr/bin/otelcol`. Numeric
 YANG list keys such as `vni`, `vni-id`, and `evni` will no longer be emitted when
 running the stock receiver.
+
+---
+
+## Related documentation
+
+| Document | Contents |
+|---|---|
+| [`README.md`](README.md) | Architecture, telemetry primer, operator guide |
+| [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) | App macros, `mstats` patterns, inventory lookup |
+| [`otel-collector/README.md`](otel-collector/README.md) | Collector config, numeric-key patch, troubleshooting |
+| [`model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](model-config-snippets/telemetry-subscriptions.ios-xe.cfg) | Subscription IDs 40101–40121 |

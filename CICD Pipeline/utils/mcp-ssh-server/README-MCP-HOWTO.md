@@ -104,7 +104,11 @@ The `evpn-ssh` server starts automatically. No manual process management require
 | core2 | 198.18.128.109 | net-admin | nxos | core | core |
 | dhcp-server | 198.18.128.110 | net-admin | iosxe | router | infra, dhcp |
 | fw-shared-services | 198.18.134.200 | net-admin | iosxe | router | infra, firewall |
-| splunk | 18.224.25.161 | cisco | linux | splunk | splunk, sh, hf, otel |
+| splunk | 18.224.25.161 | ec2-user | linux | splunk | splunk, sh, hf, otel |
+
+> **Splunk SSH path:** `splunk` reaches the EC2 host through the `script-server`
+> jump host (password). EC2 auth is PEM-only — see `.env.example` and
+> `splunk-creds/ec2user-splunk.pem`.
 
 ### Add a Device
 
@@ -266,6 +270,142 @@ run_command_by_role role=router command="show telemetry ietf subscription all"
 
 ---
 
+## Splunk App Update (`campus_evpn_assurance`)
+
+> **Automated deploy:** Cursor skill `.cursor/skills/splunk-app-deploy/SKILL.md` and
+> `Campus BGP EVPN Splunk Assurance/packaging/deploy-splunk-app.sh` (`--skip-build`,
+> `--verify-marker`). Credentials: `CICD Pipeline/utils/mcp-ssh-server/.env`.
+
+Use this workflow whenever dashboard views, lookups, or macros in the Splunk app
+are changed in git and need to go live on the EC2 Splunk host (`device=splunk`).
+
+### Why copying XML is not enough
+
+Dashboard Studio stores view definitions as Splunk **knowledge objects**. Writing
+files under `/opt/splunk/etc/apps/campus_evpn_assurance/default/data/ui/views/`
+updates disk only — Splunk may keep serving the **cached** definition until the
+app package is installed with `-update` and `splunkd` is restarted. Symptom: the
+repo and on-disk XML look correct, but the browser still shows the old dashboard
+(same tile count / layout).
+
+### Prerequisites
+
+Automated deploy: `./Campus BGP EVPN Splunk Assurance/packaging/deploy-splunk-app.sh` (see `.cursor/skills/splunk-app-deploy/SKILL.md`).
+
+| Item | Location / value |
+|---|---|
+| App source | `Campus BGP EVPN Splunk Assurance/campus_evpn_assurance/` |
+| Build script | `Campus BGP EVPN Splunk Assurance/packaging/build-app.sh` |
+| Output package | `packaging/dist/campus_evpn_assurance-<version>.spl` |
+| Installed path | `/opt/splunk/etc/apps/campus_evpn_assurance/` |
+| Splunk CLI auth | `SPLUNK_ADMIN_USER` / `SPLUNK_ADMIN_PASS` in `.env` (format: `user:pass` for `-auth`) |
+
+### Step 1 — Build the `.spl` package (local workstation)
+
+```bash
+cd "Campus BGP EVPN Splunk Assurance/packaging"
+./build-app.sh
+# -> packaging/dist/campus_evpn_assurance-1.5.0.spl
+```
+
+### Step 2 — Copy the package to the Splunk host
+
+Upload via MCP (base64 over SSH is reliable through the jump host):
+
+```
+run_command device=splunk command="ls -la /tmp/campus_evpn_assurance*.spl 2>/dev/null || echo 'not yet uploaded'"
+```
+
+From the agent/workstation, base64-encode the `.spl` and write it on the host, e.g.:
+
+```bash
+# On the workstation — produce a one-liner the MCP run_command can execute:
+base64 -i "packaging/dist/campus_evpn_assurance-1.5.0.spl" | \
+  ssh … 'base64 -d > /tmp/campus_evpn_assurance-1.5.0.spl'
+```
+
+Or ask the MCP agent to push the file the same way it deploys config (base64 pipe
+to `tee /tmp/campus_evpn_assurance-<version>.spl`).
+
+### Step 3 — Install with `-update 1` (MCP)
+
+Replace `<version>` and credentials from `.env`:
+
+```
+run_commands device=splunk commands=[
+  "sudo /opt/splunk/bin/splunk install app /tmp/campus_evpn_assurance-1.5.0.spl -update 1 -auth $SPLUNK_ADMIN_USER:$SPLUNK_ADMIN_PASS",
+  "rm -f /tmp/campus_evpn_assurance-1.5.0.spl"
+]
+```
+
+> **Always use `-update 1`** for in-place upgrades. A plain `install app` without
+> `-update` on an existing app name may fail or leave stale knowledge objects.
+
+### Step 4 — Restart Splunk
+
+Install prints *"You need to restart the Splunk Server (splunkd) for your changes
+to take effect."* — do this every time after an app update:
+
+```
+run_command device=splunk command="sudo /opt/splunk/bin/splunk restart -auth $SPLUNK_ADMIN_USER:$SPLUNK_ADMIN_PASS 2>&1 | tail -5"
+```
+
+Allow ~30–60 s for `splunkd` to come back before verifying.
+
+### Step 5 — Verify the new definition is live (MCP)
+
+Check that Splunk REST serves the updated view (not just the file on disk):
+
+```
+run_command device=splunk command="curl -sk -u '$SPLUNK_ADMIN_USER:$SPLUNK_ADMIN_PASS' 'https://localhost:8089/servicesNS/nobody/campus_evpn_assurance/data/ui/views/executive_overview?output_mode=json' | python3 -c \"import sys,json; d=json.load(sys.stdin)['entry'][0]['content']['eai:data']; print('OK' if '<your-new-panel-id-or-title>' in d else 'STALE')\""
+```
+
+Replace the marker string with something unique to your change (e.g.
+`viz_executive_overview_18` or a new panel title).
+
+Optional — run the full Dashboard Studio validator on the host:
+
+```bash
+python3 Campus\ BGP\ EVPN\ Splunk\ Assurance/tools/validate_studio.py \
+  "$SPLUNK_ADMIN_USER" "$SPLUNK_ADMIN_PASS"
+```
+
+### Step 6 — Browser refresh (tell the operator)
+
+Dashboard Studio caches on the client. After a successful server-side verify:
+
+1. Hard-refresh the dashboard: **Cmd+Shift+R** (Mac) or **Ctrl+Shift+R** (Windows).
+2. If still stale: log out of Splunk Web and back in, or open the view in a
+   private/incognito window.
+
+### Quick reference — full MCP sequence
+
+```
+# 1. Build locally: ./packaging/build-app.sh
+# 2. Upload .spl to /tmp/ on splunk host
+# 3. Install + remove temp file
+run_commands device=splunk commands=[
+  "sudo /opt/splunk/bin/splunk install app /tmp/campus_evpn_assurance-1.5.0.spl -update 1 -auth ${SPLUNK_ADMIN_USER}:${SPLUNK_ADMIN_PASS}",
+  "rm -f /tmp/campus_evpn_assurance-1.5.0.spl"
+]
+# 4. Restart
+run_command device=splunk command="sudo /opt/splunk/bin/splunk restart -auth ${SPLUNK_ADMIN_USER}:${SPLUNK_ADMIN_PASS} 2>&1 | tail -3"
+# 5. REST verify (see Step 5)
+# 6. Operator hard-refreshes browser
+```
+
+### Splunk app update — common failures
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Browser unchanged after file copy | Knowledge-object cache; REST still stale | `install app … -update 1` + restart |
+| `install app` 409 / object exists | Normal for updates | Use `-update 1`, not a fresh install name |
+| REST POST to view returns 409 | POST creates; cannot overwrite in place | Use `install app -update` or DELETE+POST |
+| `reload app` CLI error | Not a valid `splunk reload` target | Use `install app -update` instead |
+| MCP `sudo` hangs on Splunk host | sudo password prompt | Ensure `ec2-user` has NOPASSWD for splunk commands |
+
+---
+
 ## Platform Behavior Notes
 
 ### IOS-XE devices (`platform=iosxe`)
@@ -295,7 +435,11 @@ run_command_by_role role=router command="show telemetry ietf subscription all"
 | `MCP_SSH_INVENTORY` | `./devices.csv` | Absolute or relative path to CSV inventory |
 | `MCP_SSH_DEFAULT_TIMEOUT` | `30` | Per-command SSH timeout in seconds |
 | `IOSXE_PASS` | — | Password resolved by `env:IOSXE_PASS` in CSV |
-| `HF_PASS` | — | Password resolved by `env:HF_PASS` in CSV |
+| `HF_PASS` | — | Password resolved by `env:HF_PASS` in CSV (legacy HF user) |
+| `SCRIPT_SERVER_SSH_PASS` | — | Jump-host password for `script-server` (see `.env.example`) |
+| `SPLUNK_SSH_KEY_PATH` | `splunk-creds/ec2user-splunk.pem` | PEM for EC2 Splunk SSH (via jump host) |
+| `SPLUNK_ADMIN_USER` | — | Splunk Web / REST / CLI `-auth` username |
+| `SPLUNK_ADMIN_PASS` | — | Splunk Web / REST / CLI `-auth` password |
 
 ---
 

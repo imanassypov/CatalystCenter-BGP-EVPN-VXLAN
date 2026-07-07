@@ -1,5 +1,10 @@
 # Telegraf — EVPN Fabric Telemetry Collector (`telegraf_igor`)
 
+> **Note:** This directory documents an **alternative collector** used in a separate lab
+> deployment (Telegraf instead of OpenTelemetry). The **primary** assurance pipeline for this
+> project is `otel-collector/` → `otelcol-yangfix`. See the parent
+> [`README.md`](../README.md) for the supported architecture.
+
 ## Overview
 
 This directory contains the Telegraf configuration for the **`telegraf_igor`** instance running on the Splunk Heavy Forwarder (`10.0.10.104`). This instance collects Model-Driven Telemetry (MDT) from the EVPN fabric devices via IOS-XE gRPC dial-out and forwards all metrics to Splunk via HEC in `splunkmetric` format.
@@ -11,7 +16,7 @@ This directory contains the Telegraf configuration for the **`telegraf_igor`** i
 | Receives IOS-XE MDT dial-out | gRPC listener on `:57345`, `encode-kvgpb` encoding |
 | EVPN fabric coverage | Spine-01/02, Leaf-01/02, Border-01/02 |
 | YANG models collected | `Cisco-IOS-XE-evpn-oper`, `Cisco-IOS-XE-nve-oper` |
-| Subscription IDs | 40101–40112 (on-change + periodic pairs) |
+| Subscription IDs | 40101–40121 (see [`../model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](../model-config-snippets/telemetry-subscriptions.ios-xe.cfg)) |
 | Output destination | Splunk HEC on `10.0.10.104:8088` |
 | Splunk index | `evpn_assurance` (metrics index) |
 | BGP session state | Numeric mapping applied to `bgp_status` measurements |
@@ -28,7 +33,7 @@ This directory contains the Telegraf configuration for the **`telegraf_igor`** i
 | Systemd service | `telegraf_igor.service` |
 | MDT listen port | `:57345` (gRPC/TCP) |
 | Splunk HEC endpoint | `https://10.0.10.104:8088/services/collector` |
-| Splunk HEC token | `9b20f6a2-8c0b-45d8-b0df-4efb7f4a97e4` (token name: `Igor_Telegraf`) |
+| Splunk HEC token | Set in `telegraf.conf` / Splunk HEC inputs — **do not commit live tokens** |
 | Splunk index | `evpn_assurance` |
 | Search Head | `http://10.0.10.101:8000` |
 
@@ -102,7 +107,7 @@ These are the devices configured to dial out to this collector.
 | Border-01 | Border Leaf | 198.18.128.105 | 198.19.1.5 |
 | Border-02 | Border Leaf | 198.18.128.106 | 198.19.1.6 |
 
-All devices use subscription IDs 40101–40112 targeting `10.0.10.104:57345` via `grpc-tcp` from `Mgmt-vrf`.
+All devices use subscription IDs **40101–40121** (lab config) targeting `10.0.10.104:57345` via `grpc-tcp` from `Mgmt-vrf`.
 
 ---
 
@@ -144,8 +149,8 @@ All devices use subscription IDs 40101–40112 targeting `10.0.10.104:57345` via
 
   [outputs.http.headers]
     Content-Type = "application/json"
-    Authorization = "Splunk 9b20f6a2-8c0b-45d8-b0df-4efb7f4a97e4"
-    X-Splunk-Request-Channel = "9b20f6a2-8c0b-45d8-b0df-4efb7f4a97e4"
+    Authorization = "Splunk <HEC_TOKEN>"
+    X-Splunk-Request-Channel = "<HEC_TOKEN>"
 ```
 
 | Setting | Value | Reason |
@@ -173,8 +178,12 @@ Splunk HF HEC (10.0.10.104:8088)
 Splunk Indexers (10.0.10.102, 10.0.10.103)
         |
         v  mstats / mcatalog
-Splunk Search Head (10.0.10.101) → evpn_fabric_assurance dashboard
+Splunk Search Head (10.0.10.101) → `campus_evpn_assurance` app (Summary / Details / Alerts)
 ```
+
+> **Dimension note:** Telegraf tags device identity as `source`. The OTel pipeline (primary path)
+> uses `cisco.node_id`. The `campus_evpn_assurance` dashboards and `` `evpn_lookup` `` macro expect
+> **`cisco.node_id`** — use the OTel collector for production, or adapt searches if staying on Telegraf.
 
 ---
 
@@ -355,7 +364,7 @@ A healthy run shows no errors. Common issues:
 | Config directory | `/etc/telegraf/` | `/etc/telegraf_igor/` |
 | Systemd service | `telegraf.service` | `telegraf_igor.service` |
 | MDT listen port | `:57344` | `:57345` |
-| Splunk HEC token | `f3c8f5db-51d9-4844-8646-315d15f950ab` | `9b20f6a2-8c0b-45d8-b0df-4efb7f4a97e4` |
+| Splunk HEC token | *(configure per environment)* | *(configure per environment)* |
 | Splunk index | *(primary index)* | `evpn_assurance` |
 | Scope | General lab telemetry | EVPN fabric assurance only |
 | PID file | `/run/telegraf/` | `/run/telegraf_igor/` |
@@ -377,3 +386,14 @@ Both instances run as the `telegraf` system user and share the same binary at `/
 | Sub 40114 receiver stuck `Transport requested` | Used `receiver-type protocol` (named receiver mode) | Use `receiver ip address 10.0.10.104 57345 protocol grpc-tcp` with `source-vrf Mgmt-vrf` |
 | gRPC `Connecting` (never `Active`) | `pubd` crashed on device | Run `show platform software yang-management process` — restart `pubd` or reload device |
 | Metrics arrive but with wrong dimensions | `embedded_tags` misconfiguration | Not needed for IOS-XE kvgpb — list keys are auto-mapped to tags |
+
+---
+
+## Related documentation
+
+| Document | Contents |
+|---|---|
+| [`../README.md`](../README.md) | Primary OTel pipeline architecture and operator guide |
+| [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Supported install path (`otelcol-yangfix` + Splunk app) |
+| [`../otel-collector/README.md`](../otel-collector/README.md) | OpenTelemetry collector configuration (recommended) |
+| [`../campus_evpn_assurance/README.md`](../campus_evpn_assurance/README.md) | Splunk app macros, `mstats` patterns, inventory lookup |

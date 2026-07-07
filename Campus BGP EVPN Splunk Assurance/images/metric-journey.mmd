@@ -1,0 +1,5 @@
+flowchart LR
+    S["STAGE 1<br/>On the device<br/>(YANG/CLI value)"] -->|gRPC dial-out| W["STAGE 2<br/>On the wire<br/>(Cisco KV-GPB)"]
+    W -->|received + decoded| P["STAGE 3a<br/>Inside collector<br/>(OTel pdata model)"]
+    P -->|splunk_hec exporter| H["STAGE 3b<br/>On the wire to Splunk<br/>(HEC JSON / HTTP)"]
+    H -->|indexed| M["STAGE 4<br/>Splunk metrics store<br/>(metric + dimensions)"]

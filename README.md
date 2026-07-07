@@ -449,11 +449,11 @@ Fabric nodes (MDT/YANG, gRPC dial-out) → OpenTelemetry collector → splunk_he
 
 | Component | Purpose |
 |-----------|---------|
-| `campus_evpn_assurance/` | Packaged Splunk app (executive, Spine, Leaf, Border, Alerts dashboards) |
+| `campus_evpn_assurance/` | Packaged Splunk app (Summary, Details with role filter, Alerts dashboards) |
 | `otel-collector/` | OpenTelemetry config: YANG gRPC → `splunk_hec` |
 | `packaging/` | Build scripts for `.spl` package and customer handoff bundle |
 | `SETUP_GUIDE.md` | Install workflow for Splunk app + patched `otelcol-yangfix` |
-| `Model Maps/` | YANG → Splunk metric model mappings |
+| `Model Maps/` | YANG → Splunk metric model mappings — see [`Model Maps/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/Model%20Maps/README.md) |
 
 The assurance suite shares the same fabric model (roles, tenants, VNIs, loopbacks) as the provisioning templates, so dashboard logic maps directly onto what was provisioned.
 

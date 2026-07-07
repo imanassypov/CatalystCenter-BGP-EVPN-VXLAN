@@ -8,6 +8,10 @@ Collector pipeline into a Splunk **metrics** index.
 > [`SETUP_GUIDE.md`](../SETUP_GUIDE.md) shipped alongside the package. It covers
 > Splunk prerequisites, the telemetry collector install, and the per-device
 > configuration required for these dashboards to populate.
+>
+> **New to MDT / OpenTelemetry?** Start with the parent
+> [`README.md`](../README.md) — especially [From CLI to Streaming YANG](../README.md#from-cli-to-streaming-yang)
+> and [Telemetry Foundations](../README.md#telemetry-foundations--how-the-data-gets-to-splunk).
 
 ---
 
@@ -15,9 +19,9 @@ Collector pipeline into a Splunk **metrics** index.
 
 | Capability | Detail |
 |---|---|
-| Executive overview | Fabric-wide health roll-up: device reachability, BGP/EVPN, NVE peers, VNI throughput |
-| Role dashboards | Dedicated views for **Spines**, **Leafs**, and **Borders** |
-| Alerts view | Surfaced operational anomalies across the fabric |
+| **Summary** view | Fabric-wide health roll-up: BGP/EVPN, NVE peers, VNI throughput, tunnel interfaces |
+| **Details** view | Role-scoped deep dive — select **Leafs**, **Spines**, or **Borders** from one dashboard |
+| **Alerts** view | Surfaced operational anomalies across the fabric |
 | Native Sankey | NVE peer / VNI relationships rendered with `splunk.sankey` (Dashboard Studio v2) |
 | Device enrichment | `cisco.node_id` telemetry key joined to a site/role/IP inventory lookup |
 
@@ -42,28 +46,36 @@ campus_evpn_assurance/
 ├── app.manifest                     # Splunk packaging manifest (modern AppInspect)
 ├── README.md                        # this file
 ├── default/
-│   ├── app.conf                     # app metadata, version 1.5.0
+│   ├── app.conf                     # app metadata, version 1.5.0 (build 85)
 │   ├── macros.conf                  # evpn_index / evpn_lb / evpn_lookup macros
 │   ├── transforms.conf              # evpn_device_inventory lookup definition
 │   ├── ui-prefs.conf                # enable_javascript = true
 │   └── data/ui/
-│       ├── nav/default.xml          # app navigation
+│       ├── nav/default.xml          # Summary · Details · Alerts
 │       └── views/                   # Dashboard Studio v2 dashboards
-│           ├── executive_overview.xml
-│           ├── spines.xml
-│           ├── leafs.xml
-│           ├── borders.xml
+│           ├── executive_overview.xml   # Summary
+│           ├── node_details.xml         # Details (role filter)
 │           └── alerts.xml
 ├── lookups/
 │   └── evpn_device_inventory.csv    # device inventory — REPLACE with your fabric
 ├── metadata/
 │   └── default.meta                 # permissions (read:*, write:admin,power)
-└── static/
-    ├── appIcon.png                  # 36×36 launcher icon
-    ├── appIcon_2x.png               # 72×72 (retina)
-    ├── appIconAlt.png               # 36×36 light variant
-    └── appIconAlt_2x.png            # 72×72 light variant
+└── appserver/static/
+    └── dashboard.css                # shared Dashboard Studio stylesheet
 ```
+
+---
+
+## Dashboard views
+
+| Nav tab | View file | Role filter | Focus |
+|---|---|---|---|
+| **Summary** | `executive_overview.xml` | All roles | Fabric-wide posture — start every shift here |
+| **Details** | `node_details.xml` | **Dropdown:** leaf / spine / border | Deep dive on one fabric tier |
+| **Alerts** | `alerts.xml` | All roles | Consolidated anomalies and triage table |
+
+Operator interpretation guide:
+[`README.md` § Operator's Guide](../README.md#operators-guide-reading-the-dashboards).
 
 ---
 
@@ -77,9 +89,9 @@ metadata. The dashboards enrich metrics with it via the `evpn_lookup` macro.
 | `source` | Device FQDN as known to Catalyst Center |
 | `hostname` | **Must equal the `cisco.node_id` dimension** emitted by the collector (e.g. `Spine-01`) |
 | `ip_address` | Management IP |
-| `loopback` | Underlay loopback (RID) |
+| `loopback` | Underlay loopback (RID) — also used to resolve external eBGP peer IPs in matrices |
 | `site` | Site name shown in dashboards |
-| `role` | `spine` \| `leaf` \| `border` |
+| `role` | `spine` \| `leaf` \| `border` (and optional `core`, `dmz` for external peers) |
 | `description` | Free-text label |
 
 > Replace every row with your own fabric devices. The shipped rows are the lab
@@ -114,6 +126,7 @@ regular `search index=evpn_assurance` on `_raw` events.
 | `cisco.encoding_path` | YANG model path in the collector | Filter to a specific model/list (BGP, NVE, interfaces, …) |
 | `name` | YANG list key | Interface name, VRF, neighbor-id context, etc. |
 | `value` | Enum/string companion dimension | Human-readable state when the leaf is an IOS-XE enumeration |
+| `vni`, `vni-id`, `evni` | Numeric YANG list keys (patched receiver) | Per-VNI panels, throughput (Sub 40115) |
 | `subscription` | Subscription ID (when tagged) | Tie-back to `show telemetry ietf subscription <id>` on device |
 
 > **Do not use Splunk `source` as the device identity.** HEC metrics arrive with
@@ -252,7 +265,7 @@ Splunk queries:
 | NVE VNI | `Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-vni-oper` | Per-VNI state, throughput |
 | NVE peers | `Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-peer-oper` | Peer adjacency, cp-vnis |
 | EVPN inst | `Cisco-IOS-XE-evpn-oper:evpn-oper-data/evpn-inst` | EVI / VLAN binding |
-| EVPN stats | `Cisco-IOS-XE-evpn-oper:evpn-oper-data/evpn-stats/evpn-vni-rt-cnt` | Route churn |
+| EVPN stats | `Cisco-IOS-XE-evpn-oper:evpn-oper-data/evpn-stats/evpn-vni-rt-cnt` | Route churn (Sub 40113) |
 | **Interfaces** | `Cisco-IOS-XE-interfaces-oper:interfaces/interface` | **40120/40121** oper-status |
 
 Full subscription IDs and device XPaths:
@@ -298,26 +311,13 @@ Collector-side checks (on the OTel host): see
 | Interface query empty (40120 only) | On-change sub, quiet window | Widen to `-7d` or flap an interface; check 40121 |
 | `` `evpn_lookup` `` drops rows | `hostname` ≠ `cisco.node_id` | Fix `evpn_device_inventory.csv` |
 | Bare `mstats count WHERE index=…` = 0 | Known metrics-index quirk | Filter on a real metric name, e.g. `cisco.cp-vnis.` |
-
----
-
-## Dashboard views
-
-| View | Role filter | Focus |
-|---|---|---|
-| **Executive Overview** | All roles | Fabric-wide posture |
-| **Leafs** | leaf | Access VTEPs, host-facing overlay health |
-| **Spines** | spine | Route reflectors / underlay |
-| **Borders** | border | L3 handoff / external peering |
-| **Alerts** | All roles | Consolidated anomalies |
-
-Operator interpretation guide: [`README.md` § Operator's Guide](../README.md#operators-guide-reading-the-dashboards).
+| Details panels empty for a role | Wrong **Fabric Node Role** dropdown | Confirm `role` column in inventory matches `leaf`/`spine`/`border` |
 
 ---
 
 ## Version
 
-`1.5.0` (build 56). See [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) for install,
+`1.5.0` (build 85). See [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) for install,
 upgrade, and telemetry-pipeline procedures.
 
 ---
@@ -326,7 +326,9 @@ upgrade, and telemetry-pipeline procedures.
 
 | Document | Contents |
 |---|---|
+| [`../README.md`](../README.md) | Full pipeline architecture, CCIE-oriented telemetry primer, operator guide |
 | [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Install app + OTel collector, HEC, subscriptions |
-| [`../README.md`](../README.md) | Full pipeline architecture, worked metric example, operator guide |
 | [`../otel-collector/README.md`](../otel-collector/README.md) | `otelcol-yangfix`, numeric YANG keys, collector troubleshooting |
 | [`../model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](../model-config-snippets/telemetry-subscriptions.ios-xe.cfg) | IOS-XE subscription IDs 40101–40121 |
+| [`../Model Maps/README.md`](../Model Maps/README.md) | CLI ⇄ Cisco YANG xpath reference (when available locally) |
+| [`../images/README.md`](../images/README.md) | Pipeline diagram assets |

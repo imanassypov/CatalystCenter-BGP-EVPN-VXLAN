@@ -1,0 +1,3 @@
+flowchart LR
+    A[IOS-XE Switches<br/>push telemetry] -->|gRPC dial-out<br/>:57444| B[Collector]
+    B -->|HTTP HEC events<br/>:8088| C[Splunk]

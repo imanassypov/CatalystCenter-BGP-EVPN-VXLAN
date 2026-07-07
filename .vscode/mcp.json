@@ -1,0 +1,31 @@
+{
+  "inputs": [
+    {
+      "id": "iosxe_pass",
+      "type": "promptString",
+      "description": "IOS-XE 'net-admin' password (resolves env:IOSXE_PASS in devices.csv)",
+      "password": true
+    },
+    {
+      "id": "hf_pass",
+      "type": "promptString",
+      "description": "Splunk search-head 'cisco' password (resolves env:HF_PASS in devices.csv)",
+      "password": true
+    }
+  ],
+  "servers": {
+    "evpn-ssh": {
+      "type": "stdio",
+      "command": "${userHome}/.pyenv/versions/3.10.4/bin/python",
+      "args": [
+        "${workspaceFolder}/CICD Pipeline/utils/mcp-ssh-server/server.py"
+      ],
+      "env": {
+        "MCP_SSH_INVENTORY": "${workspaceFolder}/CICD Pipeline/utils/mcp-ssh-server/devices.csv",
+        "MCP_SSH_DEFAULT_TIMEOUT": "60",
+        "IOSXE_PASS": "${input:iosxe_pass}",
+        "HF_PASS": "${input:hf_pass}"
+      }
+    }
+  }
+}

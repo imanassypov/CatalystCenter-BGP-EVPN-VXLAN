@@ -5,6 +5,12 @@ configuration running on the cloud Splunk/OTel host. The collector ingests Cisco
 IOS-XE Model-Driven Telemetry (MDT) over gRPC dial-out and ships it, together
 with EC2 host metrics, to the co-located Splunk HEC.
 
+> **Context for network engineers:** if you are new to OpenTelemetry or MDT, read the
+> parent [`README.md`](../README.md) sections
+> [From CLI to Streaming YANG](../README.md#from-cli-to-streaming-yang) and
+> [Telemetry Foundations](../README.md#telemetry-foundations--how-the-data-gets-to-splunk)
+> before tuning this collector.
+
 ## Contents
 
 | File | Purpose |
@@ -16,6 +22,8 @@ with EC2 host metrics, to the co-located Splunk HEC.
 | `README.md` | This document. |
 
 ## Overview
+
+![Telemetry pipeline: fabric switches → MDT gRPC :57444 → OTel Collector → Splunk HEC :8088 → evpn_assurance index](../images/pipeline-flow.png)
 
 ```
 Cisco fabric switches (6)                 EC2 host 18.224.25.161 (ip-172-31-30-149)
@@ -90,7 +98,7 @@ The fix also normalised the dimension model, which changed the attribute contrac
 Any query that grouped a numeric metric `BY "<string-content-leaf>"` now returns
 **empty** and must be rewritten to group `BY "<numeric-key>"` (e.g. `"vni-id"`)
 and pull string attributes from their `cisco.<leaf>_info` metric via the generic
-`value` attribute. The Splunk app `campus_evpn_assurance` (v1.3.22 / build 54)
+`value` attribute. The Splunk app `campus_evpn_assurance` (v1.5.0 / build 85)
 was fully migrated to this model.
 
 ### Per-VNI peer mapping — now telemetry-native
@@ -196,10 +204,20 @@ Expected dims now **include** `vni` and `evni` (in addition to
 | `is-active` stuck `deactivating (stop-sigterm)` after restart | gRPC dial-out streams not draining on SIGTERM | Wait ~90 s for systemd `TimeoutStopSec` to force-kill; the new process then starts. Don't keep restarting. |
 | No data in `evpn_assurance` after restart | Devices not yet reconnected, or HEC (`:8088`) was down | Check `ss -tnp | grep 57444` for 6 ESTAB streams; check `ss -tlnp | grep 8088`; check `otelcol_exporter_send_failed_metric_points` at `http://localhost:8888/metrics`. |
 | `| mstats count WHERE index=evpn_assurance` returns 0 | Bare `count` with no `metric_name` filter is a known quirk on this metric index | Use a real metric, e.g. `mstats latest("cisco.cp-vnis.") BY "cisco.node_id"`. |
-| Panels grouped `BY "vni-type"`/`"nve-vni-vrf"`/`"last-update"`/`"ni-name"` return empty | Those string content leaves are no longer dimensions under the patched receiver — they are now `cisco.<leaf>_info` metrics with the string in the generic `value` attribute | Rewrite to group `BY "<numeric-key>"` (e.g. `"vni-id"`, `"vni"`) and join the `_info` metric on that key. The app v1.3.22/build 54 already does this. |
+| Panels grouped `BY "vni-type"`/`"nve-vni-vrf"`/`"last-update"`/`"ni-name"` return empty | Those string content leaves are no longer dimensions under the patched receiver — they are now `cisco.<leaf>_info` metrics with the string in the generic `value` attribute | Rewrite to group `BY "<numeric-key>"` (e.g. `"vni-id"`, `"vni"`) and join the `_info` metric on that key. The app v1.5.0/build 85 already does this. |
 | `vni`/`evni` missing on `peer-vni-group` | Running the **stock** `/usr/bin/otelcol` (rollback state) — it drops numeric list keys | Confirm `otelcol-yangfix` is active (`systemctl show -p ExecStart splunk-otel-collector`); if rolled back, re-apply the drop-in override (see [Custom collector build & rollback](#custom-collector-build--rollback)). |
 
 ## Reference
+
+| Document | Contents |
+|---|---|
+| [`../README.md`](../README.md) | Full pipeline architecture, CCIE-oriented telemetry primer, operator guide |
+| [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Install `otelcol-yangfix`, HEC token, systemd override |
+| [`../campus_evpn_assurance/README.md`](../campus_evpn_assurance/README.md) | Splunk app queries, macros, troubleshooting |
+| [`../Model Maps/README.md`](../Model Maps/README.md) | CLI ⇄ Cisco YANG xpath mappings for streamed models |
+| [`yanggrpcreceiver-numeric-key-issue.md`](yanggrpcreceiver-numeric-key-issue.md) | Numeric list-key root cause and patch analysis |
+
+External:
 
 - Receiver source / config: `opentelemetry-collector-contrib/receiver/yanggrpcreceiver`
   ([config.go](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/yanggrpcreceiver/config.go),

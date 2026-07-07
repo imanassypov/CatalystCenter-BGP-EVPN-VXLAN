@@ -9,6 +9,10 @@ Environment variables:
 Secrets: copy `.env.example` to `.env` in this directory (gitignored). The server
 loads that file on startup; process env vars from the MCP client take precedence.
 
+After pushing a campus_evpn_assurance Splunk app update, follow README-MCP-HOWTO.md
+section "Splunk App Update" — copying view XML to disk is not enough; use
+`splunk install app … -update 1` and restart splunkd.
+
 CSV columns:
 - name (required)
 - host (required)
