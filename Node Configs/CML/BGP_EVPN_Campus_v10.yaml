@@ -2973,11 +2973,12 @@ nodes:
   - boot_disk_size: null
     configuration:
       - name: nxos_config.txt
-        content: |2-
-
+        content: |-
+          ! Host: Core-01
+          ! Collected: 20260706-194412
           !Command: show running-config
-          !Running configuration last done at: Wed Apr  1 13:15:42 2026
-          !Time: Wed Apr  1 13:15:43 2026
+          !Running configuration last done at: Mon Jul  6 23:33:21 2026
+          !Time: Mon Jul  6 23:40:04 2026
 
           version 10.5(3) Bios:version
           hostname core1
@@ -3088,6 +3089,13 @@ nodes:
             no shutdown
 
           interface Ethernet1/6
+            description dmz2
+            no switchport
+            ip address 198.19.2.85/30
+            ip ospf network point-to-point
+            ip router ospf 1 area 0.0.0.0
+            ip pim sparse-mode
+            no shutdown
 
           interface Ethernet1/7
 
@@ -3267,6 +3275,10 @@ nodes:
               remote-as 65003
               address-family ipv4 unicast
                 soft-reconfiguration inbound always
+            neighbor 198.19.2.86
+              remote-as 65004
+              address-family ipv4 unicast
+                soft-reconfiguration inbound always
 
           no logging console
     cpu_limit: null
@@ -3329,8 +3341,8 @@ nodes:
         content: |2-
 
           !Command: show running-config
-          !Running configuration last done at: Wed Apr  1 13:14:53 2026
-          !Time: Wed Apr  1 13:14:54 2026
+          !Running configuration last done at: Mon Jul  6 23:33:17 2026
+          !Time: Mon Jul  6 23:33:17 2026
 
           version 10.5(3) Bios:version
           hostname core2
@@ -3440,6 +3452,13 @@ nodes:
             no shutdown
 
           interface Ethernet1/6
+            description dmz2
+            no switchport
+            ip address 198.19.2.89/30
+            ip ospf network point-to-point
+            ip router ospf 1 area 0.0.0.0
+            ip pim sparse-mode
+            no shutdown
 
           interface Ethernet1/7
 
@@ -3623,6 +3642,10 @@ nodes:
               remote-as 65003
               address-family ipv4 unicast
                 soft-reconfiguration inbound always
+            neighbor 198.19.2.90
+              remote-as 65004
+              address-family ipv4 unicast
+                soft-reconfiguration inbound always
 
           no logging console
     cpu_limit: null
@@ -3788,637 +3811,285 @@ nodes:
   - boot_disk_size: null
     configuration:
       - name: iosxe_config.txt
-        content: |-
-          Current configuration : 19451 bytes
-          !
-          ! Last configuration change at 14:01:12 UTC Wed Apr 1 2026 by net-admin
-          !
-          version 17.15
-          service timestamps debug datetime msec
-          service timestamps log datetime msec
-          !
-          hostname dmz1
-          !
-          !
-          vrf definition Mgmt-vrf
-           !
-           address-family ipv4
-           exit-address-family
-           !
-           address-family ipv6
-           exit-address-family
-          !
-          vrf definition blue
-           description VRF blue definition
-           rd 172.18.200.1:902
-           !
-           address-family ipv4
-            mdt auto-discovery vxlan
-            mdt default vxlan 239.190.0.2
-            mdt data vxlan 239.190.2.0 0.0.0.255
-            mdt data threshold 1
-            mdt overlay use-bgp
-            route-target export 65003:902
-            route-target import 65003:902
-            route-target import 65003:1000
-            route-target export 65003:902 stitching
-            route-target import 65003:902 stitching
-           exit-address-family
-          !
-          vrf definition green
-           description VRF green definition
-           rd 172.18.200.1:903
-           !
-           address-family ipv4
-            mdt auto-discovery vxlan
-            mdt default vxlan 239.190.0.3
-            mdt data vxlan 239.190.3.0 0.0.0.255
-            mdt data threshold 1
-            mdt overlay use-bgp
-            route-target export 65003:903
-            route-target import 65003:903
-            route-target import 65003:1000
-            route-target export 65003:903 stitching
-            route-target import 65003:903 stitching
-           exit-address-family
-          !
-          vrf definition shared
-           rd 172.18.200.1:1000
-           !
-           address-family ipv4
-            route-replicate from vrf blue unicast all
-            route-replicate from vrf green unicast all
-            route-target export 65003:1000
-            route-target import 65003:902
-            route-target import 65003:903
-           exit-address-family
-          !
-          no logging console
-          aaa new-model
-          !
-          !
-          aaa authentication login default local
-          aaa authorization exec default local
-          !
-          !
-          aaa session-id common
-          switch 1 provision c9kv-uadp-8p
-          !
-          !
-          !
-          !
-          ip routing
-          !
-          !
-          !
-          !
-          !
-          ip multicast-routing
-          ip multicast-routing vrf blue
-          ip multicast-routing vrf green
-          ip domain name dcloud.cisco.com
-          !
-          !
-          !
-          login on-success log
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          device-tracking tracking
-          !
-          device-tracking policy IPDT_POLICY
-           tracking enable
-          !
-          l2vpn evpn
-           replication-type static
-           router-id Loopback0
-          !
-          l2vpn evpn instance 902 vlan-based
-           encapsulation vxlan
-           replication-type static
-          !
-          l2vpn evpn instance 903 vlan-based
-           encapsulation vxlan
-           replication-type static
-          !
-          !
-          crypto pki trustpoint SLA-TrustPoint
-           enrollment pkcs12
-           revocation-check crl
-           hash sha512
-          !
-          crypto pki trustpoint TP-self-signed-659210623
-           enrollment selfsigned
-           subject-name cn=IOS-Self-Signed-Certificate-659210623
-           revocation-check none
-           rsakeypair TP-self-signed-659210623
-           hash sha512
-          !
-          !
-          crypto pki certificate chain SLA-TrustPoint
-           certificate ca 01
-            30820321 30820209 A0030201 02020101 300D0609 2A864886 F70D0101 0B050030
-            32310E30 0C060355 040A1305 43697363 6F312030 1E060355 04031317 43697363
-            6F204C69 63656E73 696E6720 526F6F74 20434130 1E170D31 33303533 30313934
-            3834375A 170D3338 30353330 31393438 34375A30 32310E30 0C060355 040A1305
-            43697363 6F312030 1E060355 04031317 43697363 6F204C69 63656E73 696E6720
-            526F6F74 20434130 82012230 0D06092A 864886F7 0D010101 05000382 010F0030
-            82010A02 82010100 A6BCBD96 131E05F7 145EA72C 2CD686E6 17222EA1 F1EFF64D
-            CBB4C798 212AA147 C655D8D7 9471380D 8711441E 1AAF071A 9CAE6388 8A38E520
-            1C394D78 462EF239 C659F715 B98C0A59 5BBB5CBD 0CFEBEA3 700A8BF7 D8F256EE
-            4AA4E80D DB6FD1C9 60B1FD18 FFC69C96 6FA68957 A2617DE7 104FDC5F EA2956AC
-            7390A3EB 2B5436AD C847A2C5 DAB553EB 69A9A535 58E9F3E3 C0BD23CF 58BD7188
-            68E69491 20F320E7 948E71D7 AE3BCC84 F10684C7 4BC8E00F 539BA42B 42C68BB7
-            C7479096 B4CB2D62 EA2F505D C7B062A4 6811D95B E8250FC4 5D5D5FB8 8F27D191
-            C55F0D76 61F9A4CD 3D992327 A8BB03BD 4E6D7069 7CBADF8B DF5F4368 95135E44
-            DFC7C6CF 04DD7FD1 02030100 01A34230 40300E06 03551D0F 0101FF04 04030201
-            06300F06 03551D13 0101FF04 05300301 01FF301D 0603551D 0E041604 1449DC85
-            4B3D31E5 1B3E6A17 606AF333 3D3B4C73 E8300D06 092A8648 86F70D01 010B0500
-            03820101 00507F24 D3932A66 86025D9F E838AE5C 6D4DF6B0 49631C78 240DA905
-            604EDCDE FF4FED2B 77FC460E CD636FDB DD44681E 3A5673AB 9093D3B1 6C9E3D8B
-            D98987BF E40CBD9E 1AECA0C2 2189BB5C 8FA85686 CD98B646 5575B146 8DFC66A8
-            467A3DF4 4D565700 6ADF0F0D CF835015 3C04FF7C 21E878AC 11BA9CD2 55A9232C
-            7CA7B7E6 C1AF74F6 152E99B7 B1FCF9BB E973DE7F 5BDDEB86 C71E3B49 1765308B
-            5FB0DA06 B92AFE7F 494E8A9E 07B85737 F3A58BE1 1A48A229 C37C1E69 39F08678
-            80DDCD16 D6BACECA EEBC7CF9 8428787B 35202CDC 60E4616A B623CDBD 230E3AFB
-            418616A9 4093E049 4D10AB75 27E86F73 932E35B5 8862FDAE 0275156F 719BB2F0
-            D697DF7F 28
-                  quit
-          crypto pki certificate chain TP-self-signed-659210623
-           certificate self-signed 01
-            3082032E 30820216 A0030201 02020101 300D0609 2A864886 F70D0101 0D050030
-            30312E30 2C060355 04030C25 494F532D 53656C66 2D536967 6E65642D 43657274
-            69666963 6174652D 36353932 31303632 33301E17 0D323630 33323631 33333434
-            305A170D 33363033 32353133 33343430 5A303031 2E302C06 03550403 0C25494F
-            532D5365 6C662D53 69676E65 642D4365 72746966 69636174 652D3635 39323130
-            36323330 82012230 0D06092A 864886F7 0D010101 05000382 010F0030 82010A02
-            82010100 9B63DEE8 DEB7A12D 8DC9E2DB DF3150D0 23108626 92F41EDE C64AAD88
-            1B32B62F 827CA619 92BEF837 BCCB0DC4 CDEB7786 EBA159C2 BAAD2C6A 099BF05C
-            C40F9594 60DC2C26 8BB1943F 9035A0C0 2B6D1AFD 2D83A26D A58C1E00 6BD8481C
-            B4131CEE EADB589D BB6D187A F757710E CECBFAA6 3DF3C863 80D956CD 95593995
-            DF9C7B88 A8603DAF E51E62E9 C57B1F0B A1833688 5B411410 B50B3A3A 63EF144E
-            4E555688 0CC386B4 C20FA79E 4B43271A D42F2E8C 2AEBE00C 5B780D80 F71A12E2
-            913E98D6 9E80B83C 7538BE38 564EF036 21961511 AD05612A 889C00C2 8FE34102
-            D05C91B2 F7519185 EF45578A 6C2E23C3 A1DF1C3A E4ABA146 72F70265 D07BD0BD
-            0C81D659 02030100 01A35330 51301D06 03551D0E 04160414 73ABD7F2 186667FD
-            E8617F5A B975E7A3 6E663837 301F0603 551D2304 18301680 1473ABD7 F2186667
-            FDE8617F 5AB975E7 A36E6638 37300F06 03551D13 0101FF04 05300301 01FF300D
-            06092A86 4886F70D 01010D05 00038201 01001A24 83AF6C54 F8E8E3FC 4264B16D
-            11E88CEA C0CF97E4 C2903A8E 930B7B4E C43F93DF 43C0F63B D2101F50 898426B5
-            0C4AC782 609BC9A4 DEC6DBAA FD79ADBC ECE1BE6F ACEF2D15 94E7262D C3AA6F7E
-            5F34380E 7D502908 A5ADA223 EC4F8DC4 B10E3729 D1F97141 DD8D6D3A A1763746
-            17E8A4B5 B3941608 B837E83E CB915192 78C830E2 1E43A982 66F7512E D68833C2
-            89E2E56D 62B8635C F38C5BE7 AE3EAEA4 8C04A53D A03E2D58 87787307 916397CA
-            10558C7F F59C8688 17BECBF9 D4E23B62 DBD2665E 61DE52E6 743D4A90 3DAFA8FD
-            DF2663AF 460A757C B6977941 F5796AA3 E1A80630 CA832F1A 759997C6 DF6B59CB
-            06212247 756560B2 C62C7D9A 24E060F7 D8F0
-                  quit
-          !
-          !
-          license boot level network-advantage addon dna-advantage
-          memory free low-watermark processor 74467
-          !
-          diagnostic bootup level minimal
-          !
-          spanning-tree mode rapid-pvst
-          spanning-tree extend system-id
-          !
-          !
-          !
-          enable password C1sco12345
-          !
-          username net-admin privilege 15 password 0 C1sco12345
-          username cisco privilege 15 secret 9 $9$iQXTSkor44bQJE$tIsWB8DmXSSoZcZnQjL8fiV.iKInRnAm59B.3o3ksQ6
-          username admin privilege 15 password 0 cisco
-          !
-          redundancy
-           mode sso
-          crypto engine compliance shield disable
-          !
-          !
-          !
-          !
-          !
-          vlan configuration 902
-           member evpn-instance 902 vni 50902
-          vlan configuration 903
-           member evpn-instance 903 vni 50903
-          !
-          !
-          class-map match-any system-cpp-police-ewlc-control
-           description EWLC Control
-          class-map match-any system-cpp-police-topology-control
-           description Topology control
-          class-map match-any system-cpp-police-sw-forward
-           description Sw forwarding, L2 LVX data packets, LOGGING, Transit Traffic
-          class-map match-any system-cpp-default
-           description EWLC Data, Inter FED Traffic
-          class-map match-any system-cpp-police-sys-data
-           description Openflow, Exception, EGR Exception, NFL Sampled Data, RPF Failed
-          class-map match-any system-cpp-police-punt-webauth
-           description Punt Webauth
-          class-map match-any system-cpp-police-l2lvx-control
-           description L2 LVX control packets
-          class-map match-any system-cpp-police-forus
-           description Forus traffic
-          class-map match-any system-cpp-police-multicast-end-station
-           description MCAST END STATION
-          class-map match-any system-cpp-police-forus-addr-resolution
-           description Forus address resolution
-          class-map match-any system-cpp-police-high-rate-app
-           description High Rate Applications
-          class-map match-any system-cpp-police-multicast
-           description MCAST Data
-          class-map match-any system-cpp-police-meraki-next-tunnel
-           description Meraki Next tunnel
-          class-map match-any system-cpp-police-l2-control
-           description L2 control
-          class-map match-any system-cpp-police-dot1x-auth25dd
-          class-map match-any system-cpp-police-dot1x-auth
-           description DOT1X Auth
-          class-map match-any system-cpp-police-data
-           description ICMP redirect, ICMP_GEN and BROADCAST
-          class-map match-any system-cpp-police-stackwise-virt-control
-           description Stackwise Virtual OOB
-          class-map match-any non-client-nrt-class
-          class-map match-any system-cpp-police-routing-control
-           description Routing control and Low Latency
-          class-map match-any system-cpp-police-protocol-snooping
-           description Protocol snooping
-          class-map match-any system-cpp-police-dhcp-snooping
-           description DHCP snooping
-          class-map match-any system-cpp-police-ios-routing
-           description L2 control, Topology control, Routing control, Low Latency
-          class-map match-any system-cpp-police-system-critical
-           description System Critical and Gold Pkt
-          class-map match-any system-cpp-police-ios-feature
-           description ICMPGEN,BROADCAST,ICMP,L2LVXCntrl,ProtoSnoop,PuntWebauth,MCASTData,Transit,DOT1XAuth,Swfwd,LOGGING,L2LVXData,ForusTraffic,ForusARP,McastEndStn,Openflow,Exception,EGRExcption,NflSampled,RpfFailed
-          !
-          policy-map system-cpp-policy
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          interface Loopback0
-           description Routing Loopback
-           ip address 198.19.1.200 255.255.255.255
-           ip pim sparse-mode
-          !
-          interface GigabitEthernet0/0
-           vrf forwarding Mgmt-vrf
-           ip address 198.18.128.107 255.255.192.0
-           negotiation auto
-          !
-          interface GigabitEthernet1/0/1
-           description Core1
-           no switchport
-           ip address 198.19.2.66 255.255.255.252
-           ip pim sparse-mode
-           ip ospf network point-to-point
-          !
-          interface GigabitEthernet1/0/2
-           description Core2
-           no switchport
-           ip address 198.19.2.70 255.255.255.252
-           ip pim sparse-mode
-           ip ospf network point-to-point
-          !
-          interface GigabitEthernet1/0/3
-           description FW
-           no switchport
-           vrf forwarding shared
-           ip address 198.19.2.73 255.255.255.252
-           load-interval 30
-          !
-          interface GigabitEthernet1/0/4
-           device-tracking attach-policy IPDT_POLICY
-          !
-          interface GigabitEthernet1/0/5
-           description dhcp-server-multivrf
-           switchport trunk allowed vlan 100,110,120
-           switchport mode trunk
-           device-tracking attach-policy IPDT_POLICY
-          !
-          interface GigabitEthernet1/0/6
-           device-tracking attach-policy IPDT_POLICY
-          !
-          interface GigabitEthernet1/0/7
-           device-tracking attach-policy IPDT_POLICY
-          !
-          interface GigabitEthernet1/0/8
-           device-tracking attach-policy IPDT_POLICY
-          !
-          interface Vlan1
-           no ip address
-           shutdown
-          !
-          interface Vlan100
-           vrf forwarding green
-           ip address 198.18.143.1 255.255.255.0
-           no autostate
-          !
-          interface Vlan110
-           vrf forwarding blue
-           ip address 198.18.144.1 255.255.255.0
-           no autostate
-          !
-          interface Vlan120
-           description CORP-RED-UNDERLAY-DHCP
-           ip address 198.19.2.77 255.255.255.252
-           ip pim sparse-mode
-           no autostate
-          !
-          interface Vlan902
-           description ** SVI for blue L3VNI **
-           vrf forwarding blue
-           ip unnumbered Loopback0
-           no ip redirects
-           no ip unreachables
-           ip pim sparse-mode
-           no autostate
-          !
-          interface Vlan903
-           description ** SVI for green L3VNI **
-           vrf forwarding green
-           ip unnumbered Loopback0
-           no ip redirects
-           no ip unreachables
-           ip pim sparse-mode
-           no autostate
-          !
-          interface nve1
-           no ip address
-           source-interface Loopback0
-           host-reachability protocol bgp
-           member vni 50902 vrf blue
-           member vni 50903 vrf green
-          !
-          router bgp 65003
-           template peer-policy PEER-POLICY
-            soft-reconfiguration inbound
-           exit-peer-policy
-           !
-           template peer-policy OVERLAY-Border-EVPN-PEER-POLICY
-            soft-reconfiguration inbound
-            send-community both
-           exit-peer-policy
-           !
-           template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
-            remote-as 65001
-            description VXLAN-GW-2-LEAF-EVPN-PEER
-            log-neighbor-changes
-            ebgp-multihop 255
-            update-source Loopback0
-           exit-peer-session
-           !
-           bgp router-id interface Loopback0
-           bgp log-neighbor-changes
-           neighbor 198.19.1.5 inherit peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
-           neighbor 198.19.1.6 inherit peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY
-           neighbor 198.19.2.65 remote-as 65002
-           neighbor 198.19.2.69 remote-as 65002
-           !
-           address-family ipv4
-            redistribute connected route-map TO-BGP
-            no neighbor 198.19.1.5 activate
-            no neighbor 198.19.1.6 activate
-            neighbor 198.19.2.65 activate
-            neighbor 198.19.2.65 soft-reconfiguration inbound
-            neighbor 198.19.2.69 activate
-            neighbor 198.19.2.69 soft-reconfiguration inbound
-            maximum-paths 2
-           exit-address-family
-           !
-           address-family l2vpn evpn
-            bgp additional-paths select all
-            bgp additional-paths send receive
-            rewrite-evpn-rt-asn
-            neighbor 198.19.1.5 activate
-            neighbor 198.19.1.5 send-community both
-            neighbor 198.19.1.5 inherit peer-policy OVERLAY-Border-EVPN-PEER-POLICY
-            neighbor 198.19.1.5 route-map EVPN-TYPE5-ONLY in
-            neighbor 198.19.1.5 route-map DMZ-policy-out out
-            neighbor 198.19.1.6 activate
-            neighbor 198.19.1.6 send-community both
-            neighbor 198.19.1.6 inherit peer-policy OVERLAY-Border-EVPN-PEER-POLICY
-            neighbor 198.19.1.6 route-map EVPN-TYPE5-ONLY in
-            neighbor 198.19.1.6 route-map DMZ-policy-out out
-           exit-address-family
-           !
-           address-family ipv4 vrf blue
-            advertise l2vpn evpn
-            import path selection all
-            redistribute static
-            redistribute connected
-            maximum-paths 2
-            default-information originate
-           exit-address-family
-           !
-           address-family ipv4 vrf green
-            advertise l2vpn evpn
-            import path selection all
-            redistribute static
-            redistribute connected
-            maximum-paths ibgp 2
-            default-information originate
-           exit-address-family
-           !
-           address-family ipv4 vrf shared
-            advertise l2vpn evpn
-            network 0.0.0.0
-            redistribute connected
-            default-information originate
-           exit-address-family
-          !
-          ip forward-protocol nd
-          ip tcp mss 1280
-          ip tcp window-size 212000
-          ip http server
-          ip http authentication local
-          ip http secure-server
-          ip http client source-interface Loopback0
-          ip pim rp-address 198.19.1.254
-          ip pim spt-threshold 0
-          ip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1
-          ip route vrf blue 0.0.0.0 0.0.0.0 198.18.130.74
-          ip route vrf blue 0.0.0.0 0.0.0.0 198.19.2.74
-          ip route vrf green 0.0.0.0 0.0.0.0 198.18.130.74
-          ip route vrf green 0.0.0.0 0.0.0.0 198.19.2.74
-          ip route vrf shared 0.0.0.0 0.0.0.0 198.19.2.74
-          ip ssh bulk-mode 131072
-          ip ssh source-interface Loopback0
-          !
-          ip as-path access-list 1 permit _$
-          !
-          !
-          ip prefix-list evpn-to-shared seq 5 permit 0.0.0.0/0 le 32
-          !
-          ip prefix-list shared-to-evpn seq 5 permit 0.0.0.0/0
-          logging source-interface Loopback0
-          logging source-interface GigabitEthernet0/0 vrf Mgmt-vrf
-          logging host 10.0.10.104 vrf Mgmt-vrf
-          logging host 10.0.10.86 vrf Mgmt-vrf
-          route-map DMZ-policy-out permit 10
-           match as-path 1
-          !
-          route-map EVPN-TYPE5-ONLY permit 10
-           match evpn route-type 5
-          !
-          route-map TO-BGP permit 10
-           match interface Loopback0
-          !
-          route-map TO-BGP permit 20
-           match interface Vlan120
-          !
-          snmp-server community RO RO
-          snmp-server community RW RW
-          snmp-server trap-source Loopback0
-          snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
-          snmp-server enable traps flowmon
-          snmp-server enable traps entity-perf throughput-notif
-          snmp-server enable traps call-home message-send-fail server-fail
-          snmp-server enable traps tty
-          snmp-server enable traps eigrp
-          snmp-server enable traps ospf state-change
-          snmp-server enable traps ospf errors
-          snmp-server enable traps ospf retransmit
-          snmp-server enable traps ospf lsa
-          snmp-server enable traps ospf cisco-specific state-change nssa-trans-change
-          snmp-server enable traps ospf cisco-specific state-change shamlink interface
-          snmp-server enable traps ospf cisco-specific state-change shamlink neighbor
-          snmp-server enable traps ospf cisco-specific errors
-          snmp-server enable traps ospf cisco-specific retransmit
-          snmp-server enable traps ospf cisco-specific lsa
-          snmp-server enable traps bfd
-          snmp-server enable traps smart-license
-          snmp-server enable traps auth-framework sec-violation
-          snmp-server enable traps rep
-          snmp-server enable traps aaa_server
-          snmp-server enable traps memory bufferpeak
-          snmp-server enable traps config-copy
-          snmp-server enable traps config
-          snmp-server enable traps config-ctid
-          snmp-server enable traps energywise
-          snmp-server enable traps fru-ctrl
-          snmp-server enable traps entity
-          snmp-server enable traps flash insertion removal lowspace
-          snmp-server enable traps power-ethernet police
-          snmp-server enable traps cpu threshold
-          snmp-server enable traps syslog
-          snmp-server enable traps udld link-fail-rpt
-          snmp-server enable traps udld status-change
-          snmp-server enable traps vtp
-          snmp-server enable traps vlancreate
-          snmp-server enable traps vlandelete
-          snmp-server enable traps port-security
-          snmp-server enable traps envmon
-          snmp-server enable traps stackwise
-          snmp-server enable traps mvpn
-          snmp-server enable traps pw vc
-          snmp-server enable traps ipsla
-          snmp-server enable traps dhcp
-          snmp-server enable traps event-manager
-          snmp-server enable traps ike policy add
-          snmp-server enable traps ike policy delete
-          snmp-server enable traps ike tunnel start
-          snmp-server enable traps ike tunnel stop
-          snmp-server enable traps ipsec cryptomap add
-          snmp-server enable traps ipsec cryptomap delete
-          snmp-server enable traps ipsec cryptomap attach
-          snmp-server enable traps ipsec cryptomap detach
-          snmp-server enable traps ipsec tunnel start
-          snmp-server enable traps ipsec tunnel stop
-          snmp-server enable traps ipsec too-many-sas
-          snmp-server enable traps ospfv3 state-change
-          snmp-server enable traps ospfv3 errors
-          snmp-server enable traps ipmulticast
-          snmp-server enable traps pimstdmib neighbor-loss invalid-register invalid-join-prune rp-mapping-change interface-election
-          snmp-server enable traps msdp
-          snmp-server enable traps pim neighbor-change rp-mapping-change invalid-pim-message
-          snmp-server enable traps bridge newroot topologychange
-          snmp-server enable traps stpx inconsistency root-inconsistency loop-inconsistency
-          snmp-server enable traps bgp state-changes all backward-trans limited updown-limited
-          snmp-server enable traps bgp threshold prefix
-          snmp-server enable traps bgp cbgp2 state-changes all backward-trans limited updown-limited
-          snmp-server enable traps bgp cbgp2 threshold prefix
-          snmp-server enable traps hsrp
-          snmp-server enable traps isis
-          snmp-server enable traps cef resource-failure peer-state-change peer-fib-state-change inconsistency
-          snmp-server enable traps lisp
-          snmp-server enable traps nhrp nhs
-          snmp-server enable traps nhrp nhc
-          snmp-server enable traps nhrp nhp
-          snmp-server enable traps nhrp quota-exceeded
-          snmp-server enable traps local-auth
-          snmp-server enable traps entity-diag boot-up-fail hm-test-recover hm-thresh-reached scheduled-test-fail
-          snmp-server enable traps mpls rfc ldp
-          snmp-server enable traps mpls ldp
-          snmp-server enable traps mpls rfc traffic-eng
-          snmp-server enable traps mpls traffic-eng
-          snmp-server enable traps mpls fast-reroute protected
-          snmp-server enable traps bulkstat collection transfer
-          snmp-server enable traps mac-notification change move threshold
-          snmp-server enable traps errdisable
-          snmp-server enable traps vlan-membership
-          snmp-server enable traps transceiver all
-          snmp-server enable traps vrfmib vrf-up vrf-down vnet-trunk-up vnet-trunk-down
-          snmp-server enable traps rf
-          snmp-server enable traps mpls vpn
-          snmp-server enable traps mpls rfc vpn
-          !
-          !
-          !
-          !
-          control-plane
-           service-policy input system-cpp-policy
-          !
-          !
-          !
-          line con 0
-           exec-timeout 0 0
-           stopbits 1
-          line vty 0 4
-           exec-timeout 0 0
-           transport input ssh
-          line vty 5 15
-           transport input ssh
-          !
-          !
-          vlan 100
-           name green-dhcp-server
-          !
-          vlan 110
-           name blue-dhcp-server
-          !
-          vlan 120
-           name red-dhcp-server-underlay
-          !
-          event manager applet POST_STARTUP authorization bypass
-          event timer countdown time 60
-          action 1.0 cli command "enable"
-          action 1.1 cli command "crypto key generate rsa usage-keys modulus 2048"
-          action 2.0 cli command "config t"
-          action 2.1 cli command "no event manager applet POST_STARTUP"
-          action 2.2 cli command "end"
-          action 2.3 cli command "wr"
-          action 2.4 cli command "exit"
-          exit
-          !
-          !
-          netconf-yang
-          end
+        content: "! Host: dmz1\n! Collected: 20260706-194412\nBuilding configuration...\n\
+          \nCurrent configuration : 20408 bytes\n!\n! Last configuration change at\
+          \ 23:33:41 UTC Mon Jul 6 2026 by net-admin\n!\nversion 17.15\nservice timestamps\
+          \ debug datetime msec\nservice timestamps log datetime msec\n!\nhostname\
+          \ dmz1\n!\n!\nvrf definition Mgmt-vrf\n !\n address-family ipv4\n exit-address-family\n\
+          \ !\n address-family ipv6\n exit-address-family\n!\nvrf definition blue\n\
+          \ description VRF blue definition\n rd 172.18.200.1:902\n !\n address-family\
+          \ ipv4\n  mdt auto-discovery vxlan\n  mdt default vxlan 239.190.0.2\n  mdt\
+          \ data vxlan 239.190.2.0 0.0.0.255\n  mdt data threshold 1\n  mdt overlay\
+          \ use-bgp\n  route-target export 65003:902\n  route-target import 65003:902\n\
+          \  route-target import 65003:1000\n  route-target export 65003:902 stitching\n\
+          \  route-target import 65003:902 stitching\n exit-address-family\n!\nvrf\
+          \ definition green\n description VRF green definition\n rd 172.18.200.1:903\n\
+          \ !\n address-family ipv4\n  mdt auto-discovery vxlan\n  mdt default vxlan\
+          \ 239.190.0.3\n  mdt data vxlan 239.190.3.0 0.0.0.255\n  mdt data threshold\
+          \ 1\n  mdt overlay use-bgp\n  route-target export 65003:903\n  route-target\
+          \ import 65003:903\n  route-target import 65003:1000\n  route-target export\
+          \ 65003:903 stitching\n  route-target import 65003:903 stitching\n exit-address-family\n\
+          !\nvrf definition shared\n rd 172.18.200.1:1000\n !\n address-family ipv4\n\
+          \  route-replicate from vrf blue unicast all\n  route-replicate from vrf\
+          \ green unicast all\n  route-target export 65003:1000\n  route-target import\
+          \ 65003:902\n  route-target import 65003:903\n exit-address-family\n!\n\
+          no logging console\naaa new-model\n!\n!\naaa authentication login default\
+          \ local\naaa authorization exec default local\n!\n!\naaa session-id common\n\
+          switch 1 provision c9kv-uadp-8p\n!\n!\n!\n!\nip routing\n!\n!\n!\n!\n!\n\
+          ip multicast-routing\nip multicast-routing vrf blue\nip multicast-routing\
+          \ vrf green\nip domain name dcloud.cisco.com\n!\n!\n!\nlogin on-success\
+          \ log\n!\n!\n!\n!\n!\n!\n!\ndevice-tracking tracking\n!\ndevice-tracking\
+          \ policy IPDT_POLICY\n tracking enable\n!\nl2vpn evpn\n replication-type\
+          \ static\n router-id Loopback0\n!\nl2vpn evpn instance 902 vlan-based\n\
+          \ encapsulation vxlan\n replication-type static\n!\nl2vpn evpn instance\
+          \ 903 vlan-based\n encapsulation vxlan\n replication-type static\n!\n!\n\
+          crypto pki trustpoint SLA-TrustPoint\n enrollment pkcs12\n revocation-check\
+          \ crl\n hash sha512\n!\ncrypto pki trustpoint TP-self-signed-659210623\n\
+          \ enrollment selfsigned\n subject-name cn=IOS-Self-Signed-Certificate-659210623\n\
+          \ revocation-check none\n rsakeypair TP-self-signed-659210623\n hash sha512\n\
+          !\n!\ncrypto pki certificate chain SLA-TrustPoint\n certificate ca 01\n\
+          \  30820321 30820209 A0030201 02020101 300D0609 2A864886 F70D0101 0B050030\n\
+          \  32310E30 0C060355 040A1305 43697363 6F312030 1E060355 04031317 43697363\n\
+          \  6F204C69 63656E73 696E6720 526F6F74 20434130 1E170D31 33303533 30313934\n\
+          \  3834375A 170D3338 30353330 31393438 34375A30 32310E30 0C060355 040A1305\n\
+          \  43697363 6F312030 1E060355 04031317 43697363 6F204C69 63656E73 696E6720\n\
+          \  526F6F74 20434130 82012230 0D06092A 864886F7 0D010101 05000382 010F0030\n\
+          \  82010A02 82010100 A6BCBD96 131E05F7 145EA72C 2CD686E6 17222EA1 F1EFF64D\n\
+          \  CBB4C798 212AA147 C655D8D7 9471380D 8711441E 1AAF071A 9CAE6388 8A38E520\n\
+          \  1C394D78 462EF239 C659F715 B98C0A59 5BBB5CBD 0CFEBEA3 700A8BF7 D8F256EE\n\
+          \  4AA4E80D DB6FD1C9 60B1FD18 FFC69C96 6FA68957 A2617DE7 104FDC5F EA2956AC\n\
+          \  7390A3EB 2B5436AD C847A2C5 DAB553EB 69A9A535 58E9F3E3 C0BD23CF 58BD7188\n\
+          \  68E69491 20F320E7 948E71D7 AE3BCC84 F10684C7 4BC8E00F 539BA42B 42C68BB7\n\
+          \  C7479096 B4CB2D62 EA2F505D C7B062A4 6811D95B E8250FC4 5D5D5FB8 8F27D191\n\
+          \  C55F0D76 61F9A4CD 3D992327 A8BB03BD 4E6D7069 7CBADF8B DF5F4368 95135E44\n\
+          \  DFC7C6CF 04DD7FD1 02030100 01A34230 40300E06 03551D0F 0101FF04 04030201\n\
+          \  06300F06 03551D13 0101FF04 05300301 01FF301D 0603551D 0E041604 1449DC85\n\
+          \  4B3D31E5 1B3E6A17 606AF333 3D3B4C73 E8300D06 092A8648 86F70D01 010B0500\n\
+          \  03820101 00507F24 D3932A66 86025D9F E838AE5C 6D4DF6B0 49631C78 240DA905\n\
+          \  604EDCDE FF4FED2B 77FC460E CD636FDB DD44681E 3A5673AB 9093D3B1 6C9E3D8B\n\
+          \  D98987BF E40CBD9E 1AECA0C2 2189BB5C 8FA85686 CD98B646 5575B146 8DFC66A8\n\
+          \  467A3DF4 4D565700 6ADF0F0D CF835015 3C04FF7C 21E878AC 11BA9CD2 55A9232C\n\
+          \  7CA7B7E6 C1AF74F6 152E99B7 B1FCF9BB E973DE7F 5BDDEB86 C71E3B49 1765308B\n\
+          \  5FB0DA06 B92AFE7F 494E8A9E 07B85737 F3A58BE1 1A48A229 C37C1E69 39F08678\n\
+          \  80DDCD16 D6BACECA EEBC7CF9 8428787B 35202CDC 60E4616A B623CDBD 230E3AFB\n\
+          \  418616A9 4093E049 4D10AB75 27E86F73 932E35B5 8862FDAE 0275156F 719BB2F0\n\
+          \  D697DF7F 28\n  \tquit\ncrypto pki certificate chain TP-self-signed-659210623\n\
+          \ certificate self-signed 01\n  3082032E 30820216 A0030201 02020101 300D0609\
+          \ 2A864886 F70D0101 0D050030\n  30312E30 2C060355 04030C25 494F532D 53656C66\
+          \ 2D536967 6E65642D 43657274\n  69666963 6174652D 36353932 31303632 33301E17\
+          \ 0D323630 37303631 32313230\n  395A170D 33363037 30353132 31323039 5A303031\
+          \ 2E302C06 03550403 0C25494F\n  532D5365 6C662D53 69676E65 642D4365 72746966\
+          \ 69636174 652D3635 39323130\n  36323330 82012230 0D06092A 864886F7 0D010101\
+          \ 05000382 010F0030 82010A02\n  82010100 AB712F1A 56B5A180 1512F1FF F77AD422\
+          \ 383869F7 F0ABC666 99C48A52\n  F43A9570 E74CB8DC 641D16E7 7E96832D 769B48F6\
+          \ 1AAB21D2 D6FE21BA 829E5C78\n  9016F5B2 A6F78CB8 68C3FFBB 3F99EA39 4FCDE446\
+          \ 581DAA6B 21D0C45C DBF48757\n  5E178054 49A5D149 963838A5 3F573A70 9B064004\
+          \ 251798DC E766CB17 71BEC9C0\n  0721FCB0 D61DAADA 12F98D34 BC0DAE64 2CCEA0D6\
+          \ 040942FC 2C455871 42A86490\n  C3965BF5 F7287C2B 18FF26D5 419C5C62 63B3EB7C\
+          \ 684E0404 7480B326 40409D0C\n  7D76AEE7 A3157AD4 1F154681 38B5F737 5EA70FDC\
+          \ F21ED3D5 52902B23 DAE5C7A4\n  3ABB7FC9 1D0403E5 78B37130 222CA6D7 CB673ED8\
+          \ FCE04D1A 40015BA6 D3A5960A\n  AD2FDE17 02030100 01A35330 51301D06 03551D0E\
+          \ 04160414 D016B751 5DEF573C\n  6AE6855F 86803946 FF68676E 301F0603 551D2304\
+          \ 18301680 14D016B7 515DEF57\n  3C6AE685 5F868039 46FF6867 6E300F06 03551D13\
+          \ 0101FF04 05300301 01FF300D\n  06092A86 4886F70D 01010D05 00038201 01000DF3\
+          \ 3214CA9A 6E8D824D 99CD821B\n  D3FC8F93 C89C53A2 27F65165 1586766A 8B27D2A8\
+          \ 83828A05 775A6E56 697B7D4C\n  7F01A3F9 A89DA4BF BC8008F6 FAA4E6D7 A7E1F18D\
+          \ A02DB7B8 1E9E78D8 EE164F13\n  0BAB69F9 666A8189 9880B1B6 FC844247 47233EF2\
+          \ C8C429AE 3B02853E 113EEB45\n  951C94C1 AD8F78A1 2CFB305E 94B1276E E2BE0D47\
+          \ 961AA4D8 C750AD87 91B559F9\n  B7069FE8 390B5DB3 665C1A60 D45B0F31 51D551AC\
+          \ 06B1FA8B DA6B1E3A 998890F0\n  506B74C8 73B5FB06 4C269951 5BF74BFA AD60E9D0\
+          \ 247BF3C4 4417A8C4 5F662BDE\n  15F5A365 81885520 F512295D F177AB82 5CCEACD1\
+          \ 9EC2EB41 62C12F0C 1FC2EC8B\n  90C4D1FF 59A4339A EEB952F8 E3FE616E 6BB6\n\
+          \  \tquit\n!\n!\nlicense boot level network-advantage addon dna-advantage\n\
+          memory free low-watermark processor 74467\n!\ndiagnostic bootup level minimal\n\
+          !\nspanning-tree mode rapid-pvst\nspanning-tree extend system-id\n!\n!\n\
+          !\nenable password C1sco12345\n!\nusername net-admin privilege 15 password\
+          \ 0 C1sco12345\nusername cisco privilege 15 secret 9 $9$iQXTSkor44bQJE$tIsWB8DmXSSoZcZnQjL8fiV.iKInRnAm59B.3o3ksQ6\n\
+          username admin privilege 15 password 0 cisco\n!\nredundancy\n mode sso\n\
+          crypto engine compliance shield disable\n!\n!\n!\n!\n!\nvlan configuration\
+          \ 902\n member evpn-instance 902 vni 50902\nvlan configuration 903\n member\
+          \ evpn-instance 903 vni 50903\n!\n!\nclass-map match-any system-cpp-police-ewlc-control\n\
+          \ description EWLC Control\nclass-map match-any system-cpp-police-topology-control\n\
+          \ description Topology control\nclass-map match-any system-cpp-police-sw-forward\n\
+          \ description Sw forwarding, L2 LVX data packets, LOGGING, Transit Traffic\n\
+          class-map match-any system-cpp-default\n description EWLC Data, Inter FED\
+          \ Traffic\nclass-map match-any system-cpp-police-sys-data\n description\
+          \ Openflow, Exception, EGR Exception, NFL Sampled Data, RPF Failed\nclass-map\
+          \ match-any system-cpp-police-punt-webauth\n description Punt Webauth\n\
+          class-map match-any system-cpp-police-l2lvx-control\n description L2 LVX\
+          \ control packets\nclass-map match-any system-cpp-police-forus\n description\
+          \ Forus traffic\nclass-map match-any system-cpp-police-multicast-end-station\n\
+          \ description MCAST END STATION\nclass-map match-any system-cpp-police-forus-addr-resolution\n\
+          \ description Forus address resolution\nclass-map match-any system-cpp-police-high-rate-app\n\
+          \ description High Rate Applications\nclass-map match-any system-cpp-police-multicast\n\
+          \ description MCAST Data\nclass-map match-any system-cpp-police-meraki-next-tunnel\n\
+          \ description Meraki Next tunnel\nclass-map match-any system-cpp-police-l2-control\n\
+          \ description L2 control\nclass-map match-any system-cpp-police-dot1x-auth25dd\n\
+          class-map match-any system-cpp-police-dot1x-auth\n description DOT1X Auth\n\
+          class-map match-any system-cpp-police-data\n description ICMP redirect,\
+          \ ICMP_GEN and BROADCAST\nclass-map match-any system-cpp-police-stackwise-virt-control\n\
+          \ description Stackwise Virtual OOB\nclass-map match-any non-client-nrt-class\n\
+          class-map match-any system-cpp-police-routing-control\n description Routing\
+          \ control and Low Latency\nclass-map match-any system-cpp-police-protocol-snooping\n\
+          \ description Protocol snooping\nclass-map match-any system-cpp-police-dhcp-snooping\n\
+          \ description DHCP snooping\nclass-map match-any system-cpp-police-ios-routing\n\
+          \ description L2 control, Topology control, Routing control, Low Latency\n\
+          class-map match-any system-cpp-police-system-critical\n description System\
+          \ Critical and Gold Pkt\nclass-map match-any system-cpp-police-ios-feature\n\
+          \ description ICMPGEN,BROADCAST,ICMP,L2LVXCntrl,ProtoSnoop,PuntWebauth,MCASTData,Transit,DOT1XAuth,Swfwd,LOGGING,L2LVXData,ForusTraffic,ForusARP,McastEndStn,Openflow,Exception,EGRExcption,NflSampled,RpfFailed\n\
+          !\npolicy-map system-cpp-policy\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\ninterface\
+          \ Loopback0\n description Routing Loopback\n ip address 198.19.1.200 255.255.255.255\n\
+          \ ip pim sparse-mode\n!\ninterface Loopback1\n description GRE TUNNEL SOURCE\n\
+          \ ip address 10.100.2.1 255.255.255.255\n!\ninterface Tunnel10\n description\
+          \ GRE TO Border-01.dcloud.cisco.com\n ip address 10.100.100.1 255.255.255.252\n\
+          \ no ip redirects\n no ip unreachables\n no ip proxy-arp\n ip pim sparse-mode\n\
+          \ ip ospf network point-to-point\n ip ospf 100 area 0\n tunnel source Loopback1\n\
+          \ tunnel destination 10.100.2.5\n tunnel path-mtu-discovery\n!\ninterface\
+          \ Tunnel11\n description GRE TO Border-02.dcloud.cisco.com\n ip address\
+          \ 10.100.101.1 255.255.255.252\n no ip redirects\n no ip unreachables\n\
+          \ no ip proxy-arp\n ip pim sparse-mode\n ip ospf network point-to-point\n\
+          \ ip ospf 100 area 0\n tunnel source Loopback1\n tunnel destination 10.100.2.6\n\
+          \ tunnel path-mtu-discovery\n!\ninterface GigabitEthernet0/0\n vrf forwarding\
+          \ Mgmt-vrf\n ip address 198.18.128.107 255.255.192.0\n negotiation auto\n\
+          !\ninterface GigabitEthernet1/0/1\n description Core1\n no switchport\n\
+          \ ip address 198.19.2.66 255.255.255.252\n ip pim sparse-mode\n ip ospf\
+          \ network point-to-point\n!\ninterface GigabitEthernet1/0/2\n description\
+          \ Core2\n no switchport\n ip address 198.19.2.70 255.255.255.252\n ip pim\
+          \ sparse-mode\n ip ospf network point-to-point\n!\ninterface GigabitEthernet1/0/3\n\
+          \ description FW\n no switchport\n vrf forwarding shared\n ip address 198.19.2.73\
+          \ 255.255.255.252\n load-interval 30\n!\ninterface GigabitEthernet1/0/4\n\
+          \ device-tracking attach-policy IPDT_POLICY\n!\ninterface GigabitEthernet1/0/5\n\
+          \ description dhcp-server-multivrf\n switchport trunk allowed vlan 100,110,120\n\
+          \ switchport mode trunk\n device-tracking attach-policy IPDT_POLICY\n!\n\
+          interface GigabitEthernet1/0/6\n device-tracking attach-policy IPDT_POLICY\n\
+          !\ninterface GigabitEthernet1/0/7\n device-tracking attach-policy IPDT_POLICY\n\
+          !\ninterface GigabitEthernet1/0/8\n device-tracking attach-policy IPDT_POLICY\n\
+          !\ninterface Vlan1\n no ip address\n shutdown\n!\ninterface Vlan100\n vrf\
+          \ forwarding green\n ip address 198.18.143.1 255.255.255.0\n no autostate\n\
+          !\ninterface Vlan110\n vrf forwarding blue\n ip address 198.18.144.1 255.255.255.0\n\
+          \ no autostate\n!\ninterface Vlan120\n description CORP-RED-UNDERLAY-DHCP\n\
+          \ ip address 198.19.2.77 255.255.255.252\n ip pim sparse-mode\n no autostate\n\
+          !\ninterface Vlan902\n description ** SVI for blue L3VNI **\n vrf forwarding\
+          \ blue\n ip unnumbered Loopback0\n no ip redirects\n no ip unreachables\n\
+          \ ip pim sparse-mode\n no autostate\n!\ninterface Vlan903\n description\
+          \ ** SVI for green L3VNI **\n vrf forwarding green\n ip unnumbered Loopback0\n\
+          \ no ip redirects\n no ip unreachables\n ip pim sparse-mode\n no autostate\n\
+          !\ninterface nve1\n no ip address\n source-interface Loopback0\n host-reachability\
+          \ protocol bgp\n member vni 50902 vrf blue\n member vni 50903 vrf green\n\
+          !\nrouter ospf 100\n router-id 198.19.1.200\n redistribute connected route-map\
+          \ LOOPBACK0-INTO-OSPF100\n!\nrouter bgp 65003\n template peer-policy PEER-POLICY\n\
+          \  soft-reconfiguration inbound\n exit-peer-policy\n !\n template peer-policy\
+          \ OVERLAY-Border-EVPN-PEER-POLICY\n  soft-reconfiguration inbound\n  send-community\
+          \ both\n exit-peer-policy\n !\n template peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY\n\
+          \  remote-as 65001\n  description VXLAN-GW-2-LEAF-EVPN-PEER\n  log-neighbor-changes\n\
+          \  ebgp-multihop 255\n  update-source Loopback0\n exit-peer-session\n !\n\
+          \ bgp router-id interface Loopback0\n bgp log-neighbor-changes\n neighbor\
+          \ 10.101.1.2 inherit peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY\n\
+          \ neighbor 10.101.2.2 inherit peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY\n\
+          \ neighbor 198.19.2.65 remote-as 65002\n neighbor 198.19.2.69 remote-as\
+          \ 65002\n !\n address-family ipv4\n  redistribute connected route-map TO-BGP\n\
+          \  no neighbor 10.101.1.2 activate\n  no neighbor 10.101.2.2 activate\n\
+          \  neighbor 198.19.2.65 activate\n  neighbor 198.19.2.65 soft-reconfiguration\
+          \ inbound\n  neighbor 198.19.2.69 activate\n  neighbor 198.19.2.69 soft-reconfiguration\
+          \ inbound\n  maximum-paths 2\n exit-address-family\n !\n address-family\
+          \ l2vpn evpn\n  bgp additional-paths select all\n  bgp additional-paths\
+          \ send receive\n  rewrite-evpn-rt-asn\n  neighbor 10.101.1.2 activate\n\
+          \  neighbor 10.101.1.2 send-community both\n  neighbor 10.101.1.2 inherit\
+          \ peer-policy OVERLAY-Border-EVPN-PEER-POLICY\n  neighbor 10.101.1.2 route-map\
+          \ EVPN-TYPE5-ONLY in\n  neighbor 10.101.1.2 route-map DMZ-policy-out out\n\
+          \  neighbor 10.101.2.2 activate\n  neighbor 10.101.2.2 send-community both\n\
+          \  neighbor 10.101.2.2 inherit peer-policy OVERLAY-Border-EVPN-PEER-POLICY\n\
+          \  neighbor 10.101.2.2 route-map EVPN-TYPE5-ONLY in\n  neighbor 10.101.2.2\
+          \ route-map DMZ-policy-out out\n exit-address-family\n !\n address-family\
+          \ ipv4 vrf blue\n  advertise l2vpn evpn\n  import path selection all\n \
+          \ redistribute static\n  redistribute connected\n  maximum-paths 2\n  default-information\
+          \ originate\n exit-address-family\n !\n address-family ipv4 vrf green\n\
+          \  advertise l2vpn evpn\n  import path selection all\n  redistribute static\n\
+          \  redistribute connected\n  maximum-paths ibgp 2\n  default-information\
+          \ originate\n exit-address-family\n !\n address-family ipv4 vrf shared\n\
+          \  advertise l2vpn evpn\n  network 0.0.0.0\n  redistribute connected\n \
+          \ default-information originate\n exit-address-family\n!\nip forward-protocol\
+          \ nd\nip tcp mss 1280\nip tcp window-size 212000\nip http server\nip http\
+          \ authentication local\nip http secure-server\nip http client source-interface\
+          \ Loopback0\nip pim rp-address 198.19.1.254\nip pim spt-threshold 0\nip\
+          \ route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1\nip route vrf blue 0.0.0.0\
+          \ 0.0.0.0 198.18.130.74\nip route vrf blue 0.0.0.0 0.0.0.0 198.19.2.74\n\
+          ip route vrf green 0.0.0.0 0.0.0.0 198.18.130.74\nip route vrf green 0.0.0.0\
+          \ 0.0.0.0 198.19.2.74\nip route vrf shared 0.0.0.0 0.0.0.0 198.19.2.74\n\
+          ip ssh bulk-mode 131072\nip ssh source-interface Loopback0\n!\nip as-path\
+          \ access-list 1 permit _$\n!\n!\nip prefix-list evpn-to-shared seq 5 permit\
+          \ 0.0.0.0/0 le 32\n!\nip prefix-list shared-to-evpn seq 5 permit 0.0.0.0/0\n\
+          logging source-interface Loopback0\nlogging source-interface GigabitEthernet0/0\
+          \ vrf Mgmt-vrf\nlogging host 10.0.10.104 vrf Mgmt-vrf\nlogging host 10.0.10.86\
+          \ vrf Mgmt-vrf\nroute-map DMZ-policy-out permit 10\n match as-path 1\n!\n\
+          route-map EVPN-TYPE5-ONLY permit 10\n match evpn route-type 5\n!\nroute-map\
+          \ TO-BGP permit 10\n match interface Loopback0\n!\nroute-map TO-BGP permit\
+          \ 20\n match interface Vlan120\n!\nroute-map TO-BGP permit 30\n match interface\
+          \ Loopback1\n!\nroute-map LOOPBACK0-INTO-OSPF100 permit 10\n match interface\
+          \ Loopback0\n!\nsnmp-server community RO RO\nsnmp-server community RW RW\n\
+          snmp-server trap-source Loopback0\nsnmp-server enable traps snmp authentication\
+          \ linkdown linkup coldstart warmstart\nsnmp-server enable traps flowmon\n\
+          snmp-server enable traps entity-perf throughput-notif\nsnmp-server enable\
+          \ traps call-home message-send-fail server-fail\nsnmp-server enable traps\
+          \ tty\nsnmp-server enable traps eigrp\nsnmp-server enable traps ospf state-change\n\
+          snmp-server enable traps ospf errors\nsnmp-server enable traps ospf retransmit\n\
+          snmp-server enable traps ospf lsa\nsnmp-server enable traps ospf cisco-specific\
+          \ state-change nssa-trans-change\nsnmp-server enable traps ospf cisco-specific\
+          \ state-change shamlink interface\nsnmp-server enable traps ospf cisco-specific\
+          \ state-change shamlink neighbor\nsnmp-server enable traps ospf cisco-specific\
+          \ errors\nsnmp-server enable traps ospf cisco-specific retransmit\nsnmp-server\
+          \ enable traps ospf cisco-specific lsa\nsnmp-server enable traps bfd\nsnmp-server\
+          \ enable traps smart-license\nsnmp-server enable traps auth-framework sec-violation\n\
+          snmp-server enable traps rep\nsnmp-server enable traps aaa_server\nsnmp-server\
+          \ enable traps memory bufferpeak\nsnmp-server enable traps config-copy\n\
+          snmp-server enable traps config\nsnmp-server enable traps config-ctid\n\
+          snmp-server enable traps energywise\nsnmp-server enable traps fru-ctrl\n\
+          snmp-server enable traps entity\nsnmp-server enable traps flash insertion\
+          \ removal lowspace\nsnmp-server enable traps power-ethernet police\nsnmp-server\
+          \ enable traps cpu threshold\nsnmp-server enable traps syslog\nsnmp-server\
+          \ enable traps udld link-fail-rpt\nsnmp-server enable traps udld status-change\n\
+          snmp-server enable traps vtp\nsnmp-server enable traps vlancreate\nsnmp-server\
+          \ enable traps vlandelete\nsnmp-server enable traps port-security\nsnmp-server\
+          \ enable traps envmon\nsnmp-server enable traps stackwise\nsnmp-server enable\
+          \ traps mvpn\nsnmp-server enable traps pw vc\nsnmp-server enable traps ipsla\n\
+          snmp-server enable traps dhcp\nsnmp-server enable traps event-manager\n\
+          snmp-server enable traps ike policy add\nsnmp-server enable traps ike policy\
+          \ delete\nsnmp-server enable traps ike tunnel start\nsnmp-server enable\
+          \ traps ike tunnel stop\nsnmp-server enable traps ipsec cryptomap add\n\
+          snmp-server enable traps ipsec cryptomap delete\nsnmp-server enable traps\
+          \ ipsec cryptomap attach\nsnmp-server enable traps ipsec cryptomap detach\n\
+          snmp-server enable traps ipsec tunnel start\nsnmp-server enable traps ipsec\
+          \ tunnel stop\nsnmp-server enable traps ipsec too-many-sas\nsnmp-server\
+          \ enable traps ospfv3 state-change\nsnmp-server enable traps ospfv3 errors\n\
+          snmp-server enable traps ipmulticast\nsnmp-server enable traps pimstdmib\
+          \ neighbor-loss invalid-register invalid-join-prune rp-mapping-change interface-election\n\
+          snmp-server enable traps msdp\nsnmp-server enable traps pim neighbor-change\
+          \ rp-mapping-change invalid-pim-message\nsnmp-server enable traps bridge\
+          \ newroot topologychange\nsnmp-server enable traps stpx inconsistency root-inconsistency\
+          \ loop-inconsistency\nsnmp-server enable traps bgp state-changes all backward-trans\
+          \ limited updown-limited\nsnmp-server enable traps bgp threshold prefix\n\
+          snmp-server enable traps bgp cbgp2 state-changes all backward-trans limited\
+          \ updown-limited\nsnmp-server enable traps bgp cbgp2 threshold prefix\n\
+          snmp-server enable traps hsrp\nsnmp-server enable traps isis\nsnmp-server\
+          \ enable traps cef resource-failure peer-state-change peer-fib-state-change\
+          \ inconsistency\nsnmp-server enable traps lisp\nsnmp-server enable traps\
+          \ nhrp nhs\nsnmp-server enable traps nhrp nhc\nsnmp-server enable traps\
+          \ nhrp nhp\nsnmp-server enable traps nhrp quota-exceeded\nsnmp-server enable\
+          \ traps local-auth\nsnmp-server enable traps entity-diag boot-up-fail hm-test-recover\
+          \ hm-thresh-reached scheduled-test-fail\nsnmp-server enable traps mpls rfc\
+          \ ldp\nsnmp-server enable traps mpls ldp\nsnmp-server enable traps mpls\
+          \ rfc traffic-eng\nsnmp-server enable traps mpls traffic-eng\nsnmp-server\
+          \ enable traps mpls fast-reroute protected\nsnmp-server enable traps bulkstat\
+          \ collection transfer\nsnmp-server enable traps mac-notification change\
+          \ move threshold\nsnmp-server enable traps errdisable\nsnmp-server enable\
+          \ traps vlan-membership\nsnmp-server enable traps transceiver all\nsnmp-server\
+          \ enable traps vrfmib vrf-up vrf-down vnet-trunk-up vnet-trunk-down\nsnmp-server\
+          \ enable traps rf\nsnmp-server enable traps mpls vpn\nsnmp-server enable\
+          \ traps mpls rfc vpn\n!\n!\n!\n!\ncontrol-plane\n service-policy input system-cpp-policy\n\
+          !\n!\n! --- SSH version 2 ---\ncrypto key generate rsa modulus 2048\nip\
+          \ ssh version 2\n!\nline con 0\n exec-timeout 0 0\n stopbits 1\nline vty\
+          \ 0 4\n exec-timeout 0 0\n transport input ssh\nline vty 5 15\n transport\
+          \ input ssh\n!\n!\n!\n!\n!\n!\n!\nnetconf-yang\nend"
       - name: conf/vswitch.xml
         content: |-
           <?xml version="1.0"?>
@@ -4656,288 +4327,114 @@ nodes:
   - boot_disk_size: null
     configuration:
       - name: iosxe_config.txt
-        content: |-
-          !
-          ! Last configuration change at 12:53:15 UTC Wed Apr 1 2026 by net-admin
-          !
-          version 17.16
-          service timestamps debug datetime msec
-          service timestamps log datetime msec
-          platform qfp utilization monitor load 80
-          platform sslvpn use-pd
-          platform console serial
-          !
-          hostname dhcp-server
-          !
-          boot-start-marker
-          boot-end-marker
-          !
-          !
-          vrf definition Mgmt-vrf
-           !
-           address-family ipv4
-           exit-address-family
-          !
-          vrf definition blue
-           !
-           address-family ipv4
-           exit-address-family
-          !
-          vrf definition green
-           !
-           address-family ipv4
-           exit-address-family
-          !
-          vrf definition iot
-           !
-           address-family ipv4
-           exit-address-family
-          !
-          vrf definition red
-           !
-           address-family ipv4
-           exit-address-family
-          !
-          no logging console
-          aaa new-model
-          !
-          !
-          aaa authentication login default local
-          aaa authorization exec default local
-          !
-          !
-          aaa session-id common
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          no ip domain lookup
-          ip domain name dcloud.cisco.com
-          ip dhcp relay information option vpn
-          ip dhcp relay information trust-all
-          ip dhcp excluded-address vrf blue 198.18.201.1 198.18.201.200
-          ip dhcp excluded-address vrf green 198.18.221.1 198.18.221.200
-          ip dhcp excluded-address vrf red 198.18.101.1 198.18.101.200
-          ip dhcp excluded-address vrf red 198.18.102.1 198.18.102.200
-          !
-          ip dhcp pool red-101
-           vrf red
-           network 198.18.101.0 255.255.255.0
-           default-router 198.18.101.1
-           dns-server 8.8.8.8
-          !
-          ip dhcp pool red-102
-           vrf red
-           network 198.18.102.0 255.255.255.0
-           default-router 198.18.102.1
-           dns-server 8.8.8.8
-          !
-          ip dhcp pool blue-201
-           vrf blue
-           network 198.18.201.0 255.255.255.0
-           default-router 198.18.201.1
-           dns-server 8.8.8.8
-          !
-          ip dhcp pool green-221
-           vrf green
-           network 198.18.221.0 255.255.255.0
-           default-router 198.18.221.1
-           dns-server 8.8.8.8
-          !
-          !
-          !
-          login on-success log
-          !
-          !
-          subscriber templating
-          !
-          !
-          !
-          crypto pki trustpoint SLA-TrustPoint
-           enrollment pkcs12
-           revocation-check crl
-           hash sha256
-          !
-          crypto pki trustpoint TP-self-signed-466271509
-           enrollment selfsigned
-           subject-name cn=IOS-Self-Signed-Certificate-466271509
-           revocation-check none
-           rsakeypair TP-self-signed-466271509
-           hash sha512
-          !
-          !
-          crypto pki certificate chain SLA-TrustPoint
-           certificate ca 01
-            30820321 30820209 A0030201 02020101 300D0609 2A864886 F70D0101 0B050030
-            32310E30 0C060355 040A1305 43697363 6F312030 1E060355 04031317 43697363
-            6F204C69 63656E73 696E6720 526F6F74 20434130 1E170D31 33303533 30313934
-            3834375A 170D3338 30353330 31393438 34375A30 32310E30 0C060355 040A1305
-            43697363 6F312030 1E060355 04031317 43697363 6F204C69 63656E73 696E6720
-            526F6F74 20434130 82012230 0D06092A 864886F7 0D010101 05000382 010F0030
-            82010A02 82010100 A6BCBD96 131E05F7 145EA72C 2CD686E6 17222EA1 F1EFF64D
-            CBB4C798 212AA147 C655D8D7 9471380D 8711441E 1AAF071A 9CAE6388 8A38E520
-            1C394D78 462EF239 C659F715 B98C0A59 5BBB5CBD 0CFEBEA3 700A8BF7 D8F256EE
-            4AA4E80D DB6FD1C9 60B1FD18 FFC69C96 6FA68957 A2617DE7 104FDC5F EA2956AC
-            7390A3EB 2B5436AD C847A2C5 DAB553EB 69A9A535 58E9F3E3 C0BD23CF 58BD7188
-            68E69491 20F320E7 948E71D7 AE3BCC84 F10684C7 4BC8E00F 539BA42B 42C68BB7
-            C7479096 B4CB2D62 EA2F505D C7B062A4 6811D95B E8250FC4 5D5D5FB8 8F27D191
-            C55F0D76 61F9A4CD 3D992327 A8BB03BD 4E6D7069 7CBADF8B DF5F4368 95135E44
-            DFC7C6CF 04DD7FD1 02030100 01A34230 40300E06 03551D0F 0101FF04 04030201
-            06300F06 03551D13 0101FF04 05300301 01FF301D 0603551D 0E041604 1449DC85
-            4B3D31E5 1B3E6A17 606AF333 3D3B4C73 E8300D06 092A8648 86F70D01 010B0500
-            03820101 00507F24 D3932A66 86025D9F E838AE5C 6D4DF6B0 49631C78 240DA905
-            604EDCDE FF4FED2B 77FC460E CD636FDB DD44681E 3A5673AB 9093D3B1 6C9E3D8B
-            D98987BF E40CBD9E 1AECA0C2 2189BB5C 8FA85686 CD98B646 5575B146 8DFC66A8
-            467A3DF4 4D565700 6ADF0F0D CF835015 3C04FF7C 21E878AC 11BA9CD2 55A9232C
-            7CA7B7E6 C1AF74F6 152E99B7 B1FCF9BB E973DE7F 5BDDEB86 C71E3B49 1765308B
-            5FB0DA06 B92AFE7F 494E8A9E 07B85737 F3A58BE1 1A48A229 C37C1E69 39F08678
-            80DDCD16 D6BACECA EEBC7CF9 8428787B 35202CDC 60E4616A B623CDBD 230E3AFB
-            418616A9 4093E049 4D10AB75 27E86F73 932E35B5 8862FDAE 0275156F 719BB2F0
-            D697DF7F 28
-                  quit
-          crypto pki certificate chain TP-self-signed-466271509
-           certificate self-signed 01
-            3082032E 30820216 A0030201 02020101 300D0609 2A864886 F70D0101 0D050030
-            30312E30 2C060355 04030C25 494F532D 53656C66 2D536967 6E65642D 43657274
-            69666963 6174652D 34363632 37313530 39301E17 0D323630 33323631 33353635
-            335A170D 33363033 32353133 35363533 5A303031 2E302C06 03550403 0C25494F
-            532D5365 6C662D53 69676E65 642D4365 72746966 69636174 652D3436 36323731
-            35303930 82012230 0D06092A 864886F7 0D010101 05000382 010F0030 82010A02
-            82010100 E9B1C509 00BF59DC E66F92BC 6457C71C EFD99F50 82800002 577859A3
-            49594A31 2BAA1D67 52E893A2 E548636D 9B7CB822 A6B0C0E9 CC788278 42DE5AE5
-            06DFF78D 78C22C61 73EA1245 143EB50F BD2C6B02 293BEEAD C8688212 A1D3589A
-            407E61BE 8AE90C7D BBDCFDF1 15640844 47C63545 6977A412 05A517F4 438F6AD4
-            4FC00955 0121C041 B9F151CC 7D16BBE2 E9DFCB00 81660F4C EDAE6F6D EDBD725D
-            67166678 BD213049 1BCF41C6 C4049A3A 1652BA86 CE335B91 46423809 CAA943A0
-            1364C584 22FBB76A AD251CF5 0C1105DA 385480BC B6059948 9D031C84 02C05B27
-            FFB82BE5 26576431 5CFFF79B 844E7206 B2DCBFC2 4AE8DFDD AC9B5145 771B46A0
-            85443011 02030100 01A35330 51301D06 03551D0E 04160414 B4B0FE12 C89FD6CB
-            9CEE4884 54D78F15 C806C608 301F0603 551D2304 18301680 14B4B0FE 12C89FD6
-            CB9CEE48 8454D78F 15C806C6 08300F06 03551D13 0101FF04 05300301 01FF300D
-            06092A86 4886F70D 01010D05 00038201 0100858A 45BD4497 DB336E4B 6C1A33D8
-            E6BB6B9E 6A121428 838956DB 89F37C71 318787C5 D3C91555 CDBA2FDA 9F3B1AAB
-            FA6A8533 97539714 B6B74C44 437AB71A 947DB85A 8A4AB9F7 6C69F6D0 969A6798
-            9E8CF179 8DBAAEB5 2B3880D5 0C0C1C0D A9D83754 BAB065AF 45AA1875 27AC91DD
-            D48F8023 185B024D B40ACA80 564479FF 8B863BDF F61E407A 3ECD4739 3EE21C8C
-            3C08B920 2554D4E3 5BECE320 FDA04BC2 D73CEC6E 16554DA8 AED6F3E1 EDDA09A4
-            D37D83DC 981600CD 998BE99E F07DEEF7 45A43E2C BDB66034 3BD66C77 A39F8A34
-            AE48200F 49A0B04F 940875AF 802CAA71 C221CAA2 38A35DB8 01E83359 AB63B2AB
-            7A1E4464 72235A6C 08370BAA 4984F25D EB32
-                  quit
-          !
-          !
-          license udi pid C8000V sn 93IXW3EHOQC
-          memory free low-watermark processor 201711
-          diagnostic bootup level minimal
-          !
-          !
-          !
-          enable password C1sco12345
-          !
-          username cisco privilege 15 password 0 cisco
-          username net-admin privilege 15 password 0 C1sco12345
-          !
-          redundancy
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          !
-          interface GigabitEthernet1
-           vrf forwarding Mgmt-vrf
-           ip address 198.18.128.110 255.255.192.0
-           negotiation auto
-          !
-          interface GigabitEthernet2
-           no ip address
-           negotiation auto
-          !
-          interface GigabitEthernet2.100
-           description dhcp-server-green
-           encapsulation dot1Q 100
-           vrf forwarding green
-           ip address 198.18.143.100 255.255.255.0
-          !
-          interface GigabitEthernet2.110
-           description dhcp-server-blue
-           encapsulation dot1Q 110
-           vrf forwarding blue
-           ip address 198.18.144.100 255.255.255.0
-          !
-          interface GigabitEthernet2.120
-           description dhcp-server-global
-           encapsulation dot1Q 120
-           ip address 198.19.2.78 255.255.255.252
-          !
-          interface GigabitEthernet3
-           no ip address
-           shutdown
-           negotiation auto
-          !
-          interface GigabitEthernet4
-           no ip address
-           shutdown
-           negotiation auto
-          !
-          ip forward-protocol nd
-          ip forward-protocol udp
-          !
-          no ip http server
-          ip http secure-server
-          ip route 0.0.0.0 0.0.0.0 198.19.2.77
-          ip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1
-          ip route vrf blue 0.0.0.0 0.0.0.0 198.18.144.1
-          ip route vrf green 0.0.0.0 0.0.0.0 198.18.143.1
-          ip ssh bulk-mode 131072
-          !
-          !
-          !
-          !
-          !
-          control-plane
-          !
-          !
-          line con 0
-           exec-timeout 0 0
-           stopbits 1
-          line aux 0
-          line vty 0 4
-           exec-timeout 0 0
-           transport input ssh
-          !
-          !
-          event manager applet POST_STARTUP authorization bypass
-          event timer countdown time 60
-          action 1.0 cli command "enable"
-          action 1.1 cli command "crypto key generate rsa usage-keys modulus 2048"
-          action 2.0 cli command "config t"
-          action 2.1 cli command "no event manager applet POST_STARTUP"
-          action 2.2 cli command "end"
-          action 2.3 cli command "wr"
-          action 2.4 cli command "exit"
-          exit
-          !
-          interface GigabitEthernet1
-          no shut
-          !
-          interface GigabitEthernet2
-          no shut
-          !
-          netconf-yang
-          end
+        content: "! Host: dhcp-server\n! Collected: 20260706-194412\nBuilding configuration...\n\
+          \nCurrent configuration : 7800 bytes\n!\n! Last configuration change at\
+          \ 14:32:23 UTC Mon Jul 6 2026 by net-admin\n!\nversion 17.16\nservice timestamps\
+          \ debug datetime msec\nservice timestamps log datetime msec\nplatform qfp\
+          \ utilization monitor load 80\nplatform sslvpn use-pd\nplatform console\
+          \ serial\n!\nhostname dhcp-server\n!\nboot-start-marker\nboot-end-marker\n\
+          !\n!\nvrf definition Mgmt-vrf\n !\n address-family ipv4\n exit-address-family\n\
+          !\nvrf definition blue\n !\n address-family ipv4\n exit-address-family\n\
+          !\nvrf definition green\n !\n address-family ipv4\n exit-address-family\n\
+          !\nvrf definition iot\n !\n address-family ipv4\n exit-address-family\n\
+          !\nvrf definition red\n !\n address-family ipv4\n exit-address-family\n\
+          !\nno logging console\naaa new-model\n!\n!\naaa authentication login default\
+          \ local\naaa authorization exec default local\n!\n!\naaa session-id common\n\
+          !\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\nno ip domain lookup\nip domain name\
+          \ dcloud.cisco.com\nip dhcp relay information option vpn\nip dhcp relay\
+          \ information trust-all\nip dhcp excluded-address vrf blue 198.18.201.1\
+          \ 198.18.201.200\nip dhcp excluded-address vrf green 198.18.221.1 198.18.221.200\n\
+          ip dhcp excluded-address vrf red 198.18.101.1 198.18.101.200\nip dhcp excluded-address\
+          \ vrf red 198.18.102.1 198.18.102.200\n!\nip dhcp pool red-101\n vrf red\n\
+          \ network 198.18.101.0 255.255.255.0\n default-router 198.18.101.1\n dns-server\
+          \ 8.8.8.8\n!\nip dhcp pool red-102\n vrf red\n network 198.18.102.0 255.255.255.0\n\
+          \ default-router 198.18.102.1\n dns-server 8.8.8.8\n!\nip dhcp pool blue-201\n\
+          \ vrf blue\n network 198.18.201.0 255.255.255.0\n default-router 198.18.201.1\n\
+          \ dns-server 8.8.8.8\n!\nip dhcp pool green-221\n vrf green\n network 198.18.221.0\
+          \ 255.255.255.0\n default-router 198.18.221.1\n dns-server 8.8.8.8\n!\n\
+          !\n!\nlogin on-success log\n!\n!\nsubscriber templating\n!\n!\n!\ncrypto\
+          \ pki trustpoint SLA-TrustPoint\n enrollment pkcs12\n revocation-check crl\n\
+          \ hash sha256\n!\ncrypto pki trustpoint TP-self-signed-1388023157\n enrollment\
+          \ selfsigned\n subject-name cn=IOS-Self-Signed-Certificate-1388023157\n\
+          \ revocation-check none\n rsakeypair TP-self-signed-1388023157\n hash sha512\n\
+          !\n!\ncrypto pki certificate chain SLA-TrustPoint\n certificate ca 01\n\
+          \  30820321 30820209 A0030201 02020101 300D0609 2A864886 F70D0101 0B050030\n\
+          \  32310E30 0C060355 040A1305 43697363 6F312030 1E060355 04031317 43697363\n\
+          \  6F204C69 63656E73 696E6720 526F6F74 20434130 1E170D31 33303533 30313934\n\
+          \  3834375A 170D3338 30353330 31393438 34375A30 32310E30 0C060355 040A1305\n\
+          \  43697363 6F312030 1E060355 04031317 43697363 6F204C69 63656E73 696E6720\n\
+          \  526F6F74 20434130 82012230 0D06092A 864886F7 0D010101 05000382 010F0030\n\
+          \  82010A02 82010100 A6BCBD96 131E05F7 145EA72C 2CD686E6 17222EA1 F1EFF64D\n\
+          \  CBB4C798 212AA147 C655D8D7 9471380D 8711441E 1AAF071A 9CAE6388 8A38E520\n\
+          \  1C394D78 462EF239 C659F715 B98C0A59 5BBB5CBD 0CFEBEA3 700A8BF7 D8F256EE\n\
+          \  4AA4E80D DB6FD1C9 60B1FD18 FFC69C96 6FA68957 A2617DE7 104FDC5F EA2956AC\n\
+          \  7390A3EB 2B5436AD C847A2C5 DAB553EB 69A9A535 58E9F3E3 C0BD23CF 58BD7188\n\
+          \  68E69491 20F320E7 948E71D7 AE3BCC84 F10684C7 4BC8E00F 539BA42B 42C68BB7\n\
+          \  C7479096 B4CB2D62 EA2F505D C7B062A4 6811D95B E8250FC4 5D5D5FB8 8F27D191\n\
+          \  C55F0D76 61F9A4CD 3D992327 A8BB03BD 4E6D7069 7CBADF8B DF5F4368 95135E44\n\
+          \  DFC7C6CF 04DD7FD1 02030100 01A34230 40300E06 03551D0F 0101FF04 04030201\n\
+          \  06300F06 03551D13 0101FF04 05300301 01FF301D 0603551D 0E041604 1449DC85\n\
+          \  4B3D31E5 1B3E6A17 606AF333 3D3B4C73 E8300D06 092A8648 86F70D01 010B0500\n\
+          \  03820101 00507F24 D3932A66 86025D9F E838AE5C 6D4DF6B0 49631C78 240DA905\n\
+          \  604EDCDE FF4FED2B 77FC460E CD636FDB DD44681E 3A5673AB 9093D3B1 6C9E3D8B\n\
+          \  D98987BF E40CBD9E 1AECA0C2 2189BB5C 8FA85686 CD98B646 5575B146 8DFC66A8\n\
+          \  467A3DF4 4D565700 6ADF0F0D CF835015 3C04FF7C 21E878AC 11BA9CD2 55A9232C\n\
+          \  7CA7B7E6 C1AF74F6 152E99B7 B1FCF9BB E973DE7F 5BDDEB86 C71E3B49 1765308B\n\
+          \  5FB0DA06 B92AFE7F 494E8A9E 07B85737 F3A58BE1 1A48A229 C37C1E69 39F08678\n\
+          \  80DDCD16 D6BACECA EEBC7CF9 8428787B 35202CDC 60E4616A B623CDBD 230E3AFB\n\
+          \  418616A9 4093E049 4D10AB75 27E86F73 932E35B5 8862FDAE 0275156F 719BB2F0\n\
+          \  D697DF7F 28\n  \tquit\ncrypto pki certificate chain TP-self-signed-1388023157\n\
+          \ certificate self-signed 01\n  30820330 30820218 A0030201 02020101 300D0609\
+          \ 2A864886 F70D0101 0D050030\n  31312F30 2D060355 04030C26 494F532D 53656C66\
+          \ 2D536967 6E65642D 43657274\n  69666963 6174652D 31333838 30323331 3537301E\
+          \ 170D3236 30373036 31323037\n  35325A17 0D333630 37303531 32303735 325A3031\
+          \ 312F302D 06035504 030C2649\n  4F532D53 656C662D 5369676E 65642D43 65727469\
+          \ 66696361 74652D31 33383830\n  32333135 37308201 22300D06 092A8648 86F70D01\
+          \ 01010500 0382010F 00308201\n  0A028201 01008BC7 0BC3663E 9F374432 BE3BC502\
+          \ 1D6DB3D9 D1C6A1FB 4672F590\n  10D2C3B2 7B53E8FE 236FFC8E AB000D53 855FCC7A\
+          \ C41FB698 47F1E655 1CF55BA2\n  A971CD5B 3A719B8B DF7F045B 54754B20 C87B4BC8\
+          \ 17D8CE2D 1B03CAA3 9FC3E338\n  1B4572A2 9BB509C0 2CA1579D 756C910D 900715E9\
+          \ 5AEEFAA6 6A7A7E5B 0B613420\n  0735F4B9 6226350D ADBD8E6F D13DDD9E 39A98771\
+          \ F48D70C2 C8D4CDDD A28D037E\n  4E166F59 08304CBA EA985D18 337562B3 E2F7E41B\
+          \ 86B59959 8BC592F5 BEE86604\n  E59419C9 F2CF7263 16291C60 DE895F2A 0333C2CA\
+          \ 7605C3CE 5176CA37 FB77FFE0\n  ABD5ADEA 3529CFAA 2E918173 70945256 6C8061DE\
+          \ 78E29537 04CA8D65 8745CC45\n  337CD4A3 D9410203 010001A3 53305130 1D060355\
+          \ 1D0E0416 04147EB6 7643CE04\n  98E2B786 BD8B8111 ADA9E8E6 0404301F 0603551D\
+          \ 23041830 1680147E B67643CE\n  0498E2B7 86BD8B81 11ADA9E8 E6040430 0F060355\
+          \ 1D130101 FF040530 030101FF\n  300D0609 2A864886 F70D0101 0D050003 82010100\
+          \ 69A62CD1 59612C40 A0E2C694\n  733011A6 B94E210F 39ADBCAC E6FD5778 F6B93ECB\
+          \ 28BC4D19 D45597E9 D1D9DF8F\n  598BF409 BCC930E8 45CADBB0 0C7FADE9 C36EDE84\
+          \ 07953F21 243D8FB9 0D001CC0\n  9B306C4E BFC75214 BD395A59 F35BD78D F62CE05E\
+          \ 28CA0DD4 6A152C67 8030A775\n  402DEC05 CFCAFB31 CB5C319F C2B20232 B4833A48\
+          \ 19741D64 8E280F33 08A37A01\n  2F95DE2E C0F93FF5 D601F351 7E0C07B9 AD457154\
+          \ 7F4A0A34 24B05393 3604A0A4\n  37ECA0C1 D43F2D93 6C3AE985 734C7916 BFA5918F\
+          \ 46C6E228 808B3325 232BD31C\n  CC32D0EE A63EDD35 0DD1C212 59780411 82634C7B\
+          \ 850797D0 88AC71B0 6429CEA4\n  503037F3 1C882D1E 0515612F EA6286D8 DC6AC81F\n\
+          \  \tquit\n!\n!\nlicense udi pid C8000V sn 9VMV2THCMEW\nmemory free low-watermark\
+          \ processor 201711\ndiagnostic bootup level minimal\n!\n!\n!\nenable password\
+          \ C1sco12345\n!\nusername cisco privilege 15 password 0 cisco\nusername\
+          \ net-admin privilege 15 password 0 C1sco12345\n!\nredundancy\n!\n!\n!\n\
+          !\n!\n!\n!\n!\n!\n!\ninterface GigabitEthernet1\n vrf forwarding Mgmt-vrf\n\
+          \ ip address 198.18.128.110 255.255.192.0\n negotiation auto\n!\ninterface\
+          \ GigabitEthernet2\n no ip address\n negotiation auto\n!\ninterface GigabitEthernet2.100\n\
+          \ description dhcp-server-green\n encapsulation dot1Q 100\n vrf forwarding\
+          \ green\n ip address 198.18.143.100 255.255.255.0\n!\ninterface GigabitEthernet2.110\n\
+          \ description dhcp-server-blue\n encapsulation dot1Q 110\n vrf forwarding\
+          \ blue\n ip address 198.18.144.100 255.255.255.0\n!\ninterface GigabitEthernet2.120\n\
+          \ description dhcp-server-global\n encapsulation dot1Q 120\n ip address\
+          \ 198.19.2.78 255.255.255.252\n!\ninterface GigabitEthernet3\n no ip address\n\
+          \ negotiation auto\n!\ninterface GigabitEthernet3.101\n description dhcp-server-green-dmz2\n\
+          \ encapsulation dot1Q 101\n vrf forwarding green\n ip address 198.18.145.100\
+          \ 255.255.255.0\n!\ninterface GigabitEthernet3.111\n description dhcp-server-blue-dmz2\n\
+          \ encapsulation dot1Q 111\n vrf forwarding blue\n ip address 198.18.146.100\
+          \ 255.255.255.0\n!\ninterface GigabitEthernet4\n no ip address\n shutdown\n\
+          \ negotiation auto\n!\nip forward-protocol nd\nip forward-protocol udp\n\
+          !\nno ip http server\nip http secure-server\nip route 0.0.0.0 0.0.0.0 198.19.2.77\n\
+          ip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1\nip route vrf blue 0.0.0.0\
+          \ 0.0.0.0 198.18.144.1\nip route vrf green 0.0.0.0 0.0.0.0 198.18.143.1\n\
+          ip ssh bulk-mode 131072\n!\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n\
+          \ exec-timeout 0 0\n stopbits 1\nline aux 0\nline vty 0 4\n exec-timeout\
+          \ 0 0\n transport input ssh\n!\n!\n!\n!\n!\n!\n!\nnetconf-yang\nend"
     cpu_limit: null
     cpus: null
     data_volume: null
@@ -5279,7 +4776,220 @@ nodes:
         type: physical
         slot: 0
   - boot_disk_size: null
-    configuration: []
+    configuration:
+      - name: iosxe_config.txt
+        content: "Building configuration...\n\nCurrent configuration : 15476 bytes\n\
+          !\n! Last configuration change at 23:58:21 UTC Mon Jul 6 2026 by net-admin\n\
+          !\nversion 17.15\nservice timestamps debug datetime msec\nservice timestamps\
+          \ log datetime msec\n!\nhostname dmz2\n!\n!\nvrf definition Mgmt-vrf\n !\n\
+          \ address-family ipv4\n exit-address-family\n !\n address-family ipv6\n\
+          \ exit-address-family\n!\nvrf definition blue\n description VRF blue definition\n\
+          \ rd 172.18.200.2:902\n !\n address-family ipv4\n  mdt auto-discovery vxlan\n\
+          \  mdt default vxlan 239.190.0.2\n  mdt data vxlan 239.190.2.0 0.0.0.255\n\
+          \  mdt data threshold 1\n  mdt overlay use-bgp\n  route-target export 65004:902\n\
+          \  route-target import 65004:902\n  route-target import 65004:1000\n  route-target\
+          \ export 65004:902 stitching\n  route-target import 65004:902 stitching\n\
+          \ exit-address-family\n!\nvrf definition green\n description VRF green definition\n\
+          \ rd 172.18.200.2:903\n !\n address-family ipv4\n  mdt auto-discovery vxlan\n\
+          \  mdt default vxlan 239.190.0.3\n  mdt data vxlan 239.190.3.0 0.0.0.255\n\
+          \  mdt data threshold 1\n  mdt overlay use-bgp\n  route-target export 65004:903\n\
+          \  route-target import 65004:903\n  route-target import 65004:1000\n  route-target\
+          \ export 65004:903 stitching\n  route-target import 65004:903 stitching\n\
+          \ exit-address-family\n!\nvrf definition shared\n rd 172.18.200.2:1000\n\
+          \ !\n address-family ipv4\n  route-replicate from vrf blue unicast all\n\
+          \  route-replicate from vrf green unicast all\n  route-target export 65004:1000\n\
+          \  route-target import 65004:902\n  route-target import 65004:903\n exit-address-family\n\
+          !\nno logging console\naaa new-model\n!\n!\naaa authentication login default\
+          \ local\naaa authorization exec default local\n!\n!\naaa session-id common\n\
+          switch 1 provision c9kv-uadp-8p\n!\n!\n!\n!\nip routing\n!\n!\n!\n!\n!\n\
+          ip domain name dcloud.cisco.com\n!\n!\n!\nlogin on-success log\n!\n!\n!\n\
+          !\n!\n!\n!\nl2vpn evpn\n replication-type static\n router-id Loopback0\n\
+          !\nl2vpn evpn instance 902 vlan-based\n encapsulation vxlan\n replication-type\
+          \ static\n!\nl2vpn evpn instance 903 vlan-based\n encapsulation vxlan\n\
+          \ replication-type static\n!\n!\ncrypto pki trustpoint TP-self-signed-2957430692\n\
+          \ enrollment selfsigned\n subject-name cn=IOS-Self-Signed-Certificate-2957430692\n\
+          \ revocation-check none\n rsakeypair TP-self-signed-2957430692\n hash sha512\n\
+          !\ncrypto pki trustpoint SLA-TrustPoint\n enrollment pkcs12\n revocation-check\
+          \ crl\n hash sha512\n!\n!\ncrypto pki certificate chain TP-self-signed-2957430692\n\
+          \ certificate self-signed 01\n  30820330 30820218 A0030201 02020101 300D0609\
+          \ 2A864886 F70D0101 0D050030\n  31312F30 2D060355 04030C26 494F532D 53656C66\
+          \ 2D536967 6E65642D 43657274\n  69666963 6174652D 32393537 34333036 3932301E\
+          \ 170D3236 30373036 31323132\n  33355A17 0D333630 37303531 32313233 355A3031\
+          \ 312F302D 06035504 030C2649\n  4F532D53 656C662D 5369676E 65642D43 65727469\
+          \ 66696361 74652D32 39353734\n  33303639 32308201 22300D06 092A8648 86F70D01\
+          \ 01010500 0382010F 00308201\n  0A028201 0100C06A 641E4836 8181754B 372FEBD8\
+          \ 0FD9246B AAE48FFA 96902AFB\n  9AB93BF2 383FA688 FFE8D65E 707EA7E3 97611C5C\
+          \ 28C3B22E 54D7AE60 CDBD1299\n  E75D8A1D DCC71146 23EED2C9 28A9B191 C6635520\
+          \ 6E7BDFF3 9981F07D A5A33F07\n  70904199 DAA18168 8DFD217B B22F9A3B 79377E18\
+          \ D2E8D46D 93DE46F8 EB11AB02\n  6DAB8661 3C69896D F6B178B3 5004C04B 1438FF57\
+          \ B4302CD2 9FCC9481 45C8A599\n  997E354B 9EBFADB5 543E2917 39D16B06 0A2E949B\
+          \ A1E1BED7 4D1F59FE 0F0FF5CB\n  F33A55AC 1829E5A4 2E6A68E7 B953158C 16C50F6F\
+          \ 173EA480 C2B97308 097259C3\n  D290DF87 019012FE 73EBF2F5 410DBFF5 2AA86036\
+          \ 0BA05E66 60CC9683 D4797C07\n  FC54BB63 52C70203 010001A3 53305130 1D060355\
+          \ 1D0E0416 04149B69 D244A289\n  BFC7C6A6 1E85D903 0BEBF6E3 1202301F 0603551D\
+          \ 23041830 1680149B 69D244A2\n  89BFC7C6 A61E85D9 030BEBF6 E3120230 0F060355\
+          \ 1D130101 FF040530 030101FF\n  300D0609 2A864886 F70D0101 0D050003 82010100\
+          \ 8E3F760A 4BBE5F21 B995671F\n  97F1FF5F F6551A59 BDE29B1E BBD65EC7 CB0F863B\
+          \ 18AB7D63 23D465DA FD0B7173\n  19A30405 8F0987EA E6C84DC7 AE86D05F 3DD68925\
+          \ AD9F50D6 3CE6872D 77ECA66B\n  F44D5D81 2821DB4A B5758C0B B031B34E 1F160C24\
+          \ B58EB958 B5C721FC B8426155\n  3F1DF1FB 98CEBDBB 54D24A16 0535C28A D6B050BF\
+          \ E669F090 EF8D7E3E 249A0B65\n  0F2C71D2 741A5ED7 230118E3 3D39B18A 9069EEBD\
+          \ F4C2E47D 0B336892 53846172\n  B1BE6E9D BDA2D2A7 74F84548 3CE0DD2A 4CB08E68\
+          \ F1652E94 43AE1A0F 6D63C3CA\n  1A3E1093 D0F68118 FCF682D3 62A9C74F 34EAB3BE\
+          \ FD2123EE D625B2A6 A92ACA54\n  E2BDDAD6 906BB698 B5DD128E 6526EC09 AF75AF3C\n\
+          \  \tquit\ncrypto pki certificate chain SLA-TrustPoint\n certificate ca\
+          \ 01\n  30820321 30820209 A0030201 02020101 300D0609 2A864886 F70D0101 0B050030\n\
+          \  32310E30 0C060355 040A1305 43697363 6F312030 1E060355 04031317 43697363\n\
+          \  6F204C69 63656E73 696E6720 526F6F74 20434130 1E170D31 33303533 30313934\n\
+          \  3834375A 170D3338 30353330 31393438 34375A30 32310E30 0C060355 040A1305\n\
+          \  43697363 6F312030 1E060355 04031317 43697363 6F204C69 63656E73 696E6720\n\
+          \  526F6F74 20434130 82012230 0D06092A 864886F7 0D010101 05000382 010F0030\n\
+          \  82010A02 82010100 A6BCBD96 131E05F7 145EA72C 2CD686E6 17222EA1 F1EFF64D\n\
+          \  CBB4C798 212AA147 C655D8D7 9471380D 8711441E 1AAF071A 9CAE6388 8A38E520\n\
+          \  1C394D78 462EF239 C659F715 B98C0A59 5BBB5CBD 0CFEBEA3 700A8BF7 D8F256EE\n\
+          \  4AA4E80D DB6FD1C9 60B1FD18 FFC69C96 6FA68957 A2617DE7 104FDC5F EA2956AC\n\
+          \  7390A3EB 2B5436AD C847A2C5 DAB553EB 69A9A535 58E9F3E3 C0BD23CF 58BD7188\n\
+          \  68E69491 20F320E7 948E71D7 AE3BCC84 F10684C7 4BC8E00F 539BA42B 42C68BB7\n\
+          \  C7479096 B4CB2D62 EA2F505D C7B062A4 6811D95B E8250FC4 5D5D5FB8 8F27D191\n\
+          \  C55F0D76 61F9A4CD 3D992327 A8BB03BD 4E6D7069 7CBADF8B DF5F4368 95135E44\n\
+          \  DFC7C6CF 04DD7FD1 02030100 01A34230 40300E06 03551D0F 0101FF04 04030201\n\
+          \  06300F06 03551D13 0101FF04 05300301 01FF301D 0603551D 0E041604 1449DC85\n\
+          \  4B3D31E5 1B3E6A17 606AF333 3D3B4C73 E8300D06 092A8648 86F70D01 010B0500\n\
+          \  03820101 00507F24 D3932A66 86025D9F E838AE5C 6D4DF6B0 49631C78 240DA905\n\
+          \  604EDCDE FF4FED2B 77FC460E CD636FDB DD44681E 3A5673AB 9093D3B1 6C9E3D8B\n\
+          \  D98987BF E40CBD9E 1AECA0C2 2189BB5C 8FA85686 CD98B646 5575B146 8DFC66A8\n\
+          \  467A3DF4 4D565700 6ADF0F0D CF835015 3C04FF7C 21E878AC 11BA9CD2 55A9232C\n\
+          \  7CA7B7E6 C1AF74F6 152E99B7 B1FCF9BB E973DE7F 5BDDEB86 C71E3B49 1765308B\n\
+          \  5FB0DA06 B92AFE7F 494E8A9E 07B85737 F3A58BE1 1A48A229 C37C1E69 39F08678\n\
+          \  80DDCD16 D6BACECA EEBC7CF9 8428787B 35202CDC 60E4616A B623CDBD 230E3AFB\n\
+          \  418616A9 4093E049 4D10AB75 27E86F73 932E35B5 8862FDAE 0275156F 719BB2F0\n\
+          \  D697DF7F 28\n  \tquit\n!\n!\nlicense boot level network-advantage addon\
+          \ dna-advantage\nmemory free low-watermark processor 74370\n!\ndiagnostic\
+          \ bootup level minimal\n!\nspanning-tree mode rapid-pvst\nspanning-tree\
+          \ extend system-id\n!\n!\n!\nenable password C1sco12345\n!\nusername net-admin\
+          \ privilege 15 password 0 C1sco12345\nusername cisco privilege 15 secret\
+          \ 9 $9$iQXTSkor44bQJE$tIsWB8DmXSSoZcZnQjL8fiV.iKInRnAm59B.3o3ksQ6\nusername\
+          \ admin privilege 15 password 0 cisco\n!\nredundancy\n mode sso\ncrypto\
+          \ engine compliance shield disable\n!\n!\n!\n!\n!\nvlan configuration 902\n\
+          \ member evpn-instance 902 vni 50902\nvlan configuration 903\n member evpn-instance\
+          \ 903 vni 50903\n!\n!\nclass-map match-any system-cpp-police-ewlc-control\n\
+          \ description EWLC Control\nclass-map match-any system-cpp-police-topology-control\n\
+          \ description Topology control\nclass-map match-any system-cpp-police-sw-forward\n\
+          \ description Sw forwarding, L2 LVX data packets, LOGGING, Transit Traffic\n\
+          class-map match-any system-cpp-default\n description EWLC Data, Inter FED\
+          \ Traffic\nclass-map match-any system-cpp-police-sys-data\n description\
+          \ Openflow, Exception, EGR Exception, NFL Sampled Data, RPF Failed\nclass-map\
+          \ match-any system-cpp-police-punt-webauth\n description Punt Webauth\n\
+          class-map match-any system-cpp-police-l2lvx-control\n description L2 LVX\
+          \ control packets\nclass-map match-any system-cpp-police-forus\n description\
+          \ Forus traffic\nclass-map match-any system-cpp-police-multicast-end-station\n\
+          \ description MCAST END STATION\nclass-map match-any system-cpp-police-forus-addr-resolution\n\
+          \ description Forus address resolution\nclass-map match-any system-cpp-police-high-rate-app\n\
+          \ description High Rate Applications\nclass-map match-any system-cpp-police-multicast\n\
+          \ description MCAST Data\nclass-map match-any system-cpp-police-meraki-next-tunnel\n\
+          \ description Meraki Next tunnel\nclass-map match-any system-cpp-police-l2-control\n\
+          \ description L2 control\nclass-map match-any system-cpp-police-dot1x-auth\n\
+          \ description DOT1X Auth\nclass-map match-any system-cpp-police-data\n description\
+          \ ICMP redirect, ICMP_GEN and BROADCAST\nclass-map match-any system-cpp-police-stackwise-virt-control\n\
+          \ description Stackwise Virtual OOB\nclass-map match-any non-client-nrt-class\n\
+          class-map match-any system-cpp-police-routing-control\n description Routing\
+          \ control and Low Latency\nclass-map match-any system-cpp-police-protocol-snooping\n\
+          \ description Protocol snooping\nclass-map match-any system-cpp-police-dhcp-snooping\n\
+          \ description DHCP snooping\nclass-map match-any system-cpp-police-ios-routing\n\
+          \ description L2 control, Topology control, Routing control, Low Latency\n\
+          class-map match-any system-cpp-police-system-critical\n description System\
+          \ Critical and Gold Pkt\nclass-map match-any system-cpp-police-ios-feature\n\
+          \ description ICMPGEN,BROADCAST,ICMP,L2LVXCntrl,ProtoSnoop,PuntWebauth,MCASTData,Transit,DOT1XAuth,Swfwd,LOGGING,L2LVXData,ForusTraffic,ForusARP,McastEndStn,Openflow,Exception,EGRExcption,NflSampled,RpfFailed\n\
+          !\npolicy-map system-cpp-policy\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\ninterface\
+          \ Loopback0\n description Routing Loopback\n ip address 198.19.2.200 255.255.255.255\n\
+          \ ip pim sparse-mode\n!\ninterface Loopback1\n description GRE TUNNEL SOURCE\n\
+          \ ip address 10.100.4.1 255.255.255.255\n!\ninterface Tunnel10\n description\
+          \ GRE TO Border-01.dcloud.cisco.com\n ip address 10.100.102.1 255.255.255.252\n\
+          \ no ip redirects\n no ip unreachables\n no ip proxy-arp\n ip pim sparse-mode\n\
+          \ ip ospf network point-to-point\n ip ospf 100 area 0\n tunnel source Loopback1\n\
+          \ tunnel destination 10.100.2.5\n tunnel path-mtu-discovery\n!\ninterface\
+          \ Tunnel11\n description GRE TO Border-02.dcloud.cisco.com\n ip address\
+          \ 10.100.103.1 255.255.255.252\n no ip redirects\n no ip unreachables\n\
+          \ no ip proxy-arp\n ip pim sparse-mode\n ip ospf network point-to-point\n\
+          \ ip ospf 100 area 0\n tunnel source Loopback1\n tunnel destination 10.100.2.6\n\
+          \ tunnel path-mtu-discovery\n!\ninterface GigabitEthernet0/0\n vrf forwarding\
+          \ Mgmt-vrf\n ip address 198.18.128.114 255.255.192.0\n negotiation auto\n\
+          !\ninterface GigabitEthernet1/0/1\n description Core1\n no switchport\n\
+          \ ip address 198.19.2.86 255.255.255.252\n ip pim sparse-mode\n ip ospf\
+          \ network point-to-point\n!\ninterface GigabitEthernet1/0/2\n description\
+          \ Core2\n no switchport\n ip address 198.19.2.90 255.255.255.252\n ip pim\
+          \ sparse-mode\n ip ospf network point-to-point\n!\ninterface GigabitEthernet1/0/3\n\
+          \ description FW\n no switchport\n vrf forwarding shared\n ip address 198.19.2.93\
+          \ 255.255.255.252\n load-interval 30\n!\ninterface GigabitEthernet1/0/4\n\
+          !\ninterface GigabitEthernet1/0/5\n description dhcp-server-multivrf\n switchport\
+          \ trunk allowed vlan 101,111\n switchport mode trunk\n!\ninterface GigabitEthernet1/0/6\n\
+          !\ninterface GigabitEthernet1/0/7\n!\ninterface GigabitEthernet1/0/8\n!\n\
+          interface GigabitEthernet1/0/9\n!\ninterface GigabitEthernet1/0/10\n!\n\
+          interface GigabitEthernet1/0/11\n!\ninterface GigabitEthernet1/0/12\n!\n\
+          interface GigabitEthernet1/0/13\n!\ninterface GigabitEthernet1/0/14\n!\n\
+          interface GigabitEthernet1/0/15\n!\ninterface GigabitEthernet1/0/16\n!\n\
+          interface GigabitEthernet1/0/17\n!\ninterface GigabitEthernet1/0/18\n!\n\
+          interface GigabitEthernet1/0/19\n!\ninterface GigabitEthernet1/0/20\n!\n\
+          interface GigabitEthernet1/0/21\n!\ninterface GigabitEthernet1/0/22\n!\n\
+          interface GigabitEthernet1/0/23\n!\ninterface GigabitEthernet1/0/24\n!\n\
+          interface Vlan1\n no ip address\n shutdown\n!\ninterface Vlan101\n vrf forwarding\
+          \ green\n ip address 198.18.145.1 255.255.255.0\n no autostate\n!\ninterface\
+          \ Vlan111\n vrf forwarding blue\n ip address 198.18.146.1 255.255.255.0\n\
+          \ no autostate\n!\ninterface Vlan902\n description ** SVI for blue L3VNI\
+          \ **\n vrf forwarding blue\n ip unnumbered Loopback0\n no ip redirects\n\
+          \ no ip unreachables\n ip pim sparse-mode\n no autostate\n!\ninterface Vlan903\n\
+          \ description ** SVI for green L3VNI **\n vrf forwarding green\n ip unnumbered\
+          \ Loopback0\n no ip redirects\n no ip unreachables\n ip pim sparse-mode\n\
+          \ no autostate\n!\ninterface nve1\n no ip address\n source-interface Loopback0\n\
+          \ host-reachability protocol bgp\n member vni 50902 vrf blue\n member vni\
+          \ 50903 vrf green\n!\nrouter ospf 100\n router-id 198.19.2.200\n redistribute\
+          \ connected route-map LOOPBACK0-INTO-OSPF100\n!\nrouter bgp 65004\n template\
+          \ peer-policy PEER-POLICY\n  soft-reconfiguration inbound\n exit-peer-policy\n\
+          \ !\n template peer-policy OVERLAY-Border-EVPN-PEER-POLICY\n  soft-reconfiguration\
+          \ inbound\n  send-community both\n exit-peer-policy\n !\n template peer-session\
+          \ OVERLAY-Border-EVPN-PEER-SESSION-POLICY\n  remote-as 65001\n  description\
+          \ VXLAN-GW-2-LEAF-EVPN-PEER\n  log-neighbor-changes\n  ebgp-multihop 255\n\
+          \  update-source Loopback0\n exit-peer-session\n !\n bgp router-id interface\
+          \ Loopback0\n bgp log-neighbor-changes\n neighbor 10.101.1.2 inherit peer-session\
+          \ OVERLAY-Border-EVPN-PEER-SESSION-POLICY\n neighbor 10.101.2.2 inherit\
+          \ peer-session OVERLAY-Border-EVPN-PEER-SESSION-POLICY\n neighbor 198.19.2.85\
+          \ remote-as 65002\n neighbor 198.19.2.89 remote-as 65002\n !\n address-family\
+          \ ipv4\n  redistribute connected route-map TO-BGP\n  no neighbor 10.101.1.2\
+          \ activate\n  no neighbor 10.101.2.2 activate\n  neighbor 198.19.2.85 activate\n\
+          \  neighbor 198.19.2.85 soft-reconfiguration inbound\n  neighbor 198.19.2.89\
+          \ activate\n  neighbor 198.19.2.89 soft-reconfiguration inbound\n  maximum-paths\
+          \ 2\n exit-address-family\n !\n address-family l2vpn evpn\n  bgp additional-paths\
+          \ select all\n  bgp additional-paths send receive\n  rewrite-evpn-rt-asn\n\
+          \  neighbor 10.101.1.2 activate\n  neighbor 10.101.1.2 send-community both\n\
+          \  neighbor 10.101.1.2 inherit peer-policy OVERLAY-Border-EVPN-PEER-POLICY\n\
+          \  neighbor 10.101.1.2 route-map EVPN-TYPE5-ONLY in\n  neighbor 10.101.1.2\
+          \ route-map DMZ-policy-out out\n  neighbor 10.101.2.2 activate\n  neighbor\
+          \ 10.101.2.2 send-community both\n  neighbor 10.101.2.2 inherit peer-policy\
+          \ OVERLAY-Border-EVPN-PEER-POLICY\n  neighbor 10.101.2.2 route-map EVPN-TYPE5-ONLY\
+          \ in\n  neighbor 10.101.2.2 route-map DMZ-policy-out out\n exit-address-family\n\
+          \ !\n address-family ipv4 vrf blue\n  advertise l2vpn evpn\n  import path\
+          \ selection all\n  redistribute static\n  redistribute connected\n  maximum-paths\
+          \ 2\n  default-information originate\n exit-address-family\n !\n address-family\
+          \ ipv4 vrf green\n  advertise l2vpn evpn\n  import path selection all\n\
+          \  redistribute static\n  redistribute connected\n  maximum-paths ibgp 2\n\
+          \  default-information originate\n exit-address-family\n !\n address-family\
+          \ ipv4 vrf shared\n  advertise l2vpn evpn\n  network 0.0.0.0\n  redistribute\
+          \ connected\n  default-information originate\n exit-address-family\n!\n\
+          ip forward-protocol nd\nip tcp mss 1280\nip tcp window-size 212000\nip http\
+          \ server\nip http authentication local\nip http secure-server\nip route\
+          \ vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1\nip ssh bulk-mode 131072\n!\n\
+          ip as-path access-list 1 permit _$\n!\n!\nip prefix-list evpn-to-shared\
+          \ seq 5 permit 0.0.0.0/0 le 32\n!\nip prefix-list shared-to-evpn seq 5 permit\
+          \ 0.0.0.0/0\nroute-map DMZ-policy-out permit 10\n match as-path 1\n!\nroute-map\
+          \ EVPN-TYPE5-ONLY permit 10\n match evpn route-type 5\n!\nroute-map TO-BGP\
+          \ permit 10\n match interface Loopback0\n!\nroute-map TO-BGP permit 30\n\
+          \ match interface Loopback1\n!\nroute-map LOOPBACK0-INTO-OSPF100 permit\
+          \ 10\n match interface Loopback0\n!\nsnmp-server enable traps aaa_server\n\
+          !\n!\n!\n!\ncontrol-plane\n service-policy input system-cpp-policy\n!\n\
+          !\n! --- SSH version 2 ---\ncrypto key generate rsa modulus 2048\nip ssh\
+          \ version 2\n!\nline con 0\n exec-timeout 0 0\n stopbits 1\nline vty 0 4\n\
+          \ exec-timeout 0 0\n transport input ssh\nline vty 5 15\n transport input\
+          \ ssh\n!\n!\n!\n!\n!\n!\n!\nend"
     cpu_limit: null
     cpus: null
     data_volume: null

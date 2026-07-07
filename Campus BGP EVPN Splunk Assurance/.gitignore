@@ -8,6 +8,8 @@ __pycache__/
 
 # SSH keys / certificates (never commit private keys)
 *.pem
+**/dcloud-splunk-creds/
+**/splunk-creds/
 
 # Local credentials / environment (use the .example templates instead)
 .envrc
