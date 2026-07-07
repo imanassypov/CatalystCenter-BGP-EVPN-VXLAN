@@ -499,7 +499,7 @@
     "ds_node_details_9": {
       "type": "ds.search",
       "options": {
-        "query": "| mstats latest(\"cisco.connection.total-dropped\") AS drops WHERE `evpn_index` earliest=$timeRange.earliest$ span=auto \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor\" BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" AND role=\"$role$\" | sort hostname vrf_name neighbor_id _time | streamstats window=1 current=false last(drops) AS _prev_drops BY hostname, vrf_name, neighbor_id | eval new_drops=drops-_prev_drops | eval new_drops=if(isnotnull(new_drops) AND new_drops>0, new_drops, 0) | stats sum(new_drops) AS new_drops by _time, hostname | xyseries _time hostname new_drops | fillnull value=0 | sort _time",
+        "query": "| mstats latest(\"cisco.connection.total-dropped\") AS drops WHERE `evpn_index` earliest=$timeRange.earliest$ latest=$timeRange.latest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-bgp-oper:bgp-state-data/neighbors/neighbor\" BY \"cisco.node_id\", \"vrf-name\", \"neighbor-id\" | rename \"vrf-name\" AS vrf_name, \"neighbor-id\" AS neighbor_id | `evpn_lookup` | where site=\"$site$\" AND role=\"$role$\" | sort hostname vrf_name neighbor_id _time | streamstats window=1 current=false last(drops) AS _prev_drops BY hostname, vrf_name, neighbor_id | eval new_drops=drops-_prev_drops | eval new_drops=if(isnotnull(new_drops) AND new_drops>0, new_drops, 0) | stats sum(new_drops) AS new_drops by _time, hostname | xyseries _time hostname new_drops | fillnull value=0 | sort _time",
         "queryParameters": {
           "earliest": "$timeRange.earliest$",
           "latest": "$timeRange.latest$"
