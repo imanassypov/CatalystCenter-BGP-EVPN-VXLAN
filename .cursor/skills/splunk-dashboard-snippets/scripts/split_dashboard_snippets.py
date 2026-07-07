@@ -1,1 +1,0 @@
-../../../../Campus BGP EVPN Splunk Assurance/images/split_dashboard_snippets.py

@@ -2,6 +2,10 @@
 *.pptx
 .github/copilot-instructions.md
 
+# Editor / IDE local config (not part of the fabric repo)
+.cursor/
+.vscode/
+
 # Python bytecode
 __pycache__/
 *.pyc
