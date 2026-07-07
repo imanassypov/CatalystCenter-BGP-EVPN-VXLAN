@@ -58,7 +58,9 @@ Cisco Modeling Labs emulation using virtual Catalyst 9000 instances. Beyond the 
 
 ![BGP ASN Relationships](DIAGRAMS/cisco_evpn_ASN.png)
 
-BGP control plane: three ASN domains (campus, core, DMZ) and their peering relationships.
+BGP control plane: four ASN domains (campus 65001, core 65002, DMZ Location A 65003, DMZ Location B 65004) and their peering relationships.
+
+> Diagram source: [`DIAGRAMS/cisco_evpn_ASN.drawio`](DIAGRAMS/cisco_evpn_ASN.drawio)
 
 ### 1.3 Border-to-DMZ EVPN Peering (GRE Overlay)
 

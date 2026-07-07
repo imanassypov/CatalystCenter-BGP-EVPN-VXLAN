@@ -26,6 +26,9 @@ __pycache__/
 # Temp files
 /tmp/
 
+# Local snippet calibration crops (not for version control)
+images/images/
+
 # Model Maps (Cisco internal reference docs — not for version control)
 Model Maps/
 
