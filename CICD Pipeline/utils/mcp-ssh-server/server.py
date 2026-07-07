@@ -6,6 +6,9 @@ Environment variables:
                      Defaults to ./devices.csv
 - MCP_SSH_DEFAULT_TIMEOUT: Per-command timeout in seconds (default: 30)
 
+Secrets: copy `.env.example` to `.env` in this directory (gitignored). The server
+loads that file on startup; process env vars from the MCP client take precedence.
+
 CSV columns:
 - name (required)
 - host (required)
@@ -30,8 +33,11 @@ from pathlib import Path
 from typing import Any
 
 import paramiko
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
+_SERVER_DIR = Path(__file__).resolve().parent
+load_dotenv(_SERVER_DIR / ".env", override=True)
 
 mcp = FastMCP("ssh-inventory-server")
 
@@ -58,6 +64,23 @@ def _resolve_secret(value: str | None) -> str | None:
         env_name = value.split(":", 1)[1]
         return os.getenv(env_name)
     return value
+
+
+def _resolve_key_path(value: str | None) -> str | None:
+    """Resolve SSH private key paths; relative paths are anchored to the server dir."""
+    resolved = _resolve_secret(value)
+    if not resolved:
+        return None
+    path = Path(resolved).expanduser()
+    if not path.is_absolute():
+        path = (_SERVER_DIR / path).resolve()
+    return str(path)
+
+
+def _default_splunk_key_path() -> str | None:
+    """Lab default: splunk-creds/ec2user-splunk.pem beside this module."""
+    default = _SERVER_DIR / "splunk-creds" / "ec2user-splunk.pem"
+    return str(default) if default.is_file() else None
 
 
 def _load_inventory() -> dict[str, Device]:
@@ -90,13 +113,18 @@ def _load_inventory() -> dict[str, Device]:
             tags_raw = (row.get("tags") or "").strip()
             tags = [t.strip().lower() for t in tags_raw.split("|") if t.strip()]
 
+            key_raw = (row.get("key_path") or "").strip()
+            key_path = _resolve_key_path(key_raw) if key_raw else None
+            if name.lower() == "splunk" and not key_path:
+                key_path = _default_splunk_key_path()
+
             devices[name.lower()] = Device(
                 name=name,
                 host=host,
                 port=port,
                 username=username,
                 password=_resolve_secret((row.get("password") or "").strip()),
-                key_path=_resolve_secret((row.get("key_path") or "").strip()),
+                key_path=key_path,
                 platform=platform,
                 role=role,
                 tags=tags,

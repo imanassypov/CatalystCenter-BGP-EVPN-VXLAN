@@ -10,3 +10,11 @@ Campus BGP EVPN Splunk Assurance/packaging/dist/
 # Ansible vault password files (secrets — never commit)
 .vault_pass
 **/.vault_pass
+
+# MCP SSH server local credentials
+CICD Pipeline/utils/mcp-ssh-server/.env
+
+# Splunk SSH keys and local credential stores (never commit)
+**/dcloud-splunk-creds/
+**/splunk-creds/
+*.pem
