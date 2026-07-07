@@ -7,8 +7,7 @@ with EC2 host metrics, to the co-located Splunk HEC.
 
 > **Context for network engineers:** if you are new to OpenTelemetry or MDT, read the
 > parent [`README.md`](../README.md) sections
-> [From CLI to Streaming YANG](../README.md#from-cli-to-streaming-yang) and
-> [Telemetry Foundations](../README.md#telemetry-foundations--how-the-data-gets-to-splunk)
+> [Telemetry and Data Model](../README.md#4-telemetry-and-data-model)
 > before tuning this collector.
 
 ## Contents
