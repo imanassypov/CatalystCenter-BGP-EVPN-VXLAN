@@ -34,6 +34,7 @@
         "primary": "ds_alerts_1"
       },
       "title": "Telemetry Stale Devices (>5 min silent)",
+      "description": "Inventory-seeded count of fabric devices with no periodic telemetry heartbeat in the last 5 minutes from any critical subscription path (NVE oper, NVE peer adjacency, or interface oper-state).",
       "options": {
         "sparklineDisplay": "off",
         "trendDisplay": "off",
@@ -57,7 +58,7 @@
       "dataSources": {
         "primary": "ds_alerts_2"
       },
-      "title": "NVE VNI Oper-State \u2014 Down VNIs per Node Over Time (0 = all VNIs up)",
+      "title": "NVE VNIs Down Over Time",
       "description": "Per-node time series of the count of operationally DOWN NVE VNIs (cisco.vni-oper-state_info, nve-vni-oper), one line per fabric node across all roles. A series rising above 0 flags a VNI going operationally down \u2014 e.g. shutting an L3VNI core SVI. See the Active Alerts table below for VRF/type detail.",
       "options": {
         "legendDisplay": "right",
@@ -167,10 +168,10 @@
     "ds_alerts_1": {
       "type": "ds.search",
       "options": {
-        "query": "| mstats latest(\"cisco.l2cp-vni-num\") AS val WHERE `evpn_index` earliest=$timeRange.earliest$ \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper\" BY \"cisco.node_id\" | `evpn_lookup` | where site=\"$site$\" | where _time < (now()-300) | stats count AS count",
+        "query": "| inputlookup evpn_device_inventory | where site=\"$site$\" AND role IN (\"leaf\",\"spine\",\"border\") | dedup hostname | fields hostname | join type=left hostname [ | mstats count(\"cisco.l2cp-vni-num\") AS n WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper\" BY \"cisco.node_id\" | rename \"cisco.node_id\" AS hostname | stats max(_time) AS t_nve by hostname ] | join type=left hostname [ | mstats count(\"cisco.cp-vnis.\") AS n WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-nve-oper:nve-oper-data/nve-oper/nve-peer-oper\" BY \"cisco.node_id\" | rename \"cisco.node_id\" AS hostname | stats max(_time) AS t_peer by hostname ] | join type=left hostname [ | mstats count(\"cisco.oper-status_info\") AS n WHERE `evpn_index` earliest=$timeRange.earliest$ span=1m \"cisco.encoding_path\"=\"Cisco-IOS-XE-interfaces-oper:interfaces/interface\" BY \"cisco.node_id\" | rename \"cisco.node_id\" AS hostname | stats max(_time) AS t_if by hostname ] | eval cutoff=relative_time(now(), \"-5m\") | eval silent=if(isnull(t_nve) OR t_nve<cutoff OR isnull(t_peer) OR t_peer<cutoff OR isnull(t_if) OR t_if<cutoff, 1, 0) | stats sum(silent) AS count",
         "queryParameters": {
           "earliest": "$timeRange.earliest$",
-          "latest": "now"
+          "latest": "$timeRange.latest$"
         }
       },
       "name": "Telemetry Stale Devices (>5 min silent)"
@@ -184,7 +185,7 @@
           "latest": "$timeRange.latest$"
         }
       },
-      "name": "NVE VNI Oper-State \u2014 Down VNIs per Node Over Time (0 = all VNIs up)"
+      "name": "NVE VNIs Down Over Time"
     },
     "ds_alerts_3": {
       "type": "ds.search",
