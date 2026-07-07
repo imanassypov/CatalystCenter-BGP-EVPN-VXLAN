@@ -1,0 +1,21 @@
+/*
+ * Campus EVPN Assurance — Dashboard Studio panel description wrapping.
+ * Enables explicit newlines in visualization description fields and word-wrap.
+ */
+[data-test="viz-description"],
+[data-test="visualization-description"],
+[data-test="panel-description"],
+[class*="VisualizationHeader"] [class*="description"],
+[class*="VisualizationHeader"] [class*="Description"],
+[class*="VizHeader"] [class*="description"],
+[class*="VizHeader"] [class*="Description"] {
+  white-space: pre-line !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+  display: block !important;
+  max-height: none !important;
+  line-height: 1.45 !important;
+  word-break: break-word !important;
+}

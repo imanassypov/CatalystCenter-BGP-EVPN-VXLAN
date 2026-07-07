@@ -1,0 +1,5 @@
+flowchart LR
+    A["BUILD<br/>CatalystCenter-BGP-EVPN-VXLAN<br/>(Catalyst Center templates)"]
+      -->|fabric commissioned| B["RUN<br/>Live EVPN VXLAN fabric<br/>(spines · leafs · borders)"]
+    B -->|streams telemetry| C["ASSURE<br/>campus_evpn_assurance<br/>(this project — Splunk dashboards)"]
+    C -->|faults / drift detected| A

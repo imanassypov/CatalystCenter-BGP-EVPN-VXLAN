@@ -11,5 +11,5 @@ core1,198.18.128.108,22,net-admin,env:IOSXE_PASS,nxos,core,core
 core2,198.18.128.109,22,net-admin,env:IOSXE_PASS,nxos,core,core
 dhcp-server,198.18.128.110,22,net-admin,env:IOSXE_PASS,iosxe,router,infra|dhcp
 fw-shared-services,198.18.134.200,22,net-admin,env:IOSXE_PASS,iosxe,router,infra|firewall
-script-server,198.18.134.28,22,root,env:SCRIPT_SERVER_SSH_PASS,linux,bastion,infra|jump,env:SSH_BASTION_KEY,
+script-server,198.18.134.28,22,root,env:SCRIPT_SERVER_SSH_PASS,linux,bastion,infra|jump,,
 splunk,18.224.25.161,22,ec2-user,,linux,splunk,splunk|sh|hf|otel,env:SPLUNK_SSH_KEY_PATH,script-server

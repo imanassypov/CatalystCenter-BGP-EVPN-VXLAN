@@ -26,9 +26,7 @@ PASS = sys.argv[2]
 VIEWS = [
     "alerts",
     "executive_overview",
-    "spines",
-    "leafs",
-    "borders",
+    "node_details",
 ]
 
 CTX = ssl.create_default_context()
