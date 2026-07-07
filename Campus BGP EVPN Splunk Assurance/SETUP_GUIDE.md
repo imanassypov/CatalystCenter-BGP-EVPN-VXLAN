@@ -7,9 +7,8 @@ This guide installs both parts of the assurance stack:
 
 > **Before you start:** if you are new to streaming telemetry or OpenTelemetry, read
 > [`README.md`](README.md) sections
-> [Audience and how to read this document](README.md#audience-and-how-to-read-this-document),
-> [From CLI to Streaming YANG](README.md#from-cli-to-streaming-yang), and
-> [Telemetry Foundations](README.md#telemetry-foundations--how-the-data-gets-to-splunk)
+> [Introduction](README.md#1-introduction) and
+> [Telemetry and Data Model](README.md#4-telemetry-and-data-model)
 > for the EVPN-to-MDT mental model. This guide assumes you understand *why* the collector
 > listens on gRPC `:57444` and writes to Splunk HEC `:8088`.
 
@@ -223,7 +222,7 @@ Open the **Campus EVPN Assurance** app in Splunk Web. You should see three tabs:
 2. On **Summary**, scorecard tiles should show non-zero ▲ counts when telemetry is flowing.
 3. On **Details**, switch **Fabric Node Role** and confirm panels filter to that tier.
 4. If panels are empty, see [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) troubleshooting
-   and the operator guide in [`README.md`](README.md#operators-guide-reading-the-dashboards).
+   and the operator guide in [`README.md`](README.md#6-operators-guide).
 
 Optional: on the **Splunk host**, validate all Dashboard Studio views and panel SPL:
 

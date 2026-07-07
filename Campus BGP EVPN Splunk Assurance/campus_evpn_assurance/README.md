@@ -10,8 +10,7 @@ Collector pipeline into a Splunk **metrics** index.
 > configuration required for these dashboards to populate.
 >
 > **New to MDT / OpenTelemetry?** Start with the parent
-> [`README.md`](../README.md) — especially [From CLI to Streaming YANG](../README.md#from-cli-to-streaming-yang)
-> and [Telemetry Foundations](../README.md#telemetry-foundations--how-the-data-gets-to-splunk).
+> [`README.md`](../README.md) — especially [§4 Telemetry and Data Model](../README.md#4-telemetry-and-data-model).
 
 ---
 
@@ -75,7 +74,7 @@ campus_evpn_assurance/
 | **Alerts** | `alerts.xml` | All roles | Consolidated anomalies and triage table |
 
 Operator interpretation guide:
-[`README.md` § Operator's Guide](../README.md#operators-guide-reading-the-dashboards).
+[`README.md` § Operator's Guide](../README.md#6-operators-guide).
 
 ---
 
@@ -168,7 +167,7 @@ Query pattern:
 ```
 
 BGP up/down in the dashboards uses a numeric workaround (`hold-time > 0`) for the
-same reason — see the parent [`README.md`](../README.md#why-a-metrics-index-and-how-you-query-it).
+same reason — see the parent [`README.md`](../README.md#44-metrics-index-and-query-patterns).
 
 ---
 

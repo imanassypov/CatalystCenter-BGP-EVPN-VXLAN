@@ -5,7 +5,6 @@ description: >-
   Splunk host via jump-host SSH. Use when the user asks to deploy, push to
   Splunk, install the app, restart splunkd, or update dashboards after
   editing campus_evpn_assurance views or app.conf.
-disable-model-invocation: true
 ---
 
 # Splunk App Deploy — campus_evpn_assurance
