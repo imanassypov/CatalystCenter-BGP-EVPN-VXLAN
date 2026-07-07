@@ -1,0 +1,51 @@
+---
+description: Splunk Dashboard Studio time-range tokens — never hardcode lookbacks in panel queries
+globs: Campus BGP EVPN Splunk Assurance/campus_evpn_assurance/**/*.xml
+alwaysApply: false
+---
+
+# Splunk Dashboard Time Range
+
+Every Dashboard Studio panel on `executive_overview`, `node_details`, and `alerts` is governed by that view's **Time Range** dropdown input (`$timeRange$`). Panel searches must respect the operator's selection — never override it with a fixed lookback.
+
+## Required pattern
+
+1. **In SPL / mstats `WHERE` clauses** inside the `query` string, use tokens:
+   - `earliest=$timeRange.earliest$`
+   - `latest=$timeRange.latest$`
+
+2. **In `queryParameters`** on each `ds.search` data source, mirror the same tokens:
+   ```json
+   "queryParameters": {
+     "earliest": "$timeRange.earliest$",
+     "latest": "$timeRange.latest$"
+   }
+   ```
+
+3. **Both places must agree.** If the query embeds `earliest=` / `latest=` for `mstats` or subsearches, those must use `$timeRange.*$` tokens — not only `queryParameters`.
+
+## Forbidden
+
+- `earliest=-24h`, `earliest=-4h`, `earliest=-7d`, or any other literal relative time in panel queries
+- `"earliest": "-24h"` (or similar) in `queryParameters` when the view has a time-range input
+- `latest=now` or `"latest": "now"` in panel queries/parameters when `$timeRange.latest$` is available
+
+Exception: **input data sources** that populate dropdowns from static lookups (e.g. `| inputlookup evpn_device_inventory`) may use `"earliest": "0"` because they are not time-series panels.
+
+## Stub / orphan-device panels
+
+When a panel uses an `append` block to show devices with **no** telemetry (e.g. "No NVE Peers"), still use `$timeRange.earliest$` / `$timeRange.latest$` for all `mstats` legs. Check both related encoding paths (e.g. `nve-peer-oper` **and** `peer-vni-group`) within the selected window — do not widen to a hardcoded 24h snapshot to paper over gaps.
+
+## Verification
+
+After editing views:
+
+```bash
+# Grep for regressions (should return no panel query hits)
+rg 'earliest=-\d' "Campus BGP EVPN Splunk Assurance/campus_evpn_assurance/default/data/ui/views/"
+
+# Optional: validate on Splunk with substituted tokens
+splunk search '| mstats ... earliest=-4h latest=now ...' -auth USER:PASS
+```
+
+Bump `build` in `campus_evpn_assurance/default/app.conf` and deploy via `packaging/deploy-splunk-app.sh` when shipping dashboard fixes.
