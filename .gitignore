@@ -12,6 +12,9 @@ __pycache__/
 
 # LinkedIn blog drafts (local-only, not part of the fabric repo)
 Linkedin Blogposts/
+
+# Splunk Lantern article drafts (local-only, not part of the fabric repo)
+Lantern Blogposts/
 # Ansible runtime artifacts
 .ansible/
 Campus BGP EVPN Splunk Assurance/packaging/dist/

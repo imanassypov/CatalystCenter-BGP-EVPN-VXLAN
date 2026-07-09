@@ -89,6 +89,13 @@ ansible-playbook playbooks/deploy_yangsuite.yml
 # UI: https://<yangsuite_server_ip>:8443/
 ```
 
+**Operations (health / restart):** see project skill
+`.cursor/skills/yangsuite-jumpserver/` — scripts `yangsuite-health.sh` and
+`yangsuite-restart.sh`. Memory note: `MEMORY.md` in that folder.
+
+If `:8443` is connection refused, the Compose stack is usually stopped; restart
+with `docker compose up -d` in `/opt/yangsuite/docker` on the host.
+
 ## Common Overrides
 
 ```bash
