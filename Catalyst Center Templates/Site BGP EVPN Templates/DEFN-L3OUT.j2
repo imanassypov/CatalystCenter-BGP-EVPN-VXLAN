@@ -62,8 +62,6 @@
 {# Entries must correspond to the 'network' values defined in   #}
 {# DEFN_OVERLAY for the L3OUT VRF (currently 'red'). Add one   #}
 {# entry per VLAN subnet that should be reachable externally.   #}
-{# ADDED: "198.18.103.0 255.255.255.0" — corp-103 aggregate advertised to   #}
-{# enterprise core (ASN 65002) via L3OUT BGP summary-only on Spines.       #}
 {# ============================================================ #}
 {% set DEFN_L3OUT_AGGREGATES = ["198.18.100.0 255.255.255.0",
                                 "198.18.101.0 255.255.255.0",

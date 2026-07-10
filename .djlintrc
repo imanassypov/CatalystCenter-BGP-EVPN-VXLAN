@@ -1,0 +1,8 @@
+[settings]
+profile=jinja
+extension=j2
+indent=2
+max_line_length=120
+format_attribute_template_tags=true
+format_js_template_tags=false
+ignore=H006,H021,H023,H025,H030,H031

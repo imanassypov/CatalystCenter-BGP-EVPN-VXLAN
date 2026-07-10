@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Validate J2 template syntax",
+      "type": "shell",
+      "command": "python3",
+      "args": [
+        "${workspaceFolder}/CICD Pipeline/ansible/scripts/validate_j2_syntax.py"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": {
+        "owner": "jinja2",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^\\s+(.+):(\\d+):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        }
+      }
+    },
+    {
+      "label": "djlint: lint J2 templates",
+      "type": "shell",
+      "command": "djlint",
+      "args": [
+        "${workspaceFolder}/Catalyst Center Templates",
+        "${workspaceFolder}/CICD Pipeline/ansible",
+        "--lint",
+        "--profile",
+        "jinja"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}
