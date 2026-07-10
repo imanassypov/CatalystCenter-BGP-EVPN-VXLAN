@@ -73,6 +73,7 @@ annotations:
     text_content: |-
       101:198.18.101.x
       102:198.18.102.x
+      103:198.18.103.x
     text_font: monospace
     text_italic: false
     text_size: 12
@@ -3028,6 +3029,7 @@ nodes:
           ip prefix-list LOOPBACKS seq 60 permit 198.19.1.6/32
           ip prefix-list TENANT_SEGMENTS seq 10 permit 198.18.101.0/24
           ip prefix-list TENANT_SEGMENTS seq 20 permit 198.18.102.0/24
+          ip prefix-list TENANT_SEGMENTS seq 30 permit 198.18.103.0/24
           ip prefix-list TO_CAMPUS seq 5 permit 0.0.0.0/0
           route-map BGP-TO-OSPF permit 10
             match ip address prefix-list LOOPBACKS
@@ -3391,6 +3393,7 @@ nodes:
           ip prefix-list LOOPBACKS seq 60 permit 198.19.1.6/32
           ip prefix-list TENANT_SEGMENTS seq 10 permit 198.18.101.0/24
           ip prefix-list TENANT_SEGMENTS seq 20 permit 198.18.102.0/24
+          ip prefix-list TENANT_SEGMENTS seq 30 permit 198.18.103.0/24
           ip prefix-list TO_CAMPUS seq 5 permit 0.0.0.0/0
           route-map BGP-TO-OSPF permit 10
             match ip address prefix-list LOOPBACKS
@@ -4345,10 +4348,13 @@ nodes:
           \ information trust-all\nip dhcp excluded-address vrf blue 198.18.201.1\
           \ 198.18.201.200\nip dhcp excluded-address vrf green 198.18.221.1 198.18.221.200\n\
           ip dhcp excluded-address vrf red 198.18.101.1 198.18.101.200\nip dhcp excluded-address\
-          \ vrf red 198.18.102.1 198.18.102.200\n!\nip dhcp pool red-101\n vrf red\n\
-          \ network 198.18.101.0 255.255.255.0\n default-router 198.18.101.1\n dns-server\
-          \ 8.8.8.8\n!\nip dhcp pool red-102\n vrf red\n network 198.18.102.0 255.255.255.0\n\
-          \ default-router 198.18.102.1\n dns-server 8.8.8.8\n!\nip dhcp pool blue-201\n\
+          \ vrf red 198.18.102.1 198.18.102.200\nip dhcp excluded-address vrf red 198.18.103.1\
+          \ 198.18.103.200\n!\nip dhcp pool red-101\n vrf red\n network 198.18.101.0\
+          \ 255.255.255.0\n default-router 198.18.101.1\n dns-server 8.8.8.8\n!\nip\
+          \ dhcp pool red-102\n vrf red\n network 198.18.102.0 255.255.255.0\n default-router\
+          \ 198.18.102.1\n dns-server 8.8.8.8\n!\nip dhcp pool red-103\n vrf red\n\
+          \ network 198.18.103.0 255.255.255.0\n default-router 198.18.103.1\n dns-server\
+          \ 8.8.8.8\n!\nip dhcp pool blue-201\n\
           \ vrf blue\n network 198.18.201.0 255.255.255.0\n default-router 198.18.201.1\n\
           \ dns-server 8.8.8.8\n!\nip dhcp pool green-221\n vrf green\n network 198.18.221.0\
           \ 255.255.255.0\n default-router 198.18.221.1\n dns-server 8.8.8.8\n!\n\
