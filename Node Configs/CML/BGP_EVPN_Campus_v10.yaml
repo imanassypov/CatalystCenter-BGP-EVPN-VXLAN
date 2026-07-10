@@ -706,6 +706,19 @@ smart_annotations:
     fill_color: '#F16A2080'
     border_color: '#00000080'
     z_index: 11
+  - tag: red-103
+    is_on: true
+    padding: 35
+    label: red-103
+    tag_offset_x: 0
+    tag_offset_y: 0
+    tag_size: 14
+    group_distance: 400
+    thickness: 1
+    border_style: ''
+    fill_color: '#FFD10080'
+    border_color: '#00000080'
+    z_index: 20
   - tag: spine
     is_on: true
     padding: 35
@@ -5141,6 +5154,42 @@ nodes:
         mac_address: null
         type: physical
         slot: 24
+  - boot_disk_size: null
+    configuration:
+      - name: node.cfg
+        content: |-
+          # this is a shell script which will be sourced at boot
+          hostname red05
+          # configurable user account
+          USERNAME=cisco
+          PASSWORD=cisco
+
+          kill $(cat /var/run/udhcpc.eth0.pid 2>/dev/null) 2>/dev/null
+          ip addr flush dev eth0
+          ip link set dev eth0 address 00:00:00:01:03:05
+          ip addr add 198.18.103.20/24 dev eth0
+          ip route add default via 198.18.103.1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n24
+    image_definition: null
+    label: red-05
+    node_definition: alpine
+    parameters: {}
+    ram: null
+    tags:
+      - red
+      - red-103
+    x: -80
+    y: 760
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
 links:
   - id: l0
     n1: n4
@@ -5464,6 +5513,13 @@ links:
     i2: i3
     conditioning: {}
     label: dmz2-GigabitEthernet1/0/5<->dhcp-server-GigabitEthernet3
+  - id: l46
+    n1: n24
+    n2: n2
+    i1: i0
+    i2: i9
+    conditioning: {}
+    label: red-05-eth0<->leaf2-GigabitEthernet1/0/8
 lab:
   description: To be used for BGP EVPN Fabric Builds with GitOps via Ansible and or
     Cisco Workflows

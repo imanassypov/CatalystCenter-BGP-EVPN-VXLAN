@@ -39,6 +39,7 @@ and is not used as a user segment.
 | [`DEFN-CLIENT-PORTS.j2`](../Catalyst%20Center%20Templates/Site%20BGP%20EVPN%20Templates/DEFN-CLIENT-PORTS.j2) | Leaf-02 `GigabitEthernet1/0/8` → VLAN 103 (`client-red-05`); Leaf-01 unchanged |
 | [`dhcp.cfg`](../Node%20Configs/fabric-dmz/dhcp.cfg) | `red-103` pool + excluded range `.1`–`.200` in vrf red |
 | [`core01.cfg`](../Node%20Configs/cores/core01.cfg), [`core02.cfg`](../Node%20Configs/cores/core02.cfg) | `TENANT_SEGMENTS seq 30 permit 198.18.103.0/24` for red egress via Spine L3OUT → Core |
+| [`BGP_EVPN_Campus_v10.yaml`](../Node%20Configs/CML/BGP_EVPN_Campus_v10.yaml) | `red-05` Alpine client (`198.18.103.20`) on Leaf-02 `Gi1/0/8`; `red-103` tag group |
 
 Inline comments in each file document the additions and rationale.
 
@@ -99,5 +100,4 @@ ip prefix-list TENANT_SEGMENTS seq 30 permit 198.18.103.0/24
 Apply on **both** `core01` and `core02`.
 
 ## Optional follow-on (not in this change)
-- Add `red05` Alpine client on Leaf-02 `Gi1/0/8` in `BGP_EVPN_Campus_v10.yaml` and update embedded dhcp-server bootstrap in CML.
 - Update README §5.3 VLAN-to-VNI table and lab topology diagram when corp-103 is deployed live.
