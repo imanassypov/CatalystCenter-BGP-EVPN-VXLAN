@@ -1,6 +1,9 @@
 {## CATC: productFamily=Switches and Hubs, softwareType=IOS-XE, productSeries=Cisco Catalyst 9000 Series Virtual Switches ##}
 {% set FABRIC_BGP_ASN = '65001' %}
 {% set FABRIC_UNDERLAY = {'proto':'ospf', 'instance_id':'1', 'area':'0'} %}
+{# ADDED: corp-103 (VLAN 103) — third corporate user segment in red VRF below.
+   vlan_ids includes '103'; vlans['103'] defines overlay SVI, anycast GW 198.18.103.1/24,
+   L2VNI 50103, BUM 239.190.100.103, and DHCP relay to underlay helper 198.19.2.78. #}
 {% set DEFN_OVERLAY = [
   {
     'vrf': 'red',
