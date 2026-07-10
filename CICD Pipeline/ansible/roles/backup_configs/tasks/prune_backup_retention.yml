@@ -1,0 +1,26 @@
+---
+# =============================================================================
+# backup_configs / prune_backup_retention.yml
+# =============================================================================
+# Remove timestamped backup directories beyond backup_retention_count.
+# =============================================================================
+
+- name: Find timestamped backup directories on controller
+  ansible.builtin.find:
+    paths: "{{ backup_root_dir }}"
+    file_type: directory
+    recurse: false
+  register: backup_dirs
+  delegate_to: localhost
+
+- name: Build list of old backup directories to prune
+  ansible.builtin.set_fact:
+    backup_dirs_to_prune: "{{ (backup_dirs.files | sort(attribute='mtime', reverse=true))[backup_retention_count | int:] }}"
+
+- name: Remove pruned backup directories from controller
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ backup_dirs_to_prune }}"
+  when: backup_dirs_to_prune | length > 0
+  delegate_to: localhost

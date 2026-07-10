@@ -1,0 +1,30 @@
+---
+# MCP SSH server CML inventory (independent of ansible/inventory/cml.yml).
+# Credentials: CML_HOST, CML_USERNAME, CML_PASSWORD, CML_LAB in .env
+
+lab: BGP EVPN Campus
+
+# CML tag allowlist — exposed as MCP device tags (run_command_by_tag).
+group_tags:
+  - "Campus Fabric"
+  - spine
+  - leaf
+  - border
+  - client
+  - dhcp-server
+  - "IP Core"
+  - ipsec
+  - dmz
+  - dmz01
+  - dmz02
+  - "65003"
+  - "65004"
+
+# CML node_definition → MCP platform (non-listed nodes are skipped)
+ssh_node_definitions:
+  cat9000v-uadp: iosxe
+  cat8000v: iosxe
+  nxosv9000: nxos
+
+device_username: net-admin
+device_password_env: IOSXE_PASS

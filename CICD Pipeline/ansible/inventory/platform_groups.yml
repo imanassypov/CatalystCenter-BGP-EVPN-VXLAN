@@ -1,0 +1,12 @@
+---
+# Parent platform groups for group_vars/iosxe and group_vars/nxos.
+# CML plugin creates child groups per node_definition (cat9000v-uadp, nxosv9000, …).
+all:
+  children:
+    iosxe:
+      children:
+        cat9000v-uadp: {}
+        cat8000v: {}
+    nxos:
+      children:
+        nxosv9000: {}

@@ -4,7 +4,9 @@
 
 This MCP server lets GitHub Copilot (or any MCP-compatible client) run SSH commands directly against the EVPN fabric routers and the Splunk Heavy Forwarder without leaving the editor.
 
-The server is implemented as a Python stdio MCP process. VS Code launches it automatically when the workspace is loaded. The device inventory is a plain CSV file — add or remove devices there without touching code.
+The server is implemented as a Python stdio MCP process. VS Code launches it automatically when the workspace is loaded. Device inventory is loaded from **CML** (`inventory/cml.yml` via `virl2_client`) plus **static hosts** (`inventory/static_hosts.yml`), or from a plain **CSV** fallback (`devices.csv`).
+
+**MCP inventory is independent of Ansible.** Playbooks use `CICD Pipeline/ansible/inventory/`; the MCP server uses only `mcp-ssh-server/inventory/`. Keep `group_tags` in sync manually when you add CML tags.
 
 ---
 
@@ -13,10 +15,19 @@ The server is implemented as a Python stdio MCP process. VS Code launches it aut
 ```
 mcp-ssh-server/
 ├── server.py              # MCP stdio server
-├── devices.csv            # Active inventory (edit this)
+├── inventory_loader.py    # CML (virl2_client) + static hosts → Device
+├── inventory/
+│   ├── cml.yml            # MCP CML config (group_tags, ssh node types)
+│   └── static_hosts.yml   # bastion, Splunk EC2
+├── devices.csv            # CSV fallback inventory (offline / no CML)
 ├── devices.example.csv    # Annotated template
 ├── requirements.txt       # Python dependencies
 └── README-MCP-HOWTO.md    # This file
+
+CICD Pipeline/ansible/inventory/   # Ansible only (playbooks)
+├── cml.yml                # cisco.cml.cml_inventory
+├── static_inventory.yml   # Catalyst Center, image/YANG servers
+└── platform_groups.yml    # iosxe/nxos parent groups
 
 .vscode/
 └── mcp.json               # VS Code MCP server registration
@@ -31,6 +42,8 @@ mcp-ssh-server/
 | Python (pyenv) | 3.10.4 |
 | `mcp` package | ≥ 1.10.0 |
 | `paramiko` package | ≥ 3.4.0 |
+| `virl2_client` | ≥ 2.0.0, &lt; 2.10.0 (CML inventory mode) |
+| CML lab running | Fabric nodes need mgmt IPs from CML API |
 
 ---
 
@@ -43,31 +56,44 @@ mcp-ssh-server/
   "/path/to/CICD Pipeline/utils/mcp-ssh-server/requirements.txt"
 ```
 
-### 2. Review credentials in `.vscode/mcp.json`
+`virl2_client` is required for CML inventory mode. No Ansible install is needed for the MCP server.
+
+### 2. Configure credentials (`CICD Pipeline/.env`)
+
+```bash
+cd "CICD Pipeline"
+cp .env.example .env    # fill in secrets
+direnv allow            # one-time — auto-loads .env on every cd
+```
+
+Paths in `.env` are relative to **`CICD Pipeline/`** (not `mcp-ssh-server/`).
+
+### 3. Review `.cursor/mcp.json`
+
+Use `envFile` pointing at `utils/mcp-ssh-server/.env` — inventory paths live in `.env`, not in `mcp.json`:
 
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "evpn-ssh": {
-      "type": "stdio",
       "command": "/path/to/python",
-      "args": [
-        "/path/to/CICD Pipeline/utils/mcp-ssh-server/server.py"
-      ],
+      "args": ["${workspaceFolder}/CICD Pipeline/utils/mcp-ssh-server/server.py"],
       "env": {
-        "MCP_SSH_INVENTORY": "/path/to/CICD Pipeline/utils/mcp-ssh-server/devices.csv",
-        "IOSXE_PASS": "<iosxe-password>",
-        "HF_PASS": "<hf-password>"
-      }
+        "MCP_SSH_DEFAULT_TIMEOUT": "60"
+      },
+      "envFile": "${workspaceFolder}/CICD Pipeline/.env"
     }
   }
 }
 ```
 
-`IOSXE_PASS` — password for all IOS-XE routers (`net-admin` user).  
-`HF_PASS` — password for the Splunk Heavy Forwarder (`cisco` user).
+`IOSXE_PASS` — password for fabric devices (`net-admin`).  
+`SCRIPT_SERVER_SSH_PASS` — dCloud jump host (`script-server`).  
+`SPLUNK_SSH_KEY_PATH` — PEM for cloud Splunk EC2 (`splunk`, via jump host).
 
-### 3. Reload VS Code window
+For offline use without CML, set `MCP_SSH_INVENTORY` to `devices.csv` instead.
+
+### 4. Reload VS Code window
 
 `Cmd+Shift+P` → `Developer: Reload Window`
 
@@ -75,7 +101,30 @@ The `evpn-ssh` server starts automatically. No manual process management require
 
 ---
 
-## Device Inventory (`devices.csv`)
+## CML Dynamic Inventory (`inventory/cml.yml`)
+
+Fabric devices are discovered from the live CML lab via **`virl2_client`** (no Ansible subprocess). CML **tag assignments** on each node become MCP tags when listed in `group_tags`.
+
+| Item | Location |
+|---|---|
+| MCP CML config | `mcp-ssh-server/inventory/cml.yml` |
+| Tag allowlist | `group_tags` — edit when you add a new CML tag to target |
+| Bastion / Splunk | `mcp-ssh-server/inventory/static_hosts.yml` |
+| Ansible (separate) | `ansible/inventory/cml.yml` — for playbooks only |
+
+**Verify Ansible CML inventory** (playbooks — not used by MCP):
+
+From **`CICD Pipeline/`**:
+
+```bash
+bash verify-cml-inventory.sh
+```
+
+CML hostnames (e.g. `spine1`) are used as inventory names — they may differ from legacy CSV names (`spine01`).
+
+---
+
+## Device Inventory (`devices.csv` — fallback)
 
 | Column | Required | Description |
 |---|---|---|
@@ -196,6 +245,25 @@ run_command_by_role role=router command="show telemetry ietf subscription all"
 run_command_by_role role=router command="show nve peers"
 run_command_by_role role=router command="show bgp l2vpn evpn summary"
 run_command_by_role role=router command="show ip interface brief"
+```
+
+---
+
+### `run_command_by_tag`
+
+Run one command on **all devices** that have a CML inventory tag (from tag assignments in CML).
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `tag` | string | Yes | CML tag name (e.g. `spine`, `leaf`, `ip core`) |
+| `command` | string | Yes | Command to run on all matching devices |
+| `timeout` | int | No | Per-device timeout in seconds (default: 30) |
+
+**Examples:**
+```
+run_command_by_tag tag=spine command="show ip interface brief"
+run_command_by_tag tag=leaf command="show nve peers"
+run_command_by_tag tag=border command="show bgp l2vpn evpn summary"
 ```
 
 ---
@@ -432,11 +500,16 @@ run_command device=splunk command="sudo /opt/splunk/bin/splunk restart -auth ${S
 
 | Variable | Default | Description |
 |---|---|---|
-| `MCP_SSH_INVENTORY` | `./devices.csv` | Absolute or relative path to CSV inventory |
+| `MCP_SSH_INVENTORY` | `inventory/cml.yml` | MCP CML config YAML or `devices.csv` (fallback) |
+| `MCP_SSH_STATIC_HOSTS` | `inventory/static_hosts.yml` | Bastion/Splunk hosts merged with CML inventory |
+| `MCP_SSH_OVERLAY` | — | Deprecated alias for `MCP_SSH_STATIC_HOSTS` |
 | `MCP_SSH_DEFAULT_TIMEOUT` | `30` | Per-command SSH timeout in seconds |
-| `IOSXE_PASS` | — | Password resolved by `env:IOSXE_PASS` in CSV |
-| `HF_PASS` | — | Password resolved by `env:HF_PASS` in CSV (legacy HF user) |
-| `SCRIPT_SERVER_SSH_PASS` | — | Jump-host password for `script-server` (see `.env.example`) |
+| `CML_HOST` | — | CML controller (required for `cml.yml`) |
+| `CML_USERNAME` | — | CML API user |
+| `CML_PASSWORD` | — | CML API password |
+| `CML_LAB` | `BGP EVPN Campus` | Lab title in CML |
+| `IOSXE_PASS` | — | Fabric device password (`net-admin`) |
+| `SCRIPT_SERVER_SSH_PASS` | — | Jump-host password for `script-server` |
 | `SPLUNK_SSH_KEY_PATH` | `splunk-creds/ec2user-splunk.pem` | PEM for EC2 Splunk SSH (via jump host) |
 | `SPLUNK_ADMIN_USER` | — | Splunk Web / REST / CLI `-auth` username |
 | `SPLUNK_ADMIN_PASS` | — | Splunk Web / REST / CLI `-auth` password |
