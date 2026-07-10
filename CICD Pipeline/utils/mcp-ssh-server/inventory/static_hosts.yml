@@ -1,0 +1,24 @@
+---
+# Static MCP SSH targets (bastion, Splunk) — not sourced from CML.
+hosts:
+  script-server:
+    host: 198.18.134.28
+    username: root
+    password: env:SCRIPT_SERVER_SSH_PASS
+    platform: linux
+    role: bastion
+    tags:
+      - infra
+      - jump
+  splunk:
+    host: 18.224.25.161
+    username: ec2-user
+    key_path: env:SPLUNK_SSH_KEY_PATH
+    platform: linux
+    role: splunk
+    tags:
+      - splunk
+      - sh
+      - hf
+      - otel
+    proxy_jump: script-server

@@ -2,12 +2,14 @@
 """MCP SSH server for IOS-XE / NX-OS routers and Splunk/Telegraf troubleshooting.
 
 Environment variables:
-- MCP_SSH_INVENTORY: Absolute/relative path to CSV inventory file.
-                     Defaults to ./devices.csv
+- MCP_SSH_INVENTORY: Path to MCP CML config YAML (inventory/cml.yml) or devices.csv.
+                     Defaults to inventory/cml.yml when CML_HOST is set, else devices.csv
+- MCP_SSH_STATIC_HOSTS: Optional static hosts YAML (default: inventory/static_hosts.yml)
 - MCP_SSH_DEFAULT_TIMEOUT: Per-command timeout in seconds (default: 30)
+- CML_HOST, CML_USERNAME, CML_PASSWORD, CML_LAB: Required when using CML inventory.
 
-Secrets: copy `.env.example` to `.env` in this directory (gitignored). The server
-loads that file on startup; process env vars from the MCP client take precedence.
+Secrets: copy `CICD Pipeline/.env.example` to `CICD Pipeline/.env` (gitignored).
+Loaded via direnv on `cd`, by verify scripts, and by this MCP server.
 
 After pushing a campus_evpn_assurance Splunk app update, follow README-MCP-HOWTO.md
 section "Splunk App Update" — copying view XML to disk is not enough; use
@@ -40,8 +42,17 @@ import paramiko
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
+from inventory_loader import (
+    PIPELINE_DIR,
+    load_mcp_inventory,
+    resolve_server_path,
+)
+
 _SERVER_DIR = Path(__file__).resolve().parent
-load_dotenv(_SERVER_DIR / ".env", override=True)
+load_dotenv(PIPELINE_DIR / ".env", override=True)
+# Deprecated — do not let a stale process env override .env static hosts path.
+if os.getenv("MCP_SSH_STATIC_HOSTS"):
+    os.environ.pop("MCP_SSH_OVERLAY", None)
 
 mcp = FastMCP("ssh-inventory-server")
 
@@ -71,14 +82,11 @@ def _resolve_secret(value: str | None) -> str | None:
 
 
 def _resolve_key_path(value: str | None) -> str | None:
-    """Resolve SSH private key paths; relative paths are anchored to the server dir."""
+    """Resolve SSH private key paths; relative paths use pipeline or server dir."""
     resolved = _resolve_secret(value)
     if not resolved:
         return None
-    path = Path(resolved).expanduser()
-    if not path.is_absolute():
-        path = (_SERVER_DIR / path).resolve()
-    return str(path)
+    return str(resolve_server_path(resolved))
 
 
 def _default_splunk_key_path() -> str | None:
@@ -87,9 +95,7 @@ def _default_splunk_key_path() -> str | None:
     return str(default) if default.is_file() else None
 
 
-def _load_inventory() -> dict[str, Device]:
-    inventory_path = os.getenv("MCP_SSH_INVENTORY", "devices.csv")
-    csv_path = Path(inventory_path).expanduser().resolve()
+def _load_csv_inventory(csv_path: Path) -> dict[str, Device]:
     if not csv_path.exists():
         raise FileNotFoundError(
             f"Inventory file not found: {csv_path}. "
@@ -139,6 +145,48 @@ def _load_inventory() -> dict[str, Device]:
         raise ValueError(f"No valid devices found in inventory: {csv_path}")
 
     return devices
+
+
+def _raw_to_device(raw: Any) -> Device:
+    key_path = _resolve_key_path(raw.key_path) if raw.key_path else None
+    if raw.name.lower() == "splunk" and not key_path:
+        key_path = _default_splunk_key_path()
+    password = _resolve_secret(raw.password) if raw.password else None
+    return Device(
+        name=raw.name,
+        host=raw.host,
+        port=raw.port,
+        username=raw.username,
+        password=password,
+        key_path=key_path,
+        platform=raw.platform,
+        role=raw.role,
+        tags=list(raw.tags),
+        proxy_jump=raw.proxy_jump,
+    )
+
+
+def _default_inventory_path() -> Path:
+    """Prefer CML inventory when configured; otherwise CSV beside this module."""
+    env_path = os.getenv("MCP_SSH_INVENTORY")
+    if env_path:
+        return resolve_server_path(env_path)
+
+    cml_path = (_SERVER_DIR / "inventory/cml.yml").resolve()
+    if cml_path.is_file() and os.getenv("CML_HOST"):
+        return cml_path
+
+    return (_SERVER_DIR / "devices.csv").resolve()
+
+
+def _load_inventory() -> dict[str, Device]:
+    path = _default_inventory_path()
+
+    if path.suffix.lower() in {".yml", ".yaml"}:
+        raw_devices = load_mcp_inventory(path)
+        return {key: _raw_to_device(raw) for key, raw in raw_devices.items()}
+
+    return _load_csv_inventory(path)
 
 
 def _is_iosxe(device: Device) -> bool:
@@ -447,6 +495,28 @@ def run_command_by_role(role: str, command: str, timeout: int | None = None) -> 
     selected = [dev for dev in devices.values() if dev.role == target_role]
     if not selected:
         return [{"error": f"No devices found with role '{role}'"}]
+
+    responses: list[dict[str, Any]] = []
+    for dev in selected:
+        try:
+            result = _run_commands(dev, [command], timeout_value, devices)[0]
+            responses.append({"device": dev.name, "host": dev.host, "result": result})
+        except (paramiko.SSHException, socket.error, TimeoutError, ValueError) as exc:
+            responses.append({"device": dev.name, "host": dev.host, "error": str(exc)})
+
+    return responses
+
+
+@mcp.tool()
+def run_command_by_tag(tag: str, command: str, timeout: int | None = None) -> list[dict[str, Any]]:
+    """Run one command on all devices that have a CML inventory tag."""
+    devices = _load_inventory()
+    target_tag = tag.strip().lower()
+    timeout_value = timeout or int(os.getenv("MCP_SSH_DEFAULT_TIMEOUT", "30"))
+
+    selected = [dev for dev in devices.values() if target_tag in dev.tags]
+    if not selected:
+        return [{"error": f"No devices found with tag '{tag}'"}]
 
     responses: list[dict[str, Any]] = []
     for dev in selected:
