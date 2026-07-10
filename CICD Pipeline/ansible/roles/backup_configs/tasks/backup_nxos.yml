@@ -33,32 +33,3 @@
     mode: "0600"
   delegate_to: localhost
 
-# Task: Find timestamped backup directories on controller
-# Pre:  backup_root_dir contains 0..N YYYYMMDD-HHMMSS subdirs
-# Post: backup_dirs.files → [{path, mtime}, …]
-- name: Find timestamped backup directories on controller
-  ansible.builtin.find:
-    paths: "{{ backup_root_dir }}"
-    file_type: directory
-    recurse: false
-  register: backup_dirs
-  delegate_to: localhost
-  run_once: true
-
-# Task: Build list of old backup directories to prune
-# Pre:  backup_retention_count: 5 (keep newest N dirs)
-# Post: backup_dirs_to_prune → dirs older than retention window
-- name: Build list of old backup directories to prune
-  ansible.builtin.set_fact:
-    backup_dirs_to_prune: "{{ (backup_dirs.files | sort(attribute='mtime', reverse=true))[backup_retention_count | int:] }}"
-  delegate_to: localhost
-  run_once: true
-
-- name: Remove pruned backup directories from controller
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: absent
-  loop: "{{ backup_dirs_to_prune }}"
-  when: backup_dirs_to_prune | length > 0
-  delegate_to: localhost
-  run_once: true

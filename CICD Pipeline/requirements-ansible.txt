@@ -1,0 +1,3 @@
+# Ansible + CML inventory (project venv). Pin virl2_client <2.10 — cisco.cml 1.2.0 uses node.config.
+ansible-core>=2.17,<2.18
+virl2_client>=2.0.0,<2.10.0
