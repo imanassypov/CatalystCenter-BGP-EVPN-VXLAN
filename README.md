@@ -435,6 +435,119 @@ It supports **multiple subfolders** (`git_repo_subfolders` in `inventory/group_v
 **Phase 3 — Control Plane** (Steps 6-7): BGP EVPN peering, L2VNI overlay
 **Phase 4 — Services** (Steps 8-11): Client ports, NAC, telemetry
 
+### 8.4 Operations Examples
+
+Step-by-step guides for common day-2 changes. Each example lists **which `DEFN-*.j2` files to edit** (the data dictionaries that drive rendering) and what Catalyst Center / lab follow-up is required. `FABRIC-*.j2` generators iterate `DEFN_OVERLAY` and related structures — **do not hand-edit FABRIC templates** when adding a VLAN in an existing VRF.
+
+#### Example 1 — Add a new red corporate VLAN and L2VNI (`corp-103`, VLAN 103)
+
+This walkthrough mirrors the **2026-07-10** addition of **corp-103**: a third corporate user segment in the existing **red** VRF (901). VLAN **103** maps to subnet **`198.18.103.0/24`**, L2VNI **50103** (`50000 + 103`), and follows the red-tenant naming conventions in §5.2–§5.3. No new VRF, loopback prefix, or `FABRIC-*.j2` edits are required.
+
+**Goal**
+
+| Field | Value |
+|-------|-------|
+| VLAN | 103 |
+| Segment name | `corp-103` |
+| VRF | red (901) |
+| Subnet / anycast GW | `198.18.103.0/24` / `198.18.103.1` |
+| L2VNI | 50103 |
+| Anycast MAC | `0000.0901.0103` |
+| BUM multicast | `239.190.100.103` |
+| Lab access port (optional) | Leaf-02 `GigabitEthernet1/0/8` → VLAN 103 (`client-red-05`) |
+
+**Step 1 — `DEFN-OVERLAY.j2` (required)**
+
+Add the VLAN to the red tenant block in `DEFN_OVERLAY`:
+
+1. Append `'103'` to the red `vlan_ids` list.
+2. Add a `vlans['103']` entry with SVI, anycast MAC, DHCP helper, BUM group, and `network` prefix.
+
+```jinja
+'vlan_ids': ['101', '102', '103'],
+'vlans': {
+  ...
+  '103': {'name':'corp-103', 'ipaddr':'198.18.103.1 255.255.255.0', 'mac':'0000.0901.0103',
+          'dhcp_helper':'198.19.2.78', 'bum_addr':'239.190.100.103', 'network':'198.18.103.0 255.255.255.0'}
+}
+```
+
+**What this drives (no FABRIC edits):** `FABRIC-OVERLAY.j2` renders on **leaves** (not spines/borders): `l2vpn evpn instance`, VLAN + `vlan configuration`, `interface nve1` L2VNI member, and `interface Vlan103` SVI with DHCP relay. Overlay is template-wide on all red-capable leaves; a lab may provision only the leaf that carries an access port.
+
+**Step 2 — `DEFN-L3OUT.j2` (required for internet / core egress)**
+
+Append the segment `/24` to `DEFN_L3OUT_AGGREGATES` so spines advertise a summary toward the enterprise core (ASN 65002):
+
+```jinja
+{% set DEFN_L3OUT_AGGREGATES = ["198.18.100.0 255.255.255.0",
+                                "198.18.101.0 255.255.255.0",
+                                "198.18.102.0 255.255.255.0",
+                                "198.18.103.0 255.255.255.0"]
+%}
+```
+
+**What this drives:** `FABRIC-EVPN.j2` adds `aggregate-address 198.18.103.0 255.255.255.0 summary-only` under `address-family ipv4 vrf red` on **Spine-01** and **Spine-02** only. This is L3OUT control-plane config — not an L2 overlay on spines.
+
+**Step 3 — `DEFN-CLIENT-PORTS.j2` (optional — lab access only)**
+
+When a physical client port is needed, add a port mapping under the target leaf hostname in `DEFN_CLIENT_PORTS`:
+
+```jinja
+'Leaf-02.dcloud.cisco.com': [
+  ...
+  {'port': 'GigabitEthernet1/0/8', 'vlan': '103', 'description': 'client-red-05', 'portfast': true, 'mode': 'access'}
+]
+```
+
+**What this drives:** `FABRIC-CLIENT-PORTS.j2` renders switchport access on that leaf only. Other leaves still receive overlay SVI/NVE/EVPN from Step 1 if provisioned, but no access port unless explicitly listed here.
+
+**DEFN files you do *not* modify for this pattern**
+
+| File | Why unchanged |
+|------|----------------|
+| `DEFN-VRF.j2` | Segment stays in existing `red` VRF (901) |
+| `DEFN-VNIOFFSETS.j2` | L2VNI still `50000 + vlan_id` |
+| `DEFN-ROLES.j2`, `DEFN-LOOPBACKS.j2` | No new nodes or loopbacks |
+| `DEFN-NAC.j2`, `DEFN-TELEMETRY.j2`, etc. | Unrelated to a new red VLAN |
+
+**Lab / non-template follow-up (outside `DEFN-*.j2`)**
+
+These are not Catalyst Center template data but are required for a working lab end-to-end:
+
+| Location | Change |
+|----------|--------|
+| `Node Configs/fabric-dmz/dhcp.cfg` | `red-103` DHCP pool + `ip dhcp excluded-address vrf red 198.18.103.1 198.18.103.200` |
+| `Node Configs/cores/core01.cfg`, `core02.cfg` | `ip prefix-list TENANT_SEGMENTS seq 30 permit 198.18.103.0/24` (red egress via Spine L3OUT → Core) |
+| `Node Configs/CML/BGP_EVPN_Campus_v*.yaml` | Lab client on Leaf-02 `Gi1/0/8` (if using CML topology) |
+
+**Deploy**
+
+1. Validate Jinja: `CICD Pipeline/ansible/scripts/validate_j2_syntax.py`
+2. Sync templates: Ansible stage `07_template_sync.yml`
+3. Re-provision campus fabric devices from Catalyst Center (`BGP-EVPN-BUILD` composite). In the lab, **Leaf-02** (access + overlay) and **both spines** (L3OUT aggregate) are the minimum fabric targets; provision additional leaves only when overlay SVI/NVE is required on those nodes.
+4. Apply `dhcp.cfg` to the dhcp-server and core prefix-list updates if external reachability is in scope.
+
+**Verify**
+
+| Check | Command / location |
+|-------|-------------------|
+| VLAN / SVI (leaf) | `show vlan id 103`, `show ip int vrf red Vlan103` |
+| EVPN | `show l2vpn evpn mac vni 50103` |
+| L3OUT (spine) | `show ip bgp vpnv4 vrf red` — aggregate `198.18.103.0/24` |
+| Core egress | `show ip prefix-list TENANT_SEGMENTS` on Core-01/02 |
+| DHCP (lab) | Client on Leaf-02 `Gi1/0/8` receives `.201+` from `red-103` pool |
+
+**Rollback scope (campus fabric only)**
+
+To remove corp-103 from live devices without touching cores, DMZ, or dhcp-server:
+
+| Device | Remove |
+|--------|--------|
+| **Leaf-02** | `Gi1/0/8` access config, `Vlan103`, NVE member `50103`, `l2vpn evpn instance 103`, VLAN 103 |
+| **Spine-01 / Spine-02** | `no aggregate-address 198.18.103.0 255.255.255.0 summary-only` in `address-family ipv4 vrf red` |
+
+Only remove overlay on other leaves if those nodes were provisioned with the segment. See [Release Notes/2026-07-10-corp-103-red-segment.md](Release%20Notes/2026-07-10-corp-103-red-segment.md) for the full change record.
+
 ---
 
 ## 9. Splunk Assurance Integration
@@ -634,6 +747,9 @@ ip prefix-list LOOPBACKS seq {{loop.index}} permit {{DEFN_LOOP_UNDERLAY[node]}}/
 2. `DEFN-OVERLAY.j2` — Add VLAN definitions under the new VRF
 
 ### New VLAN
+
+See **§8.4 Example 1** for a full red corporate VLAN walkthrough (`corp-103`). Minimal data change:
+
 Add entry to `DEFN_OVERLAY` under the correct VRF:
 ```jinja
 '102': {'name':'corp-102', 'ipaddr':'10.1.12.1 255.255.255.0', 'mac':'0000.0901.0102',
