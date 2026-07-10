@@ -1,0 +1,38 @@
+{
+  // Jinja2 (.j2) — Catalyst Center templates + Ansible role templates
+  "files.associations": {
+    "*.j2": "jinja",
+    "**/CICD Pipeline/ansible/**/*.j2": "ansible-jinja2"
+  },
+
+  "[jinja]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.quickSuggestions": {
+      "comments": false,
+      "strings": true,
+      "other": true
+    }
+  },
+
+  "[ansible-jinja2]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // djlint — Jinja syntax/structure linting (pip install djlint)
+  "djlint.enableLinting": true,
+  "djlint.useEditorIndentation": true,
+  "djlint.showInstallError": true,
+
+  // Ansible extension — ansible-lint for playbooks and role templates
+  "ansible.validation.enabled": true,
+  "ansible.validation.lint.enabled": true,
+  "ansible.lint.enabled": true,
+  "ansible.lint.arguments": "-c ${workspaceFolder}/CICD Pipeline/ansible/.ansible-lint",
+
+  // Catalyst Center FABRIC templates are IOS-XE CLI with embedded Jinja; djlint is noisy there
+  "djlint.exclude": [
+    "**/Catalyst Center Templates/**/FABRIC-*.j2"
+  ]
+}

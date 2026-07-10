@@ -4,7 +4,10 @@
 
 # Editor / IDE local config (not part of the fabric repo)
 .cursor/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
 
 # Python bytecode
 __pycache__/

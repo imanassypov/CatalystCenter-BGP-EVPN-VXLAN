@@ -63,7 +63,7 @@ discovery_netconf_credentials:
 
 # Template sync / GitHub (stage 7)
 git_repo: "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
-git_branch: main
+git_branch: feature-new-tenant-segments
 git_repo_subfolders:
   - path: "Catalyst Center Templates/Site BGP EVPN Templates"
     project_name: "Building P0"

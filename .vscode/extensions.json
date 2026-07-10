@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "wholroyd.jinja",
+    "redhat.ansible",
+    "monosans.djlint"
+  ]
+}
