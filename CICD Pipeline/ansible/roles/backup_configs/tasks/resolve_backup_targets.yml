@@ -1,0 +1,25 @@
+---
+# =============================================================================
+# backup_configs / resolve_backup_targets.yml  —  Stage 11.0 (play 1)
+# =============================================================================
+# Union of inventory hosts in backup_cml_tags (CML tag → Ansible group).
+# Play var backup_cml_tags is set on playbooks/11_backup_lab_configs.yml.
+# =============================================================================
+
+- name: Resolve backup targets from CML tag groups
+  ansible.builtin.set_fact:
+    backup_target_hosts: "{{ backup_target_hosts | default([]) | union(groups[item] | default([])) }}"
+  loop: "{{ backup_cml_tags }}"
+
+- name: Assert backup scope resolved at least one host
+  ansible.builtin.assert:
+    that:
+      - backup_target_hosts | length > 0
+    fail_msg: >-
+      No hosts found in CML tag groups {{ backup_cml_tags | join(', ') }}.
+      Check cml.yml group_tags and live CML tag assignments.
+
+- name: Show backup target hosts
+  ansible.builtin.debug:
+    msg: "Backup targets ({{ backup_target_hosts | length }}): {{ backup_target_hosts | sort | join(', ') }}"
+  when: lookup('env', 'DEBUG', default='') | bool

@@ -1,0 +1,6 @@
+vlan,l2vni,l3vni,vrf,segment_name,overlay_leaves,access_leaves
+101,50101,50901,red,corp-101,"Leaf-01 Leaf-02","Leaf-01 Leaf-02"
+102,50102,50901,red,corp-102,"Leaf-01 Leaf-02","Leaf-01 Leaf-02"
+103,50103,50901,red,corp-103,"Leaf-01 Leaf-02","Leaf-02"
+201,50201,50902,blue,iot-blue-201,"Leaf-01 Leaf-02","Leaf-01 Leaf-02"
+221,50221,50903,green,iot-green-221,"Leaf-01 Leaf-02","Leaf-01 Leaf-02"

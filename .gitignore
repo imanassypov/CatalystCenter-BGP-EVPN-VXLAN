@@ -9,8 +9,9 @@
 !.vscode/settings.json
 !.vscode/tasks.json
 
-# Python bytecode
-__pycache__/
+# Python virtual environments
+**/.venv/
+venv/
 *.pyc
 
 # LinkedIn blog drafts (local-only, not part of the fabric repo)
@@ -26,7 +27,8 @@ Campus BGP EVPN Splunk Assurance/packaging/dist/
 .vault_pass
 **/.vault_pass
 
-# MCP SSH server local credentials
+# MCP SSH server local credentials (canonical file: CICD Pipeline/.env via direnv)
+CICD Pipeline/.env
 CICD Pipeline/utils/mcp-ssh-server/.env
 
 # Splunk SSH keys and local credential stores (never commit)

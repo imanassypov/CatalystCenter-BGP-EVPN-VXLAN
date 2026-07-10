@@ -47,6 +47,7 @@ cp "${ASSURANCE_DIR}/SETUP_GUIDE.md" "${bundle_root}/"
 cp "${ASSURANCE_DIR}/README.md" "${bundle_root}/"
 cp "${ASSURANCE_DIR}/model-config-snippets/telemetry-subscriptions.ios-xe.cfg" "${bundle_root}/"
 cp "${SCRIPT_DIR}/evpn_device_inventory.template.csv" "${bundle_root}/evpn_device_inventory.template.csv"
+cp "${SCRIPT_DIR}/evpn_segment_inventory.template.csv" "${bundle_root}/evpn_segment_inventory.template.csv"
 
 rsync -a \
   --exclude '.DS_Store' \

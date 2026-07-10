@@ -7,12 +7,9 @@
         "/path/to/CICD Pipeline/utils/mcp-ssh-server/server.py"
       ],
       "env": {
-        "MCP_SSH_INVENTORY": "/path/to/CICD Pipeline/utils/mcp-ssh-server/devices.csv",
-        "IOSXE_PASS": "<device-enable-password>",
-        "HF_PASS": "<heavy-forwarder-password>",
-        "SSH_KEY_PATH": "/path/to/Campus BGP EVPN Splunk Assurance/dcloud-splunk-creds/<your-key>.pem",
-        "SSH_BASTION_KEY": "/path/to/.ssh/id_ed25519"
-      }
+        "MCP_SSH_DEFAULT_TIMEOUT": "60"
+      },
+      "envFile": "/path/to/CICD Pipeline/.env"
     }
   }
 }

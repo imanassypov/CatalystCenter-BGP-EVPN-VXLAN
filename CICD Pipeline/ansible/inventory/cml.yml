@@ -1,0 +1,27 @@
+---
+# CML dynamic inventory — requires CML_HOST, CML_USERNAME, CML_PASSWORD, CML_LAB
+# Filename must end in cml.yml (enforced by cisco.cml.cml_inventory verify_file).
+plugin: cisco.cml.cml_inventory
+host: "{{ lookup('env', 'CML_HOST') }}"
+username: "{{ lookup('env', 'CML_USERNAME') }}"
+password: "{{ lookup('env', 'CML_PASSWORD') }}"
+lab: "{{ lookup('env', 'CML_LAB') | default('BGP EVPN Campus', true) }}"
+group: fabric
+validate_certs: "no"
+
+# Maintained allowlist: CML tag names that become Ansible groups when present on a node.
+# Edit when you add a new tag in CML you want to target with --limit or MCP run_command_by_tag.
+group_tags:
+  - "Campus Fabric"
+  - spine
+  - leaf
+  - border
+  - client
+  - dhcp-server
+  - "IP Core"
+  - ipsec
+  - dmz
+  - dmz01
+  - dmz02
+  - "65003"
+  - "65004"

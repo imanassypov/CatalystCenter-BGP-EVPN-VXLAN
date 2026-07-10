@@ -1,7 +1,17 @@
 ---
-- name: Initialize backup run (timestamp + device credentials from settings.json)
+# Stage 11 — backup running-config from CML-tagged fabric devices.
+# Scope: union of hosts in backup_cml_tags (must match group_tags in inventory/cml.yml).
+# Platform tasks: IOS-XE (iosxe) and NX-OS (nxos) via platform_groups.yml.
+
+- name: Initialize backup run (timestamp, CML tag scope, device credentials)
   hosts: localhost
   gather_facts: false
+  vars:
+    backup_cml_tags:
+      - Campus Fabric
+      - IP Core
+      - dmz
+      - dhcp-server
   tasks:
     - ansible.builtin.import_role:
         name: backup_configs
@@ -11,12 +21,24 @@
         tasks_from: load_settings
     - ansible.builtin.import_role:
         name: backup_configs
+        tasks_from: resolve_backup_targets
+    - ansible.builtin.import_role:
+        name: backup_configs
         tasks_from: load_device_credentials
+    - name: Register IOS-XE hosts in tag scope for backup
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: lab_backup_iosxe
+      loop: "{{ backup_target_hosts | intersect(groups['iosxe'] | default([])) }}"
+    - name: Register NX-OS hosts in tag scope for backup
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: lab_backup_nxos
+      loop: "{{ backup_target_hosts | intersect(groups['nxos'] | default([])) }}"
 
-- name: Backup running-config from IOS-XE devices
-  hosts: iosxe
+- name: Backup running-config from IOS-XE devices (tag scope ∩ iosxe)
+  hosts: lab_backup_iosxe
   gather_facts: false
-  # Device SSH creds: settings.json → load_device_credentials (play 1)
   vars:
     backup_output_dir: "{{ backup_root_dir }}/{{ hostvars['localhost']['backup_timestamp'] }}"
   tasks:
@@ -24,13 +46,20 @@
         name: backup_configs
         tasks_from: backup_iosxe
 
-- name: Backup running-config from NX-OS devices
-  hosts: nxos
+- name: Backup running-config from NX-OS devices (tag scope ∩ nxos)
+  hosts: lab_backup_nxos
   gather_facts: false
-  # Device SSH creds: settings.json → load_device_credentials (play 1)
   vars:
     backup_output_dir: "{{ backup_root_dir }}/{{ hostvars['localhost']['backup_timestamp'] }}"
   tasks:
     - ansible.builtin.import_role:
         name: backup_configs
         tasks_from: backup_nxos
+
+- name: Prune old timestamped backup directories
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - ansible.builtin.import_role:
+        name: backup_configs
+        tasks_from: prune_backup_retention
