@@ -11,7 +11,7 @@ PNG only** — they do not render `.mmd` inline.
 | `telemetry-two-halves.png` | `telemetry-two-halves.mmd` | [`../README.md`](../README.md) — Telemetry Foundations |
 | `metric-journey.png` | `metric-journey.mmd` | [`../README.md`](../README.md) — Worked Example |
 | `splunk_executive.png` | *(screenshot)* | Source capture for Summary dashboard snippets (10 rows); also embedded in [`../README.md`](../README.md) Introduction |
-| `splunk_leafs.png` | *(screenshot)* | Source capture for Details / Leafs snippets |
+| `splunk_leafs.png` | *(screenshot)* | Source capture for Details / Leafs snippets (11 rows); embedded in [`../README.md`](../README.md) Introduction |
 | `splunk_spines.png` | *(screenshot)* | Source capture for Details / Spines snippets |
 | `splunk_borders.png` | *(screenshot)* | Source capture for Details / Borders snippets |
 | `snippets/*.png` | `split_dashboard_snippets.py` | [`../README.md`](../README.md) — Operator's Guide panel rows |

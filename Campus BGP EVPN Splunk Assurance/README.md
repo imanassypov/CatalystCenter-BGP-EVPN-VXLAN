@@ -66,10 +66,16 @@ The **Summary** tab is the shift-start view in `campus_evpn_assurance`: fabric-w
 inventory, VXLAN load, BGP health matrix, EVPN route churn, and session-drop trends — all from
 streaming MDT into metrics index `evpn_assurance`.
 
-One telemetry pipeline replaces shift-long `show bgp` sweeps. The **Details** tab drills the
-same signals by **Fabric Node Role** (leaf / spine / border). The
-[Operator's Guide](#6-operators-guide) walks each Summary panel row with cropped snippets from
-`images/snippets/`.
+![campus_evpn_assurance Details dashboard — Leafs role (site Building P0, last 4 hours)](images/splunk_leafs.png)
+
+The **Details** tab filters the same telemetry by **Fabric Node Role**. Above: **Leafs** —
+per-node BGP and tunnel state, NVE peer adjacency Sankeys, EVPN control-plane vs data-plane VNI
+binding, and VXLAN throughput (Subs 40113/40115). Spines and Borders use the same layout with
+role-appropriate expectations ([§6.3](#63-details-dashboard)).
+
+One telemetry pipeline replaces shift-long `show bgp` sweeps. The
+[Operator's Guide](#6-operators-guide) walks each Summary and Details panel row with cropped
+snippets from `images/snippets/`.
 
 ---
 
