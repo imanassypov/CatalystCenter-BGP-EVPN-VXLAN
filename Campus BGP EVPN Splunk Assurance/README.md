@@ -59,13 +59,16 @@ troubleshooting — but who may be new to **streaming telemetry, OpenTelemetry, 
 
 ### At a glance
 
-![BGP Session Health Matrix — fabric control-plane mesh; green = Established, red = any session down](images/snippets/summary_bgp_health_matrix.png)
+![campus_evpn_assurance Summary dashboard — fabric-wide overlay health (site Building P0, last 4 hours)](images/splunk_executive.png)
 
-One telemetry pipeline replaces shift-long `show bgp` sweeps: every device × peer pair
-collapses to a green dot (all sessions Established) or red (any negotiated hold-time = 0).
-The **Summary** and **Details** dashboards extend that lens across overlay inventory, VXLAN
-load, EVPN route churn, and **Silent Devices (>5m)** when MDT stops arriving. The
-[Operator's Guide](#6-operators-guide) walks each panel row with matching snippets from
+The **Summary** tab is the shift-start view in `campus_evpn_assurance`: fabric-wide scorecards
+(NVE VNIs, BGP sessions, tunnel interfaces, silent devices), tenant VRF placement, segment
+inventory, VXLAN load, BGP health matrix, EVPN route churn, and session-drop trends — all from
+streaming MDT into metrics index `evpn_assurance`.
+
+One telemetry pipeline replaces shift-long `show bgp` sweeps. The **Details** tab drills the
+same signals by **Fabric Node Role** (leaf / spine / border). The
+[Operator's Guide](#6-operators-guide) walks each Summary panel row with cropped snippets from
 `images/snippets/`.
 
 ---
