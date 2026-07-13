@@ -548,6 +548,19 @@ To remove corp-103 from live devices without touching cores, DMZ, or dhcp-server
 
 Only remove overlay on other leaves if those nodes were provisioned with the segment. See [Release Notes/2026-07-10-corp-103-red-segment.md](Release%20Notes/2026-07-10-corp-103-red-segment.md) for the full change record.
 
+### 8.5 DEFN Template Web Editor
+
+For visual editing of all `DEFN-*.j2` data dictionaries, use the web editor in [`CICD Pipeline/utils/defn-editor/`](CICD%20Pipeline/utils/defn-editor/):
+
+```bash
+cd "CICD Pipeline/utils/defn-editor"
+docker compose up --build
+```
+
+Open http://localhost:8080 — the container volume-mounts `Catalyst Center Templates/Site BGP EVPN Templates` so edits write directly to your template project folder. Click **Load project**, edit tables in AG Grid, then **Validate** and **Save**.
+
+The CLI (`defn_io.py load|save|validate`) remains available for CI and scripting. See [`defn-editor/README.md`](CICD%20Pipeline/utils/defn-editor/README.md).
+
 ---
 
 ## 9. Splunk Assurance Integration
