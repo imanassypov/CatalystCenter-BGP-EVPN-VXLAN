@@ -57,6 +57,17 @@ troubleshooting — but who may be new to **streaming telemetry, OpenTelemetry, 
 | **Telemetry engineer** | [§4](#4-telemetry-and-data-model) | [`otel-collector/README.md`](otel-collector/README.md) |
 | **Splunk maintainer** | [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) | Macros, `mstats` patterns, inventory lookup |
 
+### At a glance
+
+![BGP Session Health Matrix — fabric control-plane mesh; green = Established, red = any session down](images/snippets/summary_bgp_health_matrix.png)
+
+One telemetry pipeline replaces shift-long `show bgp` sweeps: every device × peer pair
+collapses to a green dot (all sessions Established) or red (any negotiated hold-time = 0).
+The **Summary** and **Details** dashboards extend that lens across overlay inventory, VXLAN
+load, EVPN route churn, and **Silent Devices (>5m)** when MDT stops arriving. The
+[Operator's Guide](#6-operators-guide) walks each panel row with matching snippets from
+`images/snippets/`.
+
 ---
 
 ## 2. Lifecycle Context
@@ -266,18 +277,21 @@ Summary  →  (red / non-zero)  →  Details (pick role)  →  Alerts (confirm)
 | **Spines** | L2/L3 VNIs normally **0** | Session to every leaf/border | RR peering, prefix reflection |
 | **Borders** | L2 often **0**; L3 = tenants | Spine + external eBGP | L3 VNI egress, northbound handoff |
 
-**Snippet regeneration:** `python3 images/split_dashboard_snippets.py` (see
-[`images/README.md`](images/README.md)).
+**Snippet regeneration:** `python3 images/split_dashboard_snippets.py` — Summary = 10 rows,
+Details = 11 rows per role (see [`images/README.md`](images/README.md)).
 
 ### 6.2 Summary dashboard
 
-Nine panel rows. Captures: site `Building P0`, last 4 hours.
+Ten panel rows on the **Summary** tab. Captures: site `Building P0`, last 4 hours.
 
 #### Row 1 — Scorecards
 
-![Summary scorecards](images/snippets/summary_scorecards.png)
+![Summary scorecards — fabric-wide go/no-go tiles](images/snippets/summary_scorecards.png)
 
-Fabric go/no-go. Red **Silent Devices** → check collector before assuming device fault.
+Seven fabric-wide tiles: **NVE VNIs ▲/▼**, **BGP Sessions ▲/▼**, **VTEP Tunnel Peers**,
+**Tunnel Interfaces ▲/▼**, **Active L2 VNIs**, **Active VRFs (L3 VNIs)**, and **Silent Devices
+(>5m)**. Scorecards use the latest snapshot in the picker window (not the full trend). Red
+**Silent Devices** → verify collector and MDT subscriptions before blaming the switch.
 
 ```text
 show nve vni summary
@@ -290,9 +304,11 @@ show vrf brief
 
 #### Row 2 — BGP trends and tenant VRFs
 
-![BGP Established per device; Tenant VRFs by role](images/snippets/summary_bgp_trends_vrf_sankey.png)
+![BGP Established per device; Tenant VRFs by device role (Sankey)](images/snippets/summary_bgp_trends_vrf_sankey.png)
 
-Flat Established lines = stable; dips = flap. Sankey: which roles host which tenant VRFs.
+Left: **BGP Sessions Established — Per Device Over Time** — flat lines = stable; dips (e.g.
+border nodes) = session flap. Right: **Tenant VRFs by Device Role** Sankey from NVE L3 VNI
+data-plane state (`nve-vni-oper`, `vni-type=l3`) — which roles host `red` / `blue` / `green`.
 
 ```text
 show bgp l2vpn evpn summary
@@ -300,44 +316,68 @@ show vrf
 show nve vni
 ```
 
-#### Row 3 — Segment inventory
+#### Row 3 — Segment inventory by tenant
 
-![L2 vs L3 VNI counts per tenant VRF](images/snippets/summary_segment_inventory.png)
+![Segment Inventory by Tenant VRF — stacked L2 and L3 VNI counts](images/snippets/summary_segment_inventory.png)
 
-Per-tenant overlay census vs build intent.
+**Segment Inventory by Tenant VRF** — one horizontal bar per tenant; green = L3 VNIs (routed),
+blue = L2 VNIs (bridged). Bar length = total distinct segments that tenant owns fabric-wide.
+Compare to [`DEFN-OVERLAY.j2`](https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN/blob/main/Catalyst%20Center%20Templates/Site%20BGP%20EVPN%20Templates/DEFN-OVERLAY.j2) intent.
 
 ```text
 show nve vni
 show l2vpn evpn evi detail
+show vrf
 ```
 
-#### Row 4 — Busiest VXLAN segments
+#### Row 4 — L2 segment placement
 
-![Top 3 VXLAN segments by bytes](images/snippets/summary_busiest_vxlan.png)
+![L2 Segment Placement by Device — access vs overlay-only rows per leaf](images/snippets/summary_l2_segment_placement.png)
 
-Hot-spot leaderboard (Sub 40115).
+**L2 Segment Placement by Device** — table from `evpn_segment_inventory`: which L2 segments
+are **access** (client port on that leaf) vs **overlay-only** (VNI/SVI role, no access port).
+Cross-check **NVE State** against live `nve-vni-oper` (e.g. corp segment access on Leaf-02
+only). Flags intent drift before users notice.
+
+```text
+show nve vni
+show l2vpn evpn evi detail
+show vlan brief
+```
+
+#### Row 5 — Busiest VXLAN segments
+
+![Top 3 Busiest VXLAN Segments — fabric-wide byte leaderboard](images/snippets/summary_busiest_vxlan.png)
+
+**VXLAN Bandwidth per VNI — Mbps (Sub 40115)** rendered as **Top 3 Busiest VXLAN Segments**:
+horizontal bars ranked by per-minute byte delta from `nve-vni-oper-counters`, summed per
+device + VNI across the picker range. Blue = L2 VNI; green = L3 VNI in the legend.
 
 ```text
 show nve vni
 show interfaces nve 1 counters
 ```
 
-#### Row 5 — BGP health matrix
+#### Row 6 — BGP health matrix
 
-![Device × peer session grid](images/snippets/summary_bgp_health_matrix.png)
+![BGP Session Health Matrix — Device × Peer](images/snippets/summary_bgp_health_matrix.png)
 
-Green = all sessions Established; red = any down; blank = no peering.
+**BGP Session Health Matrix — Device × Peer** — each cell is green when every BGP session
+between that device/peer pair is Established, red when any hold-time = 0, blank when no
+peering exists. Fastest fabric-wide control-plane triage.
 
 ```text
 show bgp l2vpn evpn summary
 show bgp l2vpn evpn neighbors <peer-ip>
 ```
 
-#### Row 6 — NVE overlay counts
+#### Row 7 — NVE overlay counts
 
-![Per-device VTEP peers, L2/L3 VNI counts](images/snippets/summary_nve_overlay_counts.png)
+![NVE Overlay Counts — per device with role-consistency colouring](images/snippets/summary_nve_overlay_counts.png)
 
-Per-device overlay inventory; colour = match to role design.
+**NVE Overlay Counts — Per Device** — point-in-time VTEP peer, active L2 VNI, and L3 VNI/VRF
+counts from `nve-oper`. Cell colour: green = all peers in the same role report the same count;
+yellow = drift vs a role peer; red = zero (expected for spine L2 in many designs).
 
 ```text
 show nve peers
@@ -345,33 +385,38 @@ show nve vni summary
 show vrf brief
 ```
 
-#### Row 7 — EVPN route updates
+#### Row 8 — EVPN route updates
 
-![Type 2 vs Type 5 route update deltas](images/snippets/summary_evpn_route_updates.png)
+![EVPN Route Updates by device table and Type 2 vs Type 5 by role](images/snippets/summary_evpn_route_updates.png)
 
-Control-plane work rate (Sub 40113) — not RIB size.
+Left: per-device **local-add / remote-add** counters from `evpn-stats` (Sub 40113) — T2 MAC,
+T2 MAC/IP, T5 prefix update deltas. Right: same data stacked **by role** (Type 2 vs Type 5).
+Control-plane *work rate*, not RIB size.
 
 ```text
 show bgp l2vpn evpn statistics
 show l2vpn evpn evi detail
 ```
 
-#### Row 8 — EVPN RIB churn
+#### Row 9 — EVPN RIB churn
 
-![Table version delta per device](images/snippets/summary_evpn_rib_churn.png)
+![EVPN RIB Churn per Device — table version delta per minute](images/snippets/summary_evpn_rib_churn.png)
 
-Correlates with MAC moves and reconvergence.
+**EVPN RIB Churn — Per Role** (line chart: table version delta / min per device). Spikes
+correlate with MAC moves, reconvergence, and BGP events — pair with Row 2 Established dips and
+Row 6 matrix reds.
 
 ```text
 show bgp l2vpn evpn summary
 show l2vpn evpn mac
 ```
 
-#### Row 9 — BGP session drops
+#### Row 10 — BGP session drops
 
-![Session drop events per device](images/snippets/summary_bgp_session_drops.png)
+![BGP Session Drops per Device — new session drop events over time](images/snippets/summary_bgp_session_drops.png)
 
-Spikes align with Row 2 dips and Row 5 red cells.
+**BGP Session Drops — Per Role** — **New Session Drops / Interval** per device when sessions
+fail to establish or reset. Spikes align with Rows 2 and 9 during control-plane instability.
 
 ```text
 show bgp l2vpn evpn summary
@@ -387,16 +432,16 @@ presents the same panel type.
 | # | Panel row | Demonstrates |
 |---|---|---|
 | 1 | Scorecards | Role-scoped go/no-go ([§6.1](#61-triage-model)) |
-| 2 | Tunnel interface status | `Tunnel*` oper-state (Subs 40120/40121) |
-| 3 | BGP EVPN / IPv4 session state | Per-neighbor adjacency grid |
-| 4 | BGP Established + L3 VNI trends | Session and tenant VRF stability over time |
-| 5 | BGP drops + EVPN RIB churn | Per-node control-plane instability |
-| 6 | NVE peers + tunnels over time | VTEP peer and tunnel up-count trends |
-| 7 | NVE peer adjacency (Sankey) | Device → VNI → remote VTEP |
-| 8 | EVPN VNI binding — control plane | EVI → L3 VNI → L2 VLAN chain |
+| 2 | Tunnel interface status | **Tunnel Interface Status** table (Subs 40120/40121) |
+| 3 | BGP EVPN / IPv4 session state | Per-neighbor **BGP EVPN** and **BGP IPv4** grids |
+| 4 | BGP Established + L3 VNI trends | **BGP Established Sessions per Node** + **L3 VNI count** |
+| 5 | BGP drops + EVPN RIB churn | **BGP Session Drops** + **EVPN RIB Churn** per node |
+| 6 | NVE peers + tunnels over time | **NVE Peers** + **Tunnel Interfaces Up** trends |
+| 7 | NVE peer adjacency (Sankey) | Device → VNI → remote VTEP (24 h snapshot) |
+| 8 | EVPN VNI binding — control plane | EVI → L3 VNI → L2 VLAN (`evpn-oper`) |
 | 9 | EVPN VNI binding — data plane (NVE) | VRF → L3 VNI → NVE L2 VNI oper-state |
-| 10 | VXLAN throughput + BUM ratio | Overlay load and flooding ratio (Sub 40115) |
-| 11 | NVE packet rate + top segments | Per-VNI throughput leaderboard |
+| 10 | VXLAN throughput + BUM ratio | TX+RX bytes/min + BUM vs unicast (Sub 40115) |
+| 11 | NVE packet rate + top segments | Packet rate trend + top-VNI leaderboard |
 
 #### Row 1 — Scorecards
 
@@ -418,7 +463,8 @@ show ip interface brief | include Tunnel
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_tunnel_interface_status.png) | ![spines](images/snippets/spines_tunnel_interface_status.png) | ![borders](images/snippets/borders_tunnel_interface_status.png) |
 
-All rows **Up**. PIM register / underlay tunnels.
+**Tunnel Interface Status** — oper-state grid for `Tunnel*` interfaces (PIM register / underlay
+tunnels, Subs 40120/40121). All rows **Up** in a healthy lab.
 
 ```text
 show ip interface brief | include Tunnel
@@ -431,7 +477,8 @@ show interfaces Tunnel0 - 99 status
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_bgp_session_state.png) | ![spines](images/snippets/spines_bgp_session_state.png) | ![borders](images/snippets/borders_bgp_session_state.png) |
 
-EVPN to spines; IPv4 when tenant handoff is configured. Spines: RR completeness to all VTEPs.
+Left: **BGP EVPN Session State** — EVPN neighbours to spines/peers. Right: **BGP IPv4 Session
+State** — tenant or northbound IPv4 when configured. Spines: RR completeness to all VTEPs.
 
 ```text
 show bgp l2vpn evpn summary
@@ -446,7 +493,9 @@ show bgp ipv4 unicast vrf all summary
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_bgp_vni_trends.png) | ![spines](images/snippets/spines_bgp_vni_trends.png) | ![borders](images/snippets/borders_bgp_vni_trends.png) |
 
-Steady lines = healthy. Spines: session count ≈ leaf + border VTEPs; L3 VNI count minimal.
+Left: **BGP Established Sessions per Node** — session count stability for the filtered role.
+Right: **L3 VNI (VRF) Count per Node** — tenant VRF presence on each node. Spines: session
+count ≈ all VTEP peers; L3 VNI count often minimal on pure RRs.
 
 ```text
 show bgp l2vpn evpn summary
@@ -460,7 +509,8 @@ show nve vni
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_bgp_drops_rib_churn.png) | ![spines](images/snippets/spines_bgp_drops_rib_churn.png) | ![borders](images/snippets/borders_bgp_drops_rib_churn.png) |
 
-Single node spiking → local fault. Zeros expected in steady state.
+Left: **BGP Session Drops per Node**. Right: **EVPN RIB Churn per Node** (table version
+delta / min). Single node spiking → local fault; zeros expected in steady state.
 
 ```text
 show bgp l2vpn evpn summary
@@ -474,7 +524,8 @@ show logging | include BGP
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_nve_peers_tunnels.png) | ![spines](images/snippets/spines_nve_peers_tunnels.png) | ![borders](images/snippets/borders_nve_peers_tunnels.png) |
 
-Step-down → remote VTEP or tunnel lost.
+Left: **NVE Peers Over Time** — VTEP adjacency up-count. Right: **Tunnel Interfaces Up per
+Node Over Time** — underlay/PIM tunnel oper-state. Step-down → remote VTEP or tunnel lost.
 
 ```text
 show nve peers
@@ -487,7 +538,9 @@ show ip interface brief | include Tunnel
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_nve_peer_adjacency.png) | ![spines](images/snippets/spines_nve_peer_adjacency.png) | ![borders](images/snippets/borders_nve_peer_adjacency.png) |
 
-Missing Sankey flows → broken VNI adjacency for that segment.
+**NVE Peer Adjacency (Device → VNI → VTEP Peer)** — Sankey from `nve-peer-oper` (latest
+snapshot within 24 h, not bound to the time picker). Missing flows → broken VNI adjacency for
+that segment.
 
 ```text
 show nve peers
@@ -501,7 +554,9 @@ show nve vni interface nve 1 detail
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_evpn_binding_control_plane.png) | ![spines](images/snippets/spines_evpn_binding_control_plane.png) | ![borders](images/snippets/borders_evpn_binding_control_plane.png) |
 
-EVI → L3 VNI → L2 VLAN. Spines often show minimal bindings (expected for pure RR).
+**EVPN VNI Binding — Control Plane** — Sankey chain from `evpn-oper/evpn-inst/evpn-vlan`:
+Leaf → EVI (tenant) → L3VNI → L2VNI → L2 VLAN. Cross-check Row 9 NVE Sankey: EVI ↔ VRF,
+L3/L2 VNI numbers must align.
 
 ```text
 show l2vpn evpn evi detail
@@ -515,7 +570,8 @@ show vlan brief
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_evpn_binding_data_plane.png) | ![spines](images/snippets/spines_evpn_binding_data_plane.png) | ![borders](images/snippets/borders_evpn_binding_data_plane.png) |
 
-Cross-check Row 8 — CP/DP mismatch flags programming or SVI fault.
+**EVPN VNI Binding — Data Plane (NVE)** — VRF → L3 VNI → NVE L2 VNI oper-state from
+`nve-vni-oper`. Mismatch vs Row 8 → programming or SVI fault.
 
 ```text
 show nve vni
@@ -529,7 +585,9 @@ show vrf detail
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_vxlan_throughput_bum.png) | ![spines](images/snippets/spines_vxlan_throughput_bum.png) | ![borders](images/snippets/borders_vxlan_throughput_bum.png) |
 
-High BUM % → flooding or missing MAC learning. Borders: northbound egress spikes.
+Left: **VXLAN Throughput per Node — TX+RX Bytes/min (Sub 40115)**. Right: **BUM vs Unicast
+TX Packets per Node** — high BUM % → flooding or missing MAC learning. Borders: northbound
+egress spikes.
 
 ```text
 show interfaces nve 1 counters
@@ -542,7 +600,8 @@ show nve vni
 |:---:|:---:|:---:|
 | ![leafs](images/snippets/leafs_vxlan_packet_rate_top.png) | ![spines](images/snippets/spines_vxlan_packet_rate_top.png) | ![borders](images/snippets/borders_vxlan_packet_rate_top.png) |
 
-Narrows hot nodes to specific VNIs.
+Left: **NVE Interface Packet Rate per Node**. Right: **Top VXLAN Segments by Throughput**
+(Sub 40115) — narrows hot nodes to specific VNIs.
 
 ```text
 show interfaces nve 1 counters

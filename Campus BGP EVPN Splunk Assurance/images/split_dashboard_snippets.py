@@ -21,6 +21,7 @@ EXEC_NAMES = [
     "scorecards",
     "bgp_trends_vrf_sankey",
     "segment_inventory",
+    "l2_segment_placement",
     "busiest_vxlan",
     "bgp_health_matrix",
     "nve_overlay_counts",
