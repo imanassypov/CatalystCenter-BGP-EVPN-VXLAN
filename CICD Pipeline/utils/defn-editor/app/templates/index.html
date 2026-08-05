@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEFN Template Editor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand">
+      <h1>DEFN Template Editor</h1>
+      <p id="project-path" class="muted">No project loaded</p>
+    </div>
+    <div class="folder-bar">
+      <label for="folder-input">Project folder</label>
+      <input id="folder-input" type="text" spellcheck="false"
+             placeholder="/absolute/path/to/folder/with/DEFN-*.j2" />
+    </div>
+    <div class="actions">
+      <button id="btn-browse" type="button" title="Pick folder (native macOS, Chrome, or Safari)">Browse…</button>
+      <button id="btn-load" type="button">Load project</button>
+      <button id="btn-validate" type="button" disabled>Validate</button>
+      <button id="btn-save" type="button" class="primary" disabled>Save</button>
+    </div>
+  </header>
+  <input id="folder-fallback" type="file" webkitdirectory multiple hidden>
+
+  <main>
+    <nav id="tab-bar" class="tab-bar" aria-label="DEFN sheets"></nav>
+    <section id="panels" class="panels"></section>
+    <aside id="log" class="log" aria-live="polite"></aside>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

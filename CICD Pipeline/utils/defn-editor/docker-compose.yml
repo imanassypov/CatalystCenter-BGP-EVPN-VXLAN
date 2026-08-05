@@ -1,0 +1,16 @@
+services:
+  defn-editor:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DEFN_PROJECT_ROOT: /data/templates
+      DEFN_DEFAULT_FOLDER: /data/templates
+      # Host paths allowed in the UI (colon-separated). Mount those paths below.
+      ALLOWED_PATH_ROOTS: ${HOME}
+    volumes:
+      # Default template project (repo)
+      - ../../../Catalyst Center Templates/Site BGP EVPN Templates:/data/templates:rw
+      # Host home — load/save any DEFN folder under your user profile
+      - ${HOME}:${HOME}:rw
+    restart: unless-stopped
