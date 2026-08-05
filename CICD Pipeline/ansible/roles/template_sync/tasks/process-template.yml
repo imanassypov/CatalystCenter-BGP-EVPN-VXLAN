@@ -23,13 +23,13 @@
 # Pre:  template_file (loop var): { name, path, content, commit_message,
 #                                   diff_content }
 #       projectName        — resolved CatC project for this subfolder
-#       include_diff_header — prepend the last commit diff as {## … ##} comments
+#       include_diff_header - prepend the last commit diff as {## ... ##} comments
 #       git_repo, git_branch, default_device_types, default_software_type,
 #       default_software_variant, default_template_version
 #
 # Post: template_name             — basename of the .j2 file
 #       template_content_raw      — blob with TEMPLATE_PROJECT_NAME substituted
-#       diff_content_raw          — diff wrapped in {## … ##}, or ""
+#       diff_content_raw          — diff wrapped in {## ... ##}, or ""
 #       template_content          — diff_content_raw ~ template_content_raw
 #       template_workflow_configs — appended with one entry:
 #         { configuration_templates: { template_name, project_name,
@@ -38,6 +38,27 @@
 #           failure_policy: ABORT_TARGET_ON_ERROR, version, tags } }
 # =============================================================================
 
+# Example - include_diff_header disabled (the inventory default)
+#   In : projectName         = "Building P0"
+#        include_diff_header = false
+#        template_file = {
+#          "name":    "FABRIC-VRF.j2",
+#          "path":    "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-VRF.j2",
+#          "content": "{% include \"{{ TEMPLATE_PROJECT_NAME }}/DEFN-VRF.j2\" %}\nvrf definition red\n",
+#          "commit_message": "2026-08-01T09:14:22Z | Add red VRF definition [Igor Manassypov]",
+#          "diff_content":   "@@ -1,2 +1,5 @@\n+vrf definition red"
+#        }
+#   Out: template_name        = "FABRIC-VRF.j2"
+#        template_content_raw = "{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n"
+#        commit_message       = "2026-08-01T09:14:22Z | Add red VRF definition [Igor Manassypov]"
+#        diff_content_raw     = ""
+#
+# Example - include_diff_header enabled
+#   In : same template_file, include_diff_header = true
+#   Out: diff_content_raw = "{## @@ -1,2 +1,5 @@ ##}\n{## +vrf definition red ##}\n"
+# The literal {{ TEMPLATE_PROJECT_NAME }} placeholder is substituted here rather
+# than at render time, so a template can include a sibling without hardcoding
+# the Catalyst Center project name.
 - name: Extract template metadata for {{ template_file.name }}
   set_fact:
     template_name: "{{ template_file.name }}"
@@ -45,10 +66,71 @@
     commit_message: "{{ template_file.commit_message }}"
     diff_content_raw: "{{ template_file.diff_content | regex_replace('([^\\n]+)', '{## \\1 ##}') + '\\n' if (include_diff_header and template_file.diff_content) else '' }}"
 
+# Example - include_diff_header disabled
+#   In : diff_content_raw     = ""
+#        template_content_raw = "{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n"
+#   Out: template_content     = "{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n"
+#
+# Example - include_diff_header enabled
+#   In : diff_content_raw     = "{## @@ -1,2 +1,5 @@ ##}\n{## +vrf definition red ##}\n"
+#        template_content_raw = "{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n"
+#   Out: template_content     = "{## @@ -1,2 +1,5 @@ ##}\n{## +vrf definition red ##}\n{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n"
+# The diff must come first so the CATC header comment on line 1 of the template
+# is preserved only when no diff header is prepended.
 - name: Assemble final template content for {{ template_name }}
   set_fact:
     template_content: "{{ diff_content_raw }}{{ template_content_raw }}"
 
+# Example
+#   In : template_name    = "FABRIC-VRF.j2"
+#        projectName      = "Building P0"
+#        template_content = "{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n"
+#        git_repo         = "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
+#        git_branch       = "main"
+#        default_software_type    = "IOS"
+#        default_software_variant = "XE"
+#        default_template_version = "1.0"
+#        default_device_types = [
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9500 Series Switches" },
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9300 Series Switches" },
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9400 Series Switches" }
+#        ]
+#        template_workflow_configs = []
+#   Out: template_workflow_configs = [
+#          {
+#            "configuration_templates": {
+#              "template_name":        "FABRIC-VRF.j2",
+#              "project_name":         "Building P0",
+#              "language":             "JINJA",
+#              "template_content":     "{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n",
+#              "template_description": "Template synced from Git https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git repository, branch main",
+#              "device_types": [
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9500 Series Switches" },
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9300 Series Switches" },
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9400 Series Switches" }
+#              ],
+#              "software_type":    "IOS",
+#              "software_variant": "XE",
+#              "software_version": null,
+#              "template_params":  [],
+#              "failure_policy":   "ABORT_TARGET_ON_ERROR",
+#              "version":          "1.0",
+#              "tags":             []
+#            }
+#          }
+#        ]
+# Nothing is pushed here - process-subfolder.yml submits the whole accumulated
+# list to template_workflow_manager in one call.
 - name: Build template workflow configuration for {{ template_name }}
   set_fact:
     template_workflow_configs: "{{ template_workflow_configs | default([]) + [template_config] }}"

@@ -144,6 +144,11 @@ Rules:
   `select('mapping')` guards, keys that get dropped, type coercions — not what
   the next line already says.
 
+Coverage is complete: every data-manipulation task under `roles/*/tasks/` carries
+an `Example` block. `defaults/` and `handlers/` are excluded by design — they hold
+flat data and hook declarations with no transformation to document. When you add a
+new `set_fact` or payload-assembly task, add its `Example` block in the same commit.
+
 ### SWIM (stage 6)
 
 Run in numeric order — `06.0` stages the images on the HTTP server that `06.2` imports from:

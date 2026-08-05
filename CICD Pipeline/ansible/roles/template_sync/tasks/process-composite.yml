@@ -20,7 +20,8 @@
 # member templates (containing_templates), which is what stage 10 deploys.
 #
 # Pre:  composite_file (loop var): { name, path, content }
-#         content is YAML: { composite_name: …, templates: [{name: …}, …] }
+#         content is YAML: { composite_name (optional),
+#                            templates: [{name: "FABRIC-VRF.j2"}] }
 #       projectName — resolved CatC project for this subfolder
 #       default_device_types, default_software_type, default_software_variant,
 #       default_template_version
@@ -30,27 +31,210 @@
 #                                    filename with .yml swapped for .j2
 #       composite_template_names   — ordered member template names
 #       containing_templates_list  — member stubs {name, composite: false,
-#                                    project_name, language, device_types, …}
+#                                    project_name, description, language,
+#                                    device_types, software_type,
+#                                    software_variant, templateParams, tags}
 #                                    reset to [] at the end of each iteration
 #       composite_workflow_configs — appended with one entry:
 #         { configuration_templates: { template_name, project_name,
-#           composite: true, template_content: "", containing_templates, … } }
+#           composite: true, language, template_content: "",
+#           template_description, device_types, software_type,
+#           software_variant, software_version, template_params,
+#           failure_policy, version, containing_templates, tags } }
 # =============================================================================
 
+# Example - member list trimmed to three entries so the parse is readable; the
+# real BGP-EVPN-BUILD.yml lists eleven FABRIC templates.
+#   In : composite_file = {
+#          "name":    "BGP-EVPN-BUILD.yml",
+#          "path":    "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+#          "content": "templates:\n  - name: \"FABRIC-VRF.j2\"\n  - name: \"FABRIC-LOOPBACKS.j2\"\n  - name: \"FABRIC-EVPN.j2\"\n"
+#        }
+#   Out: composite_def = {
+#          "templates": [
+#            { "name": "FABRIC-VRF.j2" },
+#            { "name": "FABRIC-LOOPBACKS.j2" },
+#            { "name": "FABRIC-EVPN.j2" }
+#          ]
+#        }
+# composite_name is absent here, so the next task derives it from the filename.
 - name: Load composite definition from {{ composite_file.name }}
   set_fact:
     composite_def: "{{ composite_file.content | from_yaml }}"
 
+# Example - no composite_name override (how BGP-EVPN-BUILD.yml is written)
+#   In : composite_file.name = "BGP-EVPN-BUILD.yml"
+#        composite_def = {
+#          "templates": [
+#            { "name": "FABRIC-VRF.j2" },
+#            { "name": "FABRIC-LOOPBACKS.j2" },
+#            { "name": "FABRIC-EVPN.j2" }
+#          ]
+#        }
+#   Out: composite_name           = "BGP-EVPN-BUILD.j2"
+#        composite_template_names = ["FABRIC-VRF.j2", "FABRIC-LOOPBACKS.j2", "FABRIC-EVPN.j2"]
+#
+# Example - explicit composite_name override
+#   In : composite_file.name = "BGP-EVPN-BUILD.yml"
+#        composite_def = {
+#          "composite_name": "SITE-FABRIC-DEPLOY.j2",
+#          "templates": [
+#            { "name": "FABRIC-VRF.j2" },
+#            { "name": "FABRIC-LOOPBACKS.j2" },
+#            { "name": "FABRIC-EVPN.j2" }
+#          ]
+#        }
+#   Out: composite_name           = "SITE-FABRIC-DEPLOY.j2"
+#        composite_template_names = ["FABRIC-VRF.j2", "FABRIC-LOOPBACKS.j2", "FABRIC-EVPN.j2"]
+# The .yml -> .j2 swap matters: Catalyst Center stores the composite as a JINJA
+# template, and stage 10 looks it up by the .j2 name.
 - name: Extract composite metadata
   set_fact:
     composite_name: "{{ composite_def.composite_name | default((composite_file.name | regex_replace('\\.yml$', '.j2'))) }}"
     composite_template_names: "{{ composite_def.templates | map(attribute='name') | list }}"
 
+# Example - member list trimmed to two entries; each stub is identical apart
+# from name, so two is enough to show the shape.
+#   In : composite_template_names = ["FABRIC-VRF.j2", "FABRIC-LOOPBACKS.j2"]
+#        projectName              = "Building P0"
+#        default_software_type    = "IOS"
+#        default_software_variant = "XE"
+#        default_device_types = [
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9500 Series Switches" },
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9300 Series Switches" },
+#          { "product_family": "Switches and Hubs",
+#            "product_series": "Cisco Catalyst 9400 Series Switches" }
+#        ]
+#        containing_templates_list = []
+#   Out: containing_templates_list = [
+#          {
+#            "name":             "FABRIC-VRF.j2",
+#            "composite":        false,
+#            "project_name":     "Building P0",
+#            "description":      "description",
+#            "language":         "JINJA",
+#            "device_types": [
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9500 Series Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9300 Series Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9400 Series Switches" }
+#            ],
+#            "software_type":    "IOS",
+#            "software_variant": "XE",
+#            "templateParams":   [],
+#            "tags":             []
+#          },
+#          {
+#            "name":             "FABRIC-LOOPBACKS.j2",
+#            "composite":        false,
+#            "project_name":     "Building P0",
+#            "description":      "description",
+#            "language":         "JINJA",
+#            "device_types": [
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9500 Series Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9300 Series Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9400 Series Switches" }
+#            ],
+#            "software_type":    "IOS",
+#            "software_variant": "XE",
+#            "templateParams":   [],
+#            "tags":             []
+#          }
+#        ]
+# The stubs are member references, not definitions - the real templates were
+# already pushed by process-template.yml. Order is preserved, and it is the
+# order stage 10 deploys the members in.
 - name: Build containing templates list
   set_fact:
     containing_templates_list: "{{ containing_templates_list | default([]) + [{'name': item, 'composite': false, 'project_name': projectName, 'description': 'description','language': 'JINJA', 'device_types': default_device_types,'software_type': default_software_type, 'software_variant': default_software_variant, 'templateParams': [], 'tags': []}] }}"
   with_items: "{{ composite_template_names }}"
 
+# Example - containing_templates shown with a single member for brevity of the
+# nested block; in practice it holds every entry built by the task above.
+#   In : composite_name           = "BGP-EVPN-BUILD.j2"
+#        projectName              = "Building P0"
+#        default_software_type    = "IOS"
+#        default_software_variant = "XE"
+#        default_template_version = "1.0"
+#        containing_templates_list = [
+#          { "name": "FABRIC-VRF.j2", "composite": false,
+#            "project_name": "Building P0", "description": "description",
+#            "language": "JINJA",
+#            "device_types": [
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9500 Series Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9300 Series Switches" },
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9400 Series Switches" }
+#            ],
+#            "software_type": "IOS", "software_variant": "XE",
+#            "templateParams": [], "tags": [] }
+#        ]
+#        composite_workflow_configs = []
+#   Out: composite_workflow_configs = [
+#          {
+#            "configuration_templates": {
+#              "template_name":        "BGP-EVPN-BUILD.j2",
+#              "project_name":         "Building P0",
+#              "composite":            true,
+#              "language":             "JINJA",
+#              "template_content":     "",
+#              "template_description": "Composite template synced from Git repository",
+#              "device_types": [
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9500 Series Switches" },
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9300 Series Switches" },
+#                { "product_family": "Switches and Hubs",
+#                  "product_series": "Cisco Catalyst 9400 Series Switches" }
+#              ],
+#              "software_type":    "IOS",
+#              "software_variant": "XE",
+#              "software_version": null,
+#              "template_params":  [],
+#              "failure_policy":   "ABORT_TARGET_ON_ERROR",
+#              "version":          "1.0",
+#              "containing_templates": [
+#                { "name": "FABRIC-VRF.j2", "composite": false,
+#                  "project_name": "Building P0", "description": "description",
+#                  "language": "JINJA",
+#                  "device_types": [
+#                    { "product_family": "Switches and Hubs",
+#                      "product_series": "Cisco Catalyst 9500 Series Switches" },
+#                    { "product_family": "Switches and Hubs",
+#                      "product_series": "Cisco Catalyst 9000 Series Virtual Switches" },
+#                    { "product_family": "Switches and Hubs",
+#                      "product_series": "Cisco Catalyst 9300 Series Switches" },
+#                    { "product_family": "Switches and Hubs",
+#                      "product_series": "Cisco Catalyst 9400 Series Switches" }
+#                  ],
+#                  "software_type": "IOS", "software_variant": "XE",
+#                  "templateParams": [], "tags": [] }
+#              ],
+#              "tags": []
+#            }
+#          }
+#        ]
+# template_content is intentionally empty - a composite has no body of its own,
+# only an ordered member list.
 - name: Build composite workflow configuration for {{ composite_name }}
   set_fact:
     composite_workflow_configs: "{{ composite_workflow_configs | default([]) + [composite_config] }}"
@@ -73,6 +257,21 @@
         containing_templates: "{{ containing_templates_list }}"
         tags: []
 
+# Example
+#   In : containing_templates_list = [
+#          { "name": "FABRIC-VRF.j2", "composite": false,
+#            "project_name": "Building P0", "description": "description",
+#            "language": "JINJA",
+#            "device_types": [
+#              { "product_family": "Switches and Hubs",
+#                "product_series": "Cisco Catalyst 9500 Series Switches" }
+#            ],
+#            "software_type": "IOS", "software_variant": "XE",
+#            "templateParams": [], "tags": [] }
+#        ]
+#   Out: containing_templates_list = []
+# Cleared here, not at the top, so a subfolder with several composites does not
+# give the second composite the first one's members.
 - name: Reset containing templates list
   set_fact:
     containing_templates_list: []

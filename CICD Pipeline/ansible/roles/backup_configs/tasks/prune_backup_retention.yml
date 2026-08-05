@@ -13,6 +13,41 @@
   register: backup_dirs
   delegate_to: localhost
 
+# Example - five runs on disk, retention 3
+#   In : backup_retention_count = 3
+#        backup_dirs.files = [
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260702-090115",
+#            "mtime": 1783602075.0, "isdir": true },
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260706-161042",
+#            "mtime": 1783959042.0, "isdir": true },
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260703-142230",
+#            "mtime": 1783707750.0, "isdir": true },
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260705-081900",
+#            "mtime": 1783858740.0, "isdir": true },
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260704-173355",
+#            "mtime": 1783798435.0, "isdir": true }
+#        ]
+#   Out: backup_dirs_to_prune = [
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260703-142230",
+#            "mtime": 1783707750.0, "isdir": true },
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260702-090115",
+#            "mtime": 1783602075.0, "isdir": true }
+#        ]
+#            → 20260706-161042, 20260705-081900 and 20260704-173355 are kept
+#
+# Example - fewer runs on disk than the retention count
+#   In : backup_retention_count = 3
+#        backup_dirs.files = [
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260706-161042",
+#            "mtime": 1783959042.0, "isdir": true },
+#          { "path":  "/Users/net-admin/repo/CICD Pipeline/config-backups/20260705-081900",
+#            "mtime": 1783858740.0, "isdir": true }
+#        ]
+#   Out: backup_dirs_to_prune = []
+#            → the removal task below is skipped
+# find() returns directories in arbitrary order, so the mtime sort is what makes
+# the slice meaningful. mtime is used rather than the directory name because the
+# name is only a label - a manually restored directory keeps its real mtime.
 - name: Build list of old backup directories to prune
   ansible.builtin.set_fact:
     backup_dirs_to_prune: "{{ (backup_dirs.files | sort(attribute='mtime', reverse=true))[backup_retention_count | int:] }}"

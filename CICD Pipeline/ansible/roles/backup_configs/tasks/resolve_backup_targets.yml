@@ -6,6 +6,43 @@
 # Play var backup_cml_tags is set on playbooks/11_backup_lab_configs.yml.
 # =============================================================================
 
+# Example - the default tag scope set on playbooks/11_backup_lab_configs.yml
+#   In : backup_cml_tags = ["Campus Fabric", "IP Core", "dmz", "dhcp-server"]
+#        groups = {
+#          "Campus Fabric": ["spine01", "spine02", "leaf01", "leaf02",
+#                            "border01", "border02"],
+#          "IP Core":       ["core01", "core02"],
+#          "dmz":           ["dmz01", "dmz02"],
+#          "dhcp-server":   ["dhcp"],
+#          "spine":         ["spine01", "spine02"],
+#          "leaf":          ["leaf01", "leaf02"],
+#          "border":        ["border01", "border02"],
+#          "iosxe":         ["spine01", "spine02", "leaf01", "leaf02",
+#                            "border01", "border02", "core01", "core02",
+#                            "dmz01", "dmz02"]
+#        }
+#   Out: backup_target_hosts = ["spine01", "spine02", "leaf01", "leaf02",
+#                               "border01", "border02", "core01", "core02",
+#                               "dmz01", "dmz02", "dhcp"]
+#
+# Example - narrowed scope with overlapping tags, e.g.
+#   ansible-playbook playbooks/11_backup_lab_configs.yml \
+#     -e '{"backup_cml_tags":["dmz","dmz01"]}'
+#   In : backup_cml_tags = ["dmz", "dmz01"]
+#        groups = {
+#          "dmz":   ["dmz01", "dmz02"],
+#          "dmz01": ["dmz01"]
+#        }
+#   Out: backup_target_hosts = ["dmz01", "dmz02"]
+#
+# Example - a tag declared in cml.yml but not assigned to any live node
+#   In : backup_cml_tags = ["ipsec"]
+#        groups = { "dmz": ["dmz01", "dmz02"] }
+#   Out: backup_target_hosts = []
+#            → the following assert fails the play
+# union() deduplicates, so overlapping tags such as dmz and dmz01 never queue a
+# host twice. A tag with no live CML assignment contributes nothing rather than
+# raising an undefined-group error, which is why the assert below is needed.
 - name: Resolve backup targets from CML tag groups
   ansible.builtin.set_fact:
     backup_target_hosts: "{{ backup_target_hosts | default([]) | union(groups[item] | default([])) }}"

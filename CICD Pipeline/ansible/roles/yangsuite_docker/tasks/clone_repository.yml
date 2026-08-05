@@ -43,6 +43,41 @@
   register: yangsuite_git
   when: not yangsuite_repo_stat.stat.exists or yangsuite_repo_force | bool
 
+# Example - repo already cloned and no force requested (the steady state)
+#   In : yangsuite_repo_stat = {
+#          "stat": { "exists": true, "isdir": true,
+#                    "path":   "/opt/yangsuite/.git" }
+#        }
+#        yangsuite_repo_force = false
+#        yangsuite_git        = { "skipped": true,
+#                                 "skip_reason": "Conditional result was False" }
+#   Out: yangsuite_git = { "changed": false }
+#
+# Example - first run, repo not yet present
+#   In : yangsuite_repo_stat = { "stat": { "exists": false } }
+#        yangsuite_repo_force = false
+#        yangsuite_git = {
+#          "changed": true,
+#          "before":  null,
+#          "after":   "7f3c1a9e2b8d4056c1e7a9f0b3d24e6857a9c1b2",
+#          "remote_url_changed": false
+#        }
+#   Out: yangsuite_git unchanged (this task is skipped)
+#
+# Example - forced re-clone over local edits
+#   In : yangsuite_repo_stat  = { "stat": { "exists": true, "isdir": true,
+#                                           "path": "/opt/yangsuite/.git" } }
+#        yangsuite_repo_force = true
+#        yangsuite_git = {
+#          "changed": true,
+#          "before":  "7f3c1a9e2b8d4056c1e7a9f0b3d24e6857a9c1b2",
+#          "after":   "c4e8b0d16a2f39475b8c0d1e2f3a4b5c6d7e8f90",
+#          "remote_url_changed": false
+#        }
+#   Out: yangsuite_git unchanged (this task is skipped)
+# The git module leaves yangsuite_git undefined-but-skipped when its condition is
+# false, and deploy_compose.yml reads yangsuite_git.changed unconditionally. This
+# task supplies the missing false so the skipped path does not raise.
 - name: Record existing yangsuite repository (local port patches preserved)
   ansible.builtin.set_fact:
     yangsuite_git:

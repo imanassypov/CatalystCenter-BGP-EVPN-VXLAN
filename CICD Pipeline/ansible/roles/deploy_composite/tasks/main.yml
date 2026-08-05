@@ -13,19 +13,69 @@
 # target device UUID lookup, configuration_template_deploy_v2 or raw REST).
 # =============================================================================
 
-# Task: Build DayN composite template deploy entries
-# Purpose: Flatten nested DayNTemplateNames[] into a linear deploy queue.
-# Pre:  settings_data.project[].network_profile.DayNTemplateNames:
-#         - TemplateName: "Building-P0-Composite"
-#           Project: "Building P0"
-#           DeployTemplate: true
-#           TemplateTarget: ["198.19.1.3", "198.19.1.4"]
-# Post: _deploy_entries:
-#         - site: "Global/PODS/POD 0/Building P0/Floor 1"
-#           template_name: "Building-P0-Composite"
-#           project_name: "Building P0"
-#           template_target: ["198.19.1.3", "198.19.1.4"]
-#           template_tag: ""
+# Example - the single project entry currently in settings.json
+#   In : settings_data.project = [
+#          {
+#            "HierarchyParent": "Global/PODS",
+#            "HierarchyArea":   "POD 0",
+#            "HierarchyBldg":   "Building P0",
+#            "HierarchyFloor":  "Floor 1",
+#            "network_profile": {
+#              "profile_name": "BGP-EVPN-Switching",
+#              "DayNTemplateNames": [
+#                {
+#                  "TemplateName":   "BGP-EVPN-BUILD.j2",
+#                  "TemplateTag":    "DEMO",
+#                  "Project":        "Building P0",
+#                  "TemplateTarget": ["198.19.1.1", "198.19.1.2", "198.19.1.3",
+#                                     "198.19.1.4", "198.19.1.5", "198.19.1.6"],
+#                  "DeployTemplate": true
+#                }
+#              ],
+#              "Day0TemplateNames": [
+#                {
+#                  "TemplateName":   null,
+#                  "TemplateTag":    null,
+#                  "Project":        null,
+#                  "TemplateTarget": [],
+#                  "DeployTemplate": null
+#                }
+#              ]
+#            }
+#          }
+#        ]
+#   Out: _deploy_entries = [
+#          {
+#            "site":            "Global/PODS/POD 0/Building P0/Floor 1",
+#            "template_name":   "BGP-EVPN-BUILD.j2",
+#            "project_name":    "Building P0",
+#            "template_target": ["198.19.1.1", "198.19.1.2", "198.19.1.3",
+#                                "198.19.1.4", "198.19.1.5", "198.19.1.6"],
+#            "template_tag":    "DEMO"
+#          }
+#        ]
+#
+# Example - DeployTemplate false, and a null placeholder row
+#   In : settings_data.project[0].network_profile.DayNTemplateNames = [
+#          {
+#            "TemplateName":   "BGP-EVPN-BUILD.j2",
+#            "TemplateTag":    "DEMO",
+#            "Project":        "Building P0",
+#            "TemplateTarget": ["198.19.1.1"],
+#            "DeployTemplate": false
+#          },
+#          {
+#            "TemplateName":   null,
+#            "TemplateTag":    null,
+#            "Project":        null,
+#            "TemplateTarget": [],
+#            "DeployTemplate": true
+#          }
+#        ]
+#   Out: _deploy_entries = []
+# Day0TemplateNames is never read here - only DayN entries are deployed. Both
+# guards matter: DeployTemplate must be true AND TemplateName must not be null,
+# because the null placeholder row would otherwise produce an unusable entry.
 - name: Build DayN composite template deploy entries
   ansible.builtin.set_fact:
     _deploy_entries: >-

@@ -49,8 +49,22 @@
 # =============================================================================
 
 # Reset per-subfolder accumulators so facts never leak across iterations/projects.
-# Pre:  prior loop iteration may have left enriched_* lists populated
-# Post: all per-subfolder facts cleared to []
+# Example - second iteration of git_repo_subfolders, entering "DMZ 01" after
+# "Building P0" has already been synced.
+#   In : enriched_template_files        = [ {"name": "DEFN-VRF.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2", "content": "{## CATC: ... ##}", "commit_message": "2026-08-01T09:14:22Z | Add red VRF [Igor Manassypov]", "diff_content": ""} ]
+#        enriched_composite_files       = [ {"name": "BGP-EVPN-BUILD.yml", "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml", "content": "templates:\n  - name: FABRIC-VRF.j2\n"} ]
+#        composite_referenced_templates = ["FABRIC-VRF.j2"]
+#        priority_template_list         = [ {"name": "FABRIC-VRF.j2"} ]
+#        regular_template_list          = [ {"name": "DEFN-VRF.j2"} ]
+#        sorted_template_files          = [ {"name": "DEFN-VRF.j2"}, {"name": "FABRIC-VRF.j2"} ]
+#        template_workflow_configs      = [ {"configuration_templates": {"name": "DEFN-VRF.j2"}} ]
+#        composite_workflow_configs     = [ {"configuration_templates": {"name": "BGP-EVPN-BUILD.j2"}} ]
+#        containing_templates_list      = [ {"name": "FABRIC-VRF.j2", "id": "c3000000-0000-4000-8000-000000000021"} ]
+#        template_sync_result           = {"changed": true, "failed": false}
+#        composite_sync_result          = {"changed": true, "failed": false}
+#   Out: every one of the ten facts above is reset to [] or {}
+# Without this reset the DMZ project would inherit the Site project's templates,
+# because set_fact values persist for the whole play.
 - name: Reset per-subfolder accumulators
   set_fact:
     enriched_template_files: []
@@ -65,10 +79,58 @@
     template_sync_result: {}
     composite_sync_result: {}
 
+# Example - configured subfolder
+#   In : subfolder_item = {
+#          "path":         "Catalyst Center Templates/Site BGP EVPN Templates",
+#          "project_name": "Building P0"
+#        }
+#   Out: git_tree_prefix = "Catalyst Center Templates/Site BGP EVPN Templates/"
+#
+# Example - repo-root scan
+#   In : subfolder_item = { "path": "", "project_name": "Building P0" }
+#   Out: git_tree_prefix = ""
+# The empty prefix is deliberate: "^" matches every path, so a blank path scans
+# the whole repository instead of matching nothing.
 - name: Build subfolder prefix filter
   set_fact:
     git_tree_prefix: "{{ (subfolder_item.path + '/') if (subfolder_item.path is defined and subfolder_item.path | length > 0) else '' }}"
 
+# Example - input tree trimmed to four blobs and one tree entry so the whole
+# transformation is visible. The real Site subfolder yields 24 templates and
+# 1 composite.
+#   In : git_tree_prefix = "Catalyst Center Templates/Site BGP EVPN Templates/"
+#        repo_tree_response.json.tree = [
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048 },
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-VRF.j2",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "b2c3d4e5f60718293a4b5c6d7e8f901234567890", "size": 1536 },
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "d4e5f6a7b8c9d0e1f2031425364758697a8b9c0d", "size": 512 },
+#          { "path": "Catalyst Center Templates/DMZ BGP EVPN Templates/DEFN-DMZ.j2",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "e5f6a7b8c9d0e1f2031425364758697a8b9c0d1e", "size": 900 },
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates",
+#            "mode": "040000", "type": "tree",
+#            "sha":  "99aabbccddeeff00112233445566778899aabbcc" }
+#        ]
+#   Out: api_template_files = [
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048 },
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-VRF.j2",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "b2c3d4e5f60718293a4b5c6d7e8f901234567890", "size": 1536 }
+#        ]
+#        api_composite_files = [
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "d4e5f6a7b8c9d0e1f2031425364758697a8b9c0d", "size": 512 }
+#        ]
+# The tree entry and the DMZ blob are both dropped: the first fails the
+# type == blob test, the second fails the prefix search.
 - name: Build template and composite file lists from repository tree
   set_fact:
     api_template_files: "{{ repo_tree_response.json.tree | selectattr('type', 'eq', 'blob') | selectattr('path', 'search', '^' + git_tree_prefix) | selectattr('path', 'search', '\\.' + template_extension + '$') | list }}"
@@ -86,6 +148,30 @@
     #   1. Explicit subfolder_item.project_name
     #   2. Basename of the subfolder path
     #   3. Basename of the first template's parent folder (repo-root scans)
+    #
+    # Example - explicit project_name (rule 1, how this repo is configured)
+    #   In : subfolder_item = {
+    #          "path":         "Catalyst Center Templates/Site BGP EVPN Templates",
+    #          "project_name": "Building P0"
+    #        }
+    #   Out: projectName = "Building P0"
+    #
+    # Example - no project_name, path present (rule 2)
+    #   In : subfolder_item = {
+    #          "path": "Catalyst Center Templates/DMZ BGP EVPN Templates"
+    #        }
+    #   Out: projectName = "DMZ BGP EVPN Templates"
+    #
+    # Example - repo-root scan, falls back to the first template's folder (rule 3)
+    #   In : subfolder_item    = { "path": "" }
+    #        api_template_files = [
+    #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "mode": "100644", "type": "blob",
+    #            "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048 }
+    #        ]
+    #   Out: projectName = "Site BGP EVPN Templates"
+    # projectName must match an existing Template Programmer project, or the
+    # workflow manager creates one with that name.
     - name: Resolve Catalyst Center project name for this subfolder
       set_fact:
         projectName: >-
@@ -138,6 +224,51 @@
         label: "{{ item.path | basename }}"
       register: template_diff_results
 
+    # Example - one template, last commit found, diff header enabled
+    #   In : item = {
+    #          "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #          "mode": "100644", "type": "blob",
+    #          "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048
+    #        }
+    #        tmpl_idx = 0
+    #        catc_template_summary_maxchar = 255
+    #        template_content_results.results[0].content =
+    #          "{## CATC: productFamily=Switches and Hubs ##}\n{% set DEFN_VRF = [] %}\n"
+    #        template_commit_results.results[0].json = [
+    #          {
+    #            "sha": "f1e2d3c4b5a60718293a4b5c6d7e8f9012345678",
+    #            "commit": {
+    #              "author":  { "name": "Igor Manassypov",
+    #                           "email": "imanassy@cisco.com",
+    #                           "date": "2026-08-01T09:14:22Z" },
+    #              "message": "Add red VRF definition"
+    #            }
+    #          }
+    #        ]
+    #        template_diff_results.results[0].json.files = [
+    #          {
+    #            "filename": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "status":   "modified",
+    #            "additions": 3, "deletions": 0, "changes": 3,
+    #            "patch": "@@ -1,2 +1,5 @@\n+{% set DEFN_VRF = [] %}"
+    #          }
+    #        ]
+    #   Out: enriched_template_files = [
+    #          {
+    #            "name":           "DEFN-VRF.j2",
+    #            "path":           "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "content":        "{## CATC: productFamily=Switches and Hubs ##}\n{% set DEFN_VRF = [] %}\n",
+    #            "commit_message": "2026-08-01T09:14:22Z | Add red VRF definition [Igor Manassypov]",
+    #            "diff_content":   "@@ -1,2 +1,5 @@\n+{% set DEFN_VRF = [] %}"
+    #          }
+    #        ]
+    #
+    # Example - file has no commit history (new, unpushed file)
+    #   In : template_commit_results.results[0].json = []
+    #   Out: enriched_template_files[0].commit_message = "Synced from Git"
+    #        enriched_template_files[0].diff_content   = ""
+    # commit_message becomes the Catalyst Center template version comment, so it
+    # is truncated to catc_template_summary_maxchar to avoid an API rejection.
     - name: Build enriched template file objects
       set_fact:
         enriched_template_files: "{{ enriched_template_files | default([]) + [enriched] }}"
@@ -171,6 +302,24 @@
         label: "{{ item.path | basename }}"
       register: composite_content_results
 
+    # Example
+    #   In : item = {
+    #          "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+    #          "mode": "100644", "type": "blob",
+    #          "sha":  "d4e5f6a7b8c9d0e1f2031425364758697a8b9c0d", "size": 512
+    #        }
+    #        comp_idx = 0
+    #        composite_content_results.results[0].content =
+    #          "templates:\n  - name: \"FABRIC-VRF.j2\"\n  - name: \"FABRIC-LOOPBACKS.j2\"\n"
+    #   Out: enriched_composite_files = [
+    #          {
+    #            "name":    "BGP-EVPN-BUILD.yml",
+    #            "path":    "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+    #            "content": "templates:\n  - name: \"FABRIC-VRF.j2\"\n  - name: \"FABRIC-LOOPBACKS.j2\"\n"
+    #          }
+    #        ]
+    # Composites carry no commit_message or diff_content - the version comment is
+    # taken from the member templates instead.
     - name: Build enriched composite file objects
       when: api_composite_files | length > 0
       set_fact:
@@ -191,6 +340,30 @@
     #   2. Extract templates referenced by those composites (dependencies)
     #   3. Process regular templates first (so dependencies exist), then priority
     #      (referenced) templates, then the composites themselves.
+    # Example - the real BGP-EVPN-BUILD.yml composite
+    #   In : enriched_composite_files = [
+    #          {
+    #            "name":    "BGP-EVPN-BUILD.yml",
+    #            "path":    "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+    #            "content": "templates:\n  - name: \"FABRIC-VRF.j2\"\n  - name: \"FABRIC-LOOPBACKS.j2\"\n  - name: \"FABRIC-BORDER-DMZ-TUNNELS.j2\"\n  - name: \"FABRIC-L3OUT.j2\"\n  - name: \"FABRIC-NVE.j2\"\n  - name: \"FABRIC-MCAST.j2\"\n  - name: \"FABRIC-EVPN.j2\"\n  - name: \"FABRIC-OVERLAY.j2\"\n  - name: \"FABRIC-CLIENT-PORTS.j2\"\n  - name: \"FABRIC-NAC.j2\"\n  - name: \"FABRIC-TELEMETRY-SPLUNK.j2\"\n"
+    #          }
+    #        ]
+    #   Out: composite_referenced_templates = [
+    #          "FABRIC-VRF.j2",
+    #          "FABRIC-LOOPBACKS.j2",
+    #          "FABRIC-BORDER-DMZ-TUNNELS.j2",
+    #          "FABRIC-L3OUT.j2",
+    #          "FABRIC-NVE.j2",
+    #          "FABRIC-MCAST.j2",
+    #          "FABRIC-EVPN.j2",
+    #          "FABRIC-OVERLAY.j2",
+    #          "FABRIC-CLIENT-PORTS.j2",
+    #          "FABRIC-NAC.j2",
+    #          "FABRIC-TELEMETRY-SPLUNK.j2"
+    #        ]
+    # The list accumulates across every composite in the subfolder, so a template
+    # referenced by two composites appears twice - harmless, it is only used for
+    # membership tests below.
     - name: Extract templates referenced in composite definitions
       set_fact:
         composite_referenced_templates: "{{ composite_referenced_templates | default([]) + (item.content | from_yaml).templates | map(attribute='name') | list }}"
@@ -204,12 +377,77 @@
       debug:
         msg: "{{ composite_referenced_templates }}"
 
+    # Example - input trimmed to four templates so the split is visible
+    #   In : composite_referenced_templates = ["FABRIC-VRF.j2", "FABRIC-LOOPBACKS.j2"]
+    #        enriched_template_files = [
+    #          { "name": "DEFN-VRF.j2",
+    #            "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "content": "{% set DEFN_VRF = [] %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FUNC-VRF-LOOKUP.j2",
+    #            "path": "Catalyst Center Templates/Site BGP EVPN Templates/FUNC-VRF-LOOKUP.j2",
+    #            "content": "{% macro vrf_definition() %}{% endmacro %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FABRIC-VRF.j2",
+    #            "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-VRF.j2",
+    #            "content": "vrf definition red",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FABRIC-LOOPBACKS.j2",
+    #            "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-LOOPBACKS.j2",
+    #            "content": "interface Loopback0",
+    #            "commit_message": "Synced from Git", "diff_content": "" }
+    #        ]
+    #   Out: regular_template_list = [
+    #          { "name": "DEFN-VRF.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "content": "{% set DEFN_VRF = [] %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FUNC-VRF-LOOKUP.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/FUNC-VRF-LOOKUP.j2",
+    #            "content": "{% macro vrf_definition() %}{% endmacro %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" }
+    #        ]
+    #        priority_template_list = [
+    #          { "name": "FABRIC-VRF.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-VRF.j2",
+    #            "content": "vrf definition red",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FABRIC-LOOPBACKS.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-LOOPBACKS.j2",
+    #            "content": "interface Loopback0",
+    #            "commit_message": "Synced from Git", "diff_content": "" }
+    #        ]
+    # DEFN and FUNC templates are never composite members, so they always land in
+    # regular_template_list and are therefore pushed first.
     - name: Build template lists based on composite references
       set_fact:
         priority_template_list: "{{ priority_template_list + [item] if (composite_referenced_templates is defined and item.name in composite_referenced_templates) else priority_template_list }}"
         regular_template_list: "{{ regular_template_list + [item] if (composite_referenced_templates is not defined or item.name not in composite_referenced_templates) else regular_template_list }}"
       loop: "{{ enriched_template_files }}"
 
+    # Example
+    #   In : regular_template_list = [
+    #          { "name": "DEFN-VRF.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "content": "{% set DEFN_VRF = [] %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FUNC-VRF-LOOKUP.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/FUNC-VRF-LOOKUP.j2",
+    #            "content": "{% macro vrf_definition() %}{% endmacro %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" }
+    #        ]
+    #        priority_template_list = [
+    #          { "name": "FABRIC-VRF.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-VRF.j2",
+    #            "content": "vrf definition red",
+    #            "commit_message": "Synced from Git", "diff_content": "" }
+    #        ]
+    #   Out: sorted_template_files = [
+    #          { "name": "DEFN-VRF.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "content": "{% set DEFN_VRF = [] %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FUNC-VRF-LOOKUP.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/FUNC-VRF-LOOKUP.j2",
+    #            "content": "{% macro vrf_definition() %}{% endmacro %}",
+    #            "commit_message": "Synced from Git", "diff_content": "" },
+    #          { "name": "FABRIC-VRF.j2", "path": "Catalyst Center Templates/Site BGP EVPN Templates/FABRIC-VRF.j2",
+    #            "content": "vrf definition red",
+    #            "commit_message": "Synced from Git", "diff_content": "" }
+    #        ]
+    # Composite members are pushed last so that a composite created afterwards
+    # can resolve every member by name to an existing template ID.
     - name: Set template processing order (regular first for dependencies, then priority)
       set_fact:
         sorted_template_files: "{{ regular_template_list + priority_template_list }}"

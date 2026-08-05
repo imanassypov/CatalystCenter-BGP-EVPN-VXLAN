@@ -78,6 +78,45 @@
     status_code: 200
   register: _template_list_result
 
+# Example - project trimmed to the composite plus one member so the sort is
+# visible; the real Building P0 project holds 24 templates and 1 composite.
+#   In : _template_list_result.json = [
+#          {
+#            "name":       "BGP-EVPN-BUILD.j2",
+#            "templateId": "e1000000-0000-4000-8000-000000000001",
+#            "composite":  true,
+#            "versionsInfo": [
+#              { "id": "e1000000-0000-4000-8000-00000000000a",
+#                "version": "1", "versionTime": 1785849727000 },
+#              { "id": "e1000000-0000-4000-8000-00000000000c",
+#                "version": "3", "versionTime": 1785936127000 },
+#              { "id": "e1000000-0000-4000-8000-00000000000b",
+#                "version": "2", "versionTime": 1785892927000 }
+#            ]
+#          },
+#          {
+#            "name":       "FABRIC-VRF.j2",
+#            "templateId": "e1000000-0000-4000-8000-000000000002",
+#            "composite":  false,
+#            "versionsInfo": [
+#              { "id": "e1000000-0000-4000-8000-00000000001a",
+#                "version": "1", "versionTime": 1785849727000 }
+#            ]
+#          }
+#        ]
+#   Out: _template_version_map = {
+#          "BGP-EVPN-BUILD.j2": {
+#            "rootId":    "e1000000-0000-4000-8000-000000000001",
+#            "versionId": "e1000000-0000-4000-8000-00000000000c"
+#          },
+#          "FABRIC-VRF.j2": {
+#            "rootId":    "e1000000-0000-4000-8000-000000000002",
+#            "versionId": "e1000000-0000-4000-8000-00000000001a"
+#          }
+#        }
+# Note that versionsInfo arrived out of order (v1, v3, v2) and the sort picked
+# v3 - Catalyst Center does not return versions chronologically. A template with
+# an empty versionsInfo falls back to its rootId as versionId.
 - name: "[{{ deploy_entry.template_name }}] Build template name → version/root ID map"
   # Builds a dict keyed by template name:
   #   { 'TEMPLATE-NAME': { 'rootId': '<uuid>', 'versionId': '<uuid>' }, ... }
@@ -102,6 +141,23 @@
       '{{ deploy_entry.project_name }}'.
       Templates available: {{ _template_version_map.keys() | list | join(', ') }}.
 
+# Example
+#   In : deploy_entry.template_name = "BGP-EVPN-BUILD.j2"
+#        _template_version_map = {
+#          "BGP-EVPN-BUILD.j2": {
+#            "rootId":    "e1000000-0000-4000-8000-000000000001",
+#            "versionId": "e1000000-0000-4000-8000-00000000000c"
+#          },
+#          "FABRIC-VRF.j2": {
+#            "rootId":    "e1000000-0000-4000-8000-000000000002",
+#            "versionId": "e1000000-0000-4000-8000-00000000001a"
+#          }
+#        }
+#   Out: _composite_raw_id      = "e1000000-0000-4000-8000-000000000001"
+#        _composite_template_id = "e1000000-0000-4000-8000-00000000000c"
+#        _composite_main_id     = "e1000000-0000-4000-8000-000000000001"
+# templateId in the deploy body must be the latest version UUID while
+# mainTemplateId must be the root UUID - swapping them deploys a stale version.
 - name: "[{{ deploy_entry.template_name }}] Extract composite template root and version IDs"
   set_fact:
     _composite_raw_id:        "{{ _template_version_map[deploy_entry.template_name].rootId }}"
@@ -133,6 +189,34 @@
     status_code: 200
   register: _template_detail_result
 
+# Example - member list trimmed to two of the eleven FABRIC members
+#   In : _template_detail_result.json = {
+#          "id":        "e1000000-0000-4000-8000-000000000001",
+#          "name":      "BGP-EVPN-BUILD.j2",
+#          "composite": true,
+#          "containingTemplates": [
+#            { "name": "FABRIC-VRF.j2",
+#              "id":         "e1000000-0000-4000-8000-00000000001a",
+#              "templateId": "e1000000-0000-4000-8000-000000000002",
+#              "composite":  false, "language": "JINJA" },
+#            { "name": "FABRIC-LOOPBACKS.j2",
+#              "id":         "e1000000-0000-4000-8000-00000000002a",
+#              "templateId": "e1000000-0000-4000-8000-000000000003",
+#              "composite":  false, "language": "JINJA" }
+#          ]
+#        }
+#   Out: _member_templates = [
+#          { "name": "FABRIC-VRF.j2",
+#            "id":         "e1000000-0000-4000-8000-00000000001a",
+#            "templateId": "e1000000-0000-4000-8000-000000000002",
+#            "composite":  false, "language": "JINJA" },
+#          { "name": "FABRIC-LOOPBACKS.j2",
+#            "id":         "e1000000-0000-4000-8000-00000000002a",
+#            "templateId": "e1000000-0000-4000-8000-000000000003",
+#            "composite":  false, "language": "JINJA" }
+#        ]
+# containingTemplates is only returned by the detail endpoint, never by the
+# list endpoint used in Step A - hence the second API call.
 - name: "[{{ deploy_entry.template_name }}] Extract member templates list"
   set_fact:
     _member_templates: "{{ _template_detail_result.json.containingTemplates | default([]) }}"
@@ -170,6 +254,34 @@
   loop: "{{ deploy_entry.template_target }}"
   register: _device_results
 
+# Example - two of the six devices shown; every other result has the same shape
+#   In : _device_results.results = [
+#          {
+#            "item": "198.19.1.1",
+#            "json": { "response": [
+#              { "id":       "b1000000-0000-4000-8000-000000000101",
+#                "hostname": "spine01.dcloud.cisco.com",
+#                "managementIpAddress": "198.19.1.1" }
+#            ] }
+#          },
+#          {
+#            "item": "198.19.1.3",
+#            "json": { "response": [
+#              { "id":       "b1000000-0000-4000-8000-000000000103",
+#                "hostname": "leaf01.dcloud.cisco.com",
+#                "managementIpAddress": "198.19.1.3" }
+#            ] }
+#          }
+#        ]
+#   Out: _device_uuid_map = {
+#          "198.19.1.1": { "uuid":     "b1000000-0000-4000-8000-000000000101",
+#                          "hostname": "spine01.dcloud.cisco.com" },
+#          "198.19.1.3": { "uuid":     "b1000000-0000-4000-8000-000000000103",
+#                          "hostname": "leaf01.dcloud.cisco.com" }
+#        }
+# Keyed by the API's managementIpAddress rather than the loop item. hostname
+# falls back to the IP when the device has none, so targetInfo.hostName is
+# never empty.
 - name: "[{{ deploy_entry.template_name }}] Build IP → { uuid, hostname } map"
   set_fact:
     _device_uuid_map: >-
@@ -223,6 +335,41 @@
 #   [{type: MANAGED_DEVICE_UUID, scope: RUNTIME, value: <uuid>}]
 #
 # Note: Only MANAGED_DEVICE_UUID is sent in resourceParams.
+# Example - two target IPs shown; the real entry targets all six
+#   In : deploy_entry.template_target = ["198.19.1.1", "198.19.1.3"]
+#        _device_uuid_map = {
+#          "198.19.1.1": { "uuid":     "b1000000-0000-4000-8000-000000000101",
+#                          "hostname": "spine01.dcloud.cisco.com" },
+#          "198.19.1.3": { "uuid":     "b1000000-0000-4000-8000-000000000103",
+#                          "hostname": "leaf01.dcloud.cisco.com" }
+#        }
+#   Out: _target_info = [
+#          {
+#            "id":       "b1000000-0000-4000-8000-000000000101",
+#            "hostName": "spine01.dcloud.cisco.com",
+#            "type":     "MANAGED_DEVICE_UUID",
+#            "params":   {},
+#            "resourceParams": [
+#              { "type":  "MANAGED_DEVICE_UUID",
+#                "scope": "RUNTIME",
+#                "value": "b1000000-0000-4000-8000-000000000101" }
+#            ]
+#          },
+#          {
+#            "id":       "b1000000-0000-4000-8000-000000000103",
+#            "hostName": "leaf01.dcloud.cisco.com",
+#            "type":     "MANAGED_DEVICE_UUID",
+#            "params":   {},
+#            "resourceParams": [
+#              { "type":  "MANAGED_DEVICE_UUID",
+#                "scope": "RUNTIME",
+#                "value": "b1000000-0000-4000-8000-000000000103" }
+#            ]
+#          }
+#        ]
+# params is empty at the top level - member parameters go in
+# memberTemplateDeploymentInfo instead. An IP missing from _device_uuid_map is
+# silently dropped, which the preceding assert already prevents.
 - name: "[{{ deploy_entry.template_name }}] Build top-level targetInfo"
   set_fact:
     _target_info: >-
@@ -261,6 +408,53 @@
 #       loopback_ip: "192.168.100.1"
 #     "FABRIC-VRF.j2": {}
 #
+# Example - one member and one target device so the nesting is readable; the
+# real payload has eleven members times six devices.
+#   In : deploy_entry.template_target = ["198.19.1.3"]
+#        force_push_template = true
+#        member_template_params = { "FABRIC-LOOPBACKS.j2": { "loopback_ip": "192.168.100.1" } }
+#        _member_templates = [
+#          { "name": "FABRIC-LOOPBACKS.j2",
+#            "id":         "e1000000-0000-4000-8000-00000000002a",
+#            "templateId": "e1000000-0000-4000-8000-000000000003",
+#            "composite":  false, "language": "JINJA" }
+#        ]
+#        _template_version_map = {
+#          "FABRIC-LOOPBACKS.j2": {
+#            "rootId":    "e1000000-0000-4000-8000-000000000003",
+#            "versionId": "e1000000-0000-4000-8000-00000000002c"
+#          }
+#        }
+#        _device_uuid_map = {
+#          "198.19.1.3": { "uuid":     "b1000000-0000-4000-8000-000000000103",
+#                          "hostname": "leaf01.dcloud.cisco.com" }
+#        }
+#   Out: _member_deployment_info = [
+#          {
+#            "templateId":     "e1000000-0000-4000-8000-00000000002c",
+#            "mainTemplateId": "e1000000-0000-4000-8000-000000000003",
+#            "targetInfo": [
+#              {
+#                "id":       "b1000000-0000-4000-8000-000000000103",
+#                "hostName": "leaf01.dcloud.cisco.com",
+#                "type":     "MANAGED_DEVICE_UUID",
+#                "params":   { "loopback_ip": "192.168.100.1" },
+#                "resourceParams": [
+#                  { "type":  "MANAGED_DEVICE_UUID",
+#                    "scope": "RUNTIME",
+#                    "value": "b1000000-0000-4000-8000-000000000103" }
+#                ]
+#              }
+#            ],
+#            "forcePushTemplate": true,
+#            "copyingConfig":     true,
+#            "isComposite":       false
+#          }
+#        ]
+# The member's templateId is taken from _template_version_map, not from the
+# containingTemplates entry: the detail endpoint returns the member's root ID,
+# which would deploy the uncommitted draft rather than the latest version.
+# A member absent from member_template_params gets params: {}.
 - name: "[{{ deploy_entry.template_name }}] Build memberTemplateDeploymentInfo"
   set_fact:
     _member_deployment_info: >-
@@ -393,6 +587,32 @@
   debug:
     var: _deploy_results
 
+# Example - two devices, one accepted and one rejected
+#   In : _deploy_results.results = [
+#          {
+#            "item": { "key":   "198.19.1.1",
+#                      "value": { "uuid":     "b1000000-0000-4000-8000-000000000101",
+#                                 "hostname": "spine01.dcloud.cisco.com" } },
+#            "status": 202,
+#            "json": { "response": {
+#              "taskId": "f1000000-0000-4000-8000-000000000401",
+#              "url":    "/api/v1/task/f1000000-0000-4000-8000-000000000401" } }
+#          },
+#          {
+#            "item": { "key":   "198.19.1.3",
+#                      "value": { "uuid":     "b1000000-0000-4000-8000-000000000103",
+#                                 "hostname": "leaf01.dcloud.cisco.com" } },
+#            "status": 400,
+#            "json": { "response": {} }
+#          }
+#        ]
+#   Out: _deploy_task_ids = [
+#          { "ip":     "198.19.1.1",
+#            "taskId": "f1000000-0000-4000-8000-000000000401" }
+#        ]
+# Devices whose call returned no taskId are dropped rather than polled, so a
+# single rejected device does not stall the run. ignore_errors on the deploy
+# task is what allows this list to be partial.
 - name: "[{{ deploy_entry.template_name }}] Extract async task IDs from deploy responses"
   # The v2 deploy API returns { "response": { "taskId": "...", "url": "..." } }.
   # With ansible.builtin.uri the response is under .json (not .dnac_response).
@@ -459,6 +679,56 @@
       {%- endfor -%}
       {{ ns.out }}
 
+# Example - one device succeeded, one failed
+#   In : _task_poll_results.results = [
+#          {
+#            "item": { "ip": "198.19.1.1",
+#                      "taskId": "f1000000-0000-4000-8000-000000000401" },
+#            "json": { "response": {
+#              "id":        "f1000000-0000-4000-8000-000000000401",
+#              "isError":   false,
+#              "endTime":   1785936319000,
+#              "progress":  "Deployment of Composite Template: 9a7c5e21-3b4d-4f18-9c0a-2e6f8b1d4057 Member Template: FABRIC-VRF.j2",
+#              "failureReason": ""
+#            } }
+#          },
+#          {
+#            "item": { "ip": "198.19.1.3",
+#                      "taskId": "f1000000-0000-4000-8000-000000000403" },
+#            "json": { "response": {
+#              "id":        "f1000000-0000-4000-8000-000000000403",
+#              "isError":   true,
+#              "endTime":   1785936290000,
+#              "progress":  "Template Deployemnt Id: 4c8f0d33-7a1b-42e9-8d55-1f3a9b6c0e72 | failureReason: Device is unreachable",
+#              "failureReason": "Device is unreachable"
+#            } }
+#          }
+#        ]
+#   Out: _deployment_status_ids = [
+#          { "ip":            "198.19.1.1",
+#            "deploymentId":  "9a7c5e21-3b4d-4f18-9c0a-2e6f8b1d4057",
+#            "failureReason": "" },
+#          { "ip":            "198.19.1.3",
+#            "deploymentId":  "4c8f0d33-7a1b-42e9-8d55-1f3a9b6c0e72",
+#            "failureReason": "Device is unreachable" }
+#        ]
+#
+# Example - task errored but progress carries no failureReason marker
+#   In : _task_poll_results.results[0].json.response = {
+#          "id":        "f1000000-0000-4000-8000-000000000401",
+#          "isError":   true,
+#          "endTime":   1785936290000,
+#          "progress":  "Deployment of Composite Template: 9a7c5e21-3b4d-4f18-9c0a-2e6f8b1d4057",
+#          "failureReason": "NCTP10028: At least one device should data should be provided"
+#        }
+#   Out: _deployment_status_ids = [
+#          { "ip":            "198.19.1.1",
+#            "deploymentId":  "9a7c5e21-3b4d-4f18-9c0a-2e6f8b1d4057",
+#            "failureReason": "NCTP10028: At least one device should data should be provided" }
+#        ]
+# An empty failureReason is the only SUCCESS signal - Catalyst Center does not
+# return a status enum here. The regex matches both progress formats because
+# older releases used the misspelled "Template Deployemnt Id:" marker.
 - name: "[{{ deploy_entry.template_name }}] Extract Template Deployment IDs and failure reasons from task progress"
   # ── Step F2: Extract deployment result from task progress ─────────────────
   #
@@ -506,6 +776,46 @@
       {{ ns.out }}
 
 # ── Step G: Summary and error propagation ───────────────────────────────────
+# Example - two devices, one succeeded and one failed
+#   In : deploy_entry = {
+#          "site":          "Global/PODS/POD 0/Building P0/Floor 1",
+#          "template_name": "BGP-EVPN-BUILD.j2",
+#          "project_name":  "Building P0",
+#          "template_tag":  "DEMO",
+#          "template_target": ["198.19.1.1", "198.19.1.3"]
+#        }
+#        _deploy_results.results = [
+#          { "item": { "key": "198.19.1.1" }, "failed": false, "status": 202 },
+#          { "item": { "key": "198.19.1.3" }, "failed": false, "status": 202 }
+#        ]
+#        _deployment_status_ids = [
+#          { "ip":            "198.19.1.1",
+#            "deploymentId":  "9a7c5e21-3b4d-4f18-9c0a-2e6f8b1d4057",
+#            "failureReason": "" },
+#          { "ip":            "198.19.1.3",
+#            "deploymentId":  "4c8f0d33-7a1b-42e9-8d55-1f3a9b6c0e72",
+#            "failureReason": "Device is unreachable" }
+#        ]
+#   Out: _summary_lines = [
+#          "┌────────────────────┬──────────────────────────────────────────┐",
+#          "│ Template           │ BGP-EVPN-BUILD.j2                        │",
+#          "├────────────────────┼──────────────────────────────────────────┤",
+#          "│ Project            │ Building P0                              │",
+#          "├────────────────────┼──────────────────────────────────────────┤",
+#          "│ Site               │ Global/PODS/POD 0/Building P0/Floor 1    │",
+#          "├────────────────────┼──────────────────────────────────────────┤",
+#          "│ Target devices     │ 198.19.1.1, 198.19.1.3                   │",
+#          "├────────────────────┼──────────────────────────────────────────┤",
+#          "│ API errors         │ none ✓                                   │",
+#          "├────────────────────┼──────────────────────────────────────────┤",
+#          "│ 198.19.1.1         │ ✓ SUCCESS                                │",
+#          "├────────────────────┼──────────────────────────────────────────┤",
+#          "│ 198.19.1.3         │ ✗ FAILURE  Device is unreachable         │",
+#          "└────────────────────┴──────────────────────────────────────────┘"
+#        ]
+# "API errors" reports HTTP-level failures on the deploy call itself, which is
+# a different condition from a per-device push failure - a device can be
+# accepted with 202 and still fail to receive config.
 - name: "[{{ deploy_entry.template_name }}] Deployment summary - build table"
   set_fact:
     _summary_lines: >-

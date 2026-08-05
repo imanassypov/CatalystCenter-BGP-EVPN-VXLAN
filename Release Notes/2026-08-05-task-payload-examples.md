@@ -89,12 +89,18 @@ the same SWIM image names the pipeline actually runs against. Nothing is invente
 | `credentials` | `main.yml`, `netconf_create_or_update.yml`, `netconf_delete.yml` |
 | `device_discovery` | `main.yml` |
 | `assign_to_site` | `main.yml` |
-| `template_sync` | `main.yml` |
+| `template_sync` | `main.yml`, `process-subfolder.yml`, `process-template.yml`, `process-composite.yml` |
+| `provision_devices` | `main.yml`, `provision_site.yml` |
+| `deploy_composite` | `main.yml`, `deploy_entry.yml` |
+| `backup_configs` | `load_device_credentials.yml`, `set_timestamp.yml`, `resolve_backup_targets.yml`, `prune_backup_retention.yml` |
+| `http_image_server` | `stage_images.yml` |
+| `yangsuite_docker` | `clone_repository.yml` |
 | `swim` | `load_swim_details.yml`, `preflight.yml`, `postcheck.yml` |
 
-Remaining files (`template_sync/process-*.yml`, `provision_devices`,
-`deploy_composite`, `backup_configs`, `http_image_server`, `yangsuite_docker`)
-retain their boxed headers and are queued for the same treatment.
+This is the complete set. Every `set_fact`, accumulator loop and REST payload
+assembly task in `CICD Pipeline/ansible/roles/` now carries a complete `In:`/`Out:`
+pair. `defaults/` and `handlers/` files are intentionally excluded — they are flat
+data and hook declarations with no transformation to document.
 
 ## Defects fixed along the way
 
@@ -142,9 +148,13 @@ done
 echo "fail=$fail"
 # → fail=0
 
-# 3. No elisions remain inside example data structures
+# 3. No elisions remain anywhere under roles/ or playbooks/
 grep -rn "…" --include="*.yml" roles playbooks
-# → only prose/schema summaries in not-yet-annotated files
+# → no matches
+
+# 4. No comment/task newline collapse from bulk edits
+grep -n '#- name:\|[a-z)"]- name:' roles/*/tasks/*.yml playbooks/*.yml
+# → no matches
 ```
 
 ## Operational impact
@@ -155,10 +165,6 @@ configuration and Catalyst Center API behaviour are unchanged.
 
 ## Known follow-ups
 
-- `template_sync/process-subfolder.yml`, `process-composite.yml` and
-  `process-template.yml` still need In/Out examples (24 `set_fact` tasks between them).
-- `provision_devices`, `deploy_composite`, `backup_configs`, `http_image_server`
-  and `yangsuite_docker` task files still need In/Out examples.
 - SWIM evidence artifacts still use pre-renumbering filename prefixes
   (`-00_preflight.json`, `-10_import_and_tag.json`, `-20_distribute.json`,
   `-30_activate.json`, `-35_rollback.json`, `-40_postcheck.json`). Renaming these

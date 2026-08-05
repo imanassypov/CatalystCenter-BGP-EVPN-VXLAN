@@ -36,9 +36,51 @@
     label: "{{ item | basename }}"
   register: remote_images
 
-# Task: Build the per-image staging plan
-# Post: image_plan:
-#         - { path, filename, local_exists, remote_exists }
+# Example - the upgrade image already staged, the rollback image not yet
+#   In : local_images.results = [
+#          { "item": "/Users/net-admin/images/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            "stat": { "exists": true, "size": 1394606080 } },
+#          { "item": "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
+#            "stat": { "exists": true, "size": 1288490188 } }
+#        ]
+#        remote_images.results = [
+#          { "item": "/Users/net-admin/images/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            "stat": { "exists": true } },
+#          { "item": "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
+#            "stat": { "exists": false } }
+#        ]
+#   Out: image_plan = [
+#          { "path":          "/Users/net-admin/images/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            "filename":      "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            "local_exists":  true,
+#            "remote_exists": true },
+#          { "path":          "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
+#            "filename":      "cat9kv-universalk9.17.15.03.SPA.bin",
+#            "local_exists":  true,
+#            "remote_exists": false }
+#        ]
+#            → only cat9kv-universalk9.17.15.03.SPA.bin is uploaded
+#
+# Example - an image present on neither side
+#   In : local_images.results = [
+#          { "item": "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
+#            "stat": { "exists": false } }
+#        ]
+#        remote_images.results = [
+#          { "item": "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
+#            "stat": { "exists": false } }
+#        ]
+#   Out: image_plan = [
+#          { "path":          "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
+#            "filename":      "cat9kv-universalk9.17.15.03.SPA.bin",
+#            "local_exists":  false,
+#            "remote_exists": false }
+#        ]
+#            → the following fail task aborts the run
+# zip() pairs the two stat result lists positionally, which is safe because both
+# loops iterate image_local_paths in the same order. The plan is accumulated one
+# element at a time rather than built in a single expression so the loop label
+# reports the filename being evaluated.
 - name: Build the per-image staging plan
   ansible.builtin.set_fact:
     image_plan: >-

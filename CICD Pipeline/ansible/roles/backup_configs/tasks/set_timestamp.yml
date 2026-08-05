@@ -7,9 +7,15 @@
 #   {{ backup_root_dir }}/{{ backup_timestamp }}/
 # =============================================================================
 
-# Task: Set shared backup timestamp
-# Pre:  backup_root_dir from group_vars (e.g. ../config-backups)
-# Post: backup_timestamp: "20260706-161042"  (hostvars['localhost']['backup_timestamp'])
+# Example
+#   In : backup_root_dir = "/Users/net-admin/repo/CICD Pipeline/ansible/playbooks/../config-backups"
+#        system clock    = 2026-07-06 16:10:42 America/Toronto
+#   Out: backup_timestamp = "20260706-161042"
+#        derived by the calling play as:
+#        backup_output_dir = "/Users/net-admin/repo/CICD Pipeline/ansible/playbooks/../config-backups/20260706-161042"
+# Set once on localhost and read back through hostvars['localhost'] by the
+# iosxe and nxos plays, so every device config for one run shares a directory.
+# Computing it per-play would straddle a minute boundary and split the run.
 - name: Set shared backup timestamp
   ansible.builtin.set_fact:
     backup_timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
