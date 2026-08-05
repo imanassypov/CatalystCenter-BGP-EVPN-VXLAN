@@ -79,6 +79,6 @@
 
 # Task: Phase A — site_id_map summary
 # Pre/Post: unchanged — prints map size and contents
-- name: "Phase A — site_id_map ({{ site_id_map | length }} existing sites)"
+- name: "Phase A — site_id_map summary"
   ansible.builtin.debug:
-    msg: "{{ site_id_map }}"
+    msg: "{{ site_id_map | length }} existing sites: {{ site_id_map }}"
