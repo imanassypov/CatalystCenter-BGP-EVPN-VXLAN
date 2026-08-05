@@ -3,9 +3,11 @@
 # MCP bastion/Splunk: utils/mcp-ssh-server/inventory/static_hosts.yml (not Ansible).
 all:
   children:
+    # Host name must differ from the group name, otherwise Ansible warns
+    # "Found both group and host with same name". Playbooks target the group.
     catalyst_center:
       hosts:
-        catalyst_center:
+        catalyst_center_api:
           ansible_host: localhost
           ansible_connection: local
           ansible_python_interpreter: "{{ ansible_playbook_python }}"
