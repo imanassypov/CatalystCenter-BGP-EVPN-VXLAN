@@ -501,23 +501,24 @@
   vars:
     _first_dev: "{{ (_device_uuid_map | dict2items | first).value }}"
   debug:
-    msg: "{{ {
+    msg: >-
+      {{ {
       'templateId': _composite_template_id,
       'mainTemplateId': _composite_main_id,
       'isComposite': true,
       'forcePushTemplate': true,
       'copyingConfig': true,
       'targetInfo': [{
-        'id': _first_dev.uuid,
-        'hostName': _first_dev.hostname,
-        'type': 'MANAGED_DEVICE_UUID',
-        'params': {},
-        'resourceParams': [
-          {'type': 'MANAGED_DEVICE_UUID', 'scope': 'RUNTIME', 'value': _first_dev.uuid}
-        ]
+      'id': _first_dev.uuid,
+      'hostName': _first_dev.hostname,
+      'type': 'MANAGED_DEVICE_UUID',
+      'params': {},
+      'resourceParams': [
+      {'type': 'MANAGED_DEVICE_UUID', 'scope': 'RUNTIME', 'value': _first_dev.uuid}
+      ]
       }],
       'memberTemplateDeploymentInfo': _member_deployment_info
-    } | to_nice_json }}"
+      } | to_nice_json }}
 
 # ── Step E: Deploy composite template via direct REST API call ───────────────
 #
