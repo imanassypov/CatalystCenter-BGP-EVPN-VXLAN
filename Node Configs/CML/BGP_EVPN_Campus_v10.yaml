@@ -601,6 +601,19 @@ smart_annotations:
     fill_color: '#CDD51917'
     border_color: '#00000080'
     z_index: 1
+  - tag: client
+    is_on: true
+    padding: 35
+    label: client
+    tag_offset_x: 0
+    tag_offset_y: 0
+    tag_size: 14
+    group_distance: 400
+    thickness: 1
+    border_style: ''
+    fill_color: '#931ce380'
+    border_color: '#00000080'
+    z_index: 25
   - tag: dhcp-client
     is_on: true
     padding: 35
@@ -614,6 +627,58 @@ smart_annotations:
     fill_color: '#A4C8E180'
     border_color: '#00000080'
     z_index: 17
+  - tag: dhcp-server
+    is_on: true
+    padding: 35
+    label: dhcp-server
+    tag_offset_x: 0
+    tag_offset_y: 0
+    tag_size: 14
+    group_distance: 400
+    thickness: 1
+    border_style: ''
+    fill_color: '#03c97580'
+    border_color: '#00000080'
+    z_index: 24
+  - tag: dmz
+    is_on: true
+    padding: 35
+    label: dmz
+    tag_offset_x: 0
+    tag_offset_y: 0
+    tag_size: 14
+    group_distance: 400
+    thickness: 1
+    border_style: ''
+    fill_color: '#005C9980'
+    border_color: '#00000080'
+    z_index: 21
+  - tag: dmz01
+    is_on: true
+    padding: 35
+    label: dmz01
+    tag_offset_x: 0
+    tag_offset_y: 0
+    tag_size: 14
+    group_distance: 400
+    thickness: 1
+    border_style: ''
+    fill_color: '#00B14080'
+    border_color: '#00000080'
+    z_index: 22
+  - tag: dmz02
+    is_on: true
+    padding: 35
+    label: dmz02
+    tag_offset_x: 0
+    tag_offset_y: 0
+    tag_size: 14
+    group_distance: 400
+    thickness: 1
+    border_style: ''
+    fill_color: '#B7E3D980'
+    border_color: '#00000080'
+    z_index: 23
   - tag: green-202
     is_on: true
     padding: 35
@@ -705,6 +770,19 @@ smart_annotations:
     fill_color: '#F16A2080'
     border_color: '#00000080'
     z_index: 11
+  - tag: red-103
+    is_on: true
+    padding: 35
+    label: red-103
+    tag_offset_x: 0
+    tag_offset_y: 0
+    tag_size: 14
+    group_distance: 400
+    thickness: 1
+    border_style: ''
+    fill_color: '#FFD10080'
+    border_color: '#00000080'
+    z_index: 20
   - tag: spine
     is_on: true
     padding: 35
@@ -1919,6 +1997,7 @@ nodes:
     tags:
       - red
       - red-101
+      - client
     x: -160
     y: 400
     interfaces:
@@ -1955,6 +2034,7 @@ nodes:
     tags:
       - red
       - red-101
+      - client
     x: -400
     y: 400
     interfaces:
@@ -3730,6 +3810,7 @@ nodes:
     tags:
       - red
       - red-102
+      - client
     x: -120
     y: 640
     interfaces:
@@ -3765,6 +3846,7 @@ nodes:
     ram: null
     tags:
       - blue-201
+      - client
     x: 160
     y: 400
     interfaces:
@@ -3800,6 +3882,7 @@ nodes:
     ram: null
     tags:
       - green-202
+      - client
     x: 560
     y: 400
     interfaces:
@@ -4237,6 +4320,8 @@ nodes:
     tags:
       - ipsec
       - '65003'
+      - dmz
+      - dmz01
     x: 80
     y: -400
     interfaces:
@@ -4316,6 +4401,7 @@ nodes:
     ram: null
     tags:
       - blue-201
+      - client
     x: 360
     y: 400
     interfaces:
@@ -4345,96 +4431,100 @@ nodes:
           \ information trust-all\nip dhcp excluded-address vrf blue 198.18.201.1\
           \ 198.18.201.200\nip dhcp excluded-address vrf green 198.18.221.1 198.18.221.200\n\
           ip dhcp excluded-address vrf red 198.18.101.1 198.18.101.200\nip dhcp excluded-address\
-          \ vrf red 198.18.102.1 198.18.102.200\n!\nip dhcp pool red-101\n vrf red\n\
-          \ network 198.18.101.0 255.255.255.0\n default-router 198.18.101.1\n dns-server\
+          \ vrf red 198.18.102.1 198.18.102.200\nip dhcp excluded-address vrf red\
+          \ 198.18.103.1 198.18.103.200\n!\nip dhcp pool red-101\n vrf red\n network\
+          \ 198.18.101.0 255.255.255.0\n default-router 198.18.101.1\n dns-server\
           \ 8.8.8.8\n!\nip dhcp pool red-102\n vrf red\n network 198.18.102.0 255.255.255.0\n\
-          \ default-router 198.18.102.1\n dns-server 8.8.8.8\n!\nip dhcp pool blue-201\n\
-          \ vrf blue\n network 198.18.201.0 255.255.255.0\n default-router 198.18.201.1\n\
-          \ dns-server 8.8.8.8\n!\nip dhcp pool green-221\n vrf green\n network 198.18.221.0\
-          \ 255.255.255.0\n default-router 198.18.221.1\n dns-server 8.8.8.8\n!\n\
-          !\n!\nlogin on-success log\n!\n!\nsubscriber templating\n!\n!\n!\ncrypto\
-          \ pki trustpoint SLA-TrustPoint\n enrollment pkcs12\n revocation-check crl\n\
-          \ hash sha256\n!\ncrypto pki trustpoint TP-self-signed-1388023157\n enrollment\
-          \ selfsigned\n subject-name cn=IOS-Self-Signed-Certificate-1388023157\n\
-          \ revocation-check none\n rsakeypair TP-self-signed-1388023157\n hash sha512\n\
-          !\n!\ncrypto pki certificate chain SLA-TrustPoint\n certificate ca 01\n\
-          \  30820321 30820209 A0030201 02020101 300D0609 2A864886 F70D0101 0B050030\n\
-          \  32310E30 0C060355 040A1305 43697363 6F312030 1E060355 04031317 43697363\n\
-          \  6F204C69 63656E73 696E6720 526F6F74 20434130 1E170D31 33303533 30313934\n\
-          \  3834375A 170D3338 30353330 31393438 34375A30 32310E30 0C060355 040A1305\n\
-          \  43697363 6F312030 1E060355 04031317 43697363 6F204C69 63656E73 696E6720\n\
-          \  526F6F74 20434130 82012230 0D06092A 864886F7 0D010101 05000382 010F0030\n\
-          \  82010A02 82010100 A6BCBD96 131E05F7 145EA72C 2CD686E6 17222EA1 F1EFF64D\n\
-          \  CBB4C798 212AA147 C655D8D7 9471380D 8711441E 1AAF071A 9CAE6388 8A38E520\n\
-          \  1C394D78 462EF239 C659F715 B98C0A59 5BBB5CBD 0CFEBEA3 700A8BF7 D8F256EE\n\
-          \  4AA4E80D DB6FD1C9 60B1FD18 FFC69C96 6FA68957 A2617DE7 104FDC5F EA2956AC\n\
-          \  7390A3EB 2B5436AD C847A2C5 DAB553EB 69A9A535 58E9F3E3 C0BD23CF 58BD7188\n\
-          \  68E69491 20F320E7 948E71D7 AE3BCC84 F10684C7 4BC8E00F 539BA42B 42C68BB7\n\
-          \  C7479096 B4CB2D62 EA2F505D C7B062A4 6811D95B E8250FC4 5D5D5FB8 8F27D191\n\
-          \  C55F0D76 61F9A4CD 3D992327 A8BB03BD 4E6D7069 7CBADF8B DF5F4368 95135E44\n\
-          \  DFC7C6CF 04DD7FD1 02030100 01A34230 40300E06 03551D0F 0101FF04 04030201\n\
-          \  06300F06 03551D13 0101FF04 05300301 01FF301D 0603551D 0E041604 1449DC85\n\
-          \  4B3D31E5 1B3E6A17 606AF333 3D3B4C73 E8300D06 092A8648 86F70D01 010B0500\n\
-          \  03820101 00507F24 D3932A66 86025D9F E838AE5C 6D4DF6B0 49631C78 240DA905\n\
-          \  604EDCDE FF4FED2B 77FC460E CD636FDB DD44681E 3A5673AB 9093D3B1 6C9E3D8B\n\
-          \  D98987BF E40CBD9E 1AECA0C2 2189BB5C 8FA85686 CD98B646 5575B146 8DFC66A8\n\
-          \  467A3DF4 4D565700 6ADF0F0D CF835015 3C04FF7C 21E878AC 11BA9CD2 55A9232C\n\
-          \  7CA7B7E6 C1AF74F6 152E99B7 B1FCF9BB E973DE7F 5BDDEB86 C71E3B49 1765308B\n\
-          \  5FB0DA06 B92AFE7F 494E8A9E 07B85737 F3A58BE1 1A48A229 C37C1E69 39F08678\n\
-          \  80DDCD16 D6BACECA EEBC7CF9 8428787B 35202CDC 60E4616A B623CDBD 230E3AFB\n\
-          \  418616A9 4093E049 4D10AB75 27E86F73 932E35B5 8862FDAE 0275156F 719BB2F0\n\
-          \  D697DF7F 28\n  \tquit\ncrypto pki certificate chain TP-self-signed-1388023157\n\
-          \ certificate self-signed 01\n  30820330 30820218 A0030201 02020101 300D0609\
-          \ 2A864886 F70D0101 0D050030\n  31312F30 2D060355 04030C26 494F532D 53656C66\
-          \ 2D536967 6E65642D 43657274\n  69666963 6174652D 31333838 30323331 3537301E\
-          \ 170D3236 30373036 31323037\n  35325A17 0D333630 37303531 32303735 325A3031\
-          \ 312F302D 06035504 030C2649\n  4F532D53 656C662D 5369676E 65642D43 65727469\
-          \ 66696361 74652D31 33383830\n  32333135 37308201 22300D06 092A8648 86F70D01\
-          \ 01010500 0382010F 00308201\n  0A028201 01008BC7 0BC3663E 9F374432 BE3BC502\
-          \ 1D6DB3D9 D1C6A1FB 4672F590\n  10D2C3B2 7B53E8FE 236FFC8E AB000D53 855FCC7A\
-          \ C41FB698 47F1E655 1CF55BA2\n  A971CD5B 3A719B8B DF7F045B 54754B20 C87B4BC8\
-          \ 17D8CE2D 1B03CAA3 9FC3E338\n  1B4572A2 9BB509C0 2CA1579D 756C910D 900715E9\
-          \ 5AEEFAA6 6A7A7E5B 0B613420\n  0735F4B9 6226350D ADBD8E6F D13DDD9E 39A98771\
-          \ F48D70C2 C8D4CDDD A28D037E\n  4E166F59 08304CBA EA985D18 337562B3 E2F7E41B\
-          \ 86B59959 8BC592F5 BEE86604\n  E59419C9 F2CF7263 16291C60 DE895F2A 0333C2CA\
-          \ 7605C3CE 5176CA37 FB77FFE0\n  ABD5ADEA 3529CFAA 2E918173 70945256 6C8061DE\
-          \ 78E29537 04CA8D65 8745CC45\n  337CD4A3 D9410203 010001A3 53305130 1D060355\
-          \ 1D0E0416 04147EB6 7643CE04\n  98E2B786 BD8B8111 ADA9E8E6 0404301F 0603551D\
-          \ 23041830 1680147E B67643CE\n  0498E2B7 86BD8B81 11ADA9E8 E6040430 0F060355\
-          \ 1D130101 FF040530 030101FF\n  300D0609 2A864886 F70D0101 0D050003 82010100\
-          \ 69A62CD1 59612C40 A0E2C694\n  733011A6 B94E210F 39ADBCAC E6FD5778 F6B93ECB\
-          \ 28BC4D19 D45597E9 D1D9DF8F\n  598BF409 BCC930E8 45CADBB0 0C7FADE9 C36EDE84\
-          \ 07953F21 243D8FB9 0D001CC0\n  9B306C4E BFC75214 BD395A59 F35BD78D F62CE05E\
-          \ 28CA0DD4 6A152C67 8030A775\n  402DEC05 CFCAFB31 CB5C319F C2B20232 B4833A48\
-          \ 19741D64 8E280F33 08A37A01\n  2F95DE2E C0F93FF5 D601F351 7E0C07B9 AD457154\
-          \ 7F4A0A34 24B05393 3604A0A4\n  37ECA0C1 D43F2D93 6C3AE985 734C7916 BFA5918F\
-          \ 46C6E228 808B3325 232BD31C\n  CC32D0EE A63EDD35 0DD1C212 59780411 82634C7B\
-          \ 850797D0 88AC71B0 6429CEA4\n  503037F3 1C882D1E 0515612F EA6286D8 DC6AC81F\n\
-          \  \tquit\n!\n!\nlicense udi pid C8000V sn 9VMV2THCMEW\nmemory free low-watermark\
-          \ processor 201711\ndiagnostic bootup level minimal\n!\n!\n!\nenable password\
-          \ C1sco12345\n!\nusername cisco privilege 15 password 0 cisco\nusername\
-          \ net-admin privilege 15 password 0 C1sco12345\n!\nredundancy\n!\n!\n!\n\
-          !\n!\n!\n!\n!\n!\n!\ninterface GigabitEthernet1\n vrf forwarding Mgmt-vrf\n\
-          \ ip address 198.18.128.110 255.255.192.0\n negotiation auto\n!\ninterface\
-          \ GigabitEthernet2\n no ip address\n negotiation auto\n!\ninterface GigabitEthernet2.100\n\
+          \ default-router 198.18.102.1\n dns-server 8.8.8.8\n!\nip dhcp pool red-103\n\
+          \ vrf red\n network 198.18.103.0 255.255.255.0\n default-router 198.18.103.1\n\
+          \ dns-server 8.8.8.8\n!\nip dhcp pool blue-201\n vrf blue\n network 198.18.201.0\
+          \ 255.255.255.0\n default-router 198.18.201.1\n dns-server 8.8.8.8\n!\n\
+          ip dhcp pool green-221\n vrf green\n network 198.18.221.0 255.255.255.0\n\
+          \ default-router 198.18.221.1\n dns-server 8.8.8.8\n!\n!\n!\nlogin on-success\
+          \ log\n!\n!\nsubscriber templating\n!\n!\n!\ncrypto pki trustpoint SLA-TrustPoint\n\
+          \ enrollment pkcs12\n revocation-check crl\n hash sha256\n!\ncrypto pki\
+          \ trustpoint TP-self-signed-1388023157\n enrollment selfsigned\n subject-name\
+          \ cn=IOS-Self-Signed-Certificate-1388023157\n revocation-check none\n rsakeypair\
+          \ TP-self-signed-1388023157\n hash sha512\n!\n!\ncrypto pki certificate\
+          \ chain SLA-TrustPoint\n certificate ca 01\n  30820321 30820209 A0030201\
+          \ 02020101 300D0609 2A864886 F70D0101 0B050030\n  32310E30 0C060355 040A1305\
+          \ 43697363 6F312030 1E060355 04031317 43697363\n  6F204C69 63656E73 696E6720\
+          \ 526F6F74 20434130 1E170D31 33303533 30313934\n  3834375A 170D3338 30353330\
+          \ 31393438 34375A30 32310E30 0C060355 040A1305\n  43697363 6F312030 1E060355\
+          \ 04031317 43697363 6F204C69 63656E73 696E6720\n  526F6F74 20434130 82012230\
+          \ 0D06092A 864886F7 0D010101 05000382 010F0030\n  82010A02 82010100 A6BCBD96\
+          \ 131E05F7 145EA72C 2CD686E6 17222EA1 F1EFF64D\n  CBB4C798 212AA147 C655D8D7\
+          \ 9471380D 8711441E 1AAF071A 9CAE6388 8A38E520\n  1C394D78 462EF239 C659F715\
+          \ B98C0A59 5BBB5CBD 0CFEBEA3 700A8BF7 D8F256EE\n  4AA4E80D DB6FD1C9 60B1FD18\
+          \ FFC69C96 6FA68957 A2617DE7 104FDC5F EA2956AC\n  7390A3EB 2B5436AD C847A2C5\
+          \ DAB553EB 69A9A535 58E9F3E3 C0BD23CF 58BD7188\n  68E69491 20F320E7 948E71D7\
+          \ AE3BCC84 F10684C7 4BC8E00F 539BA42B 42C68BB7\n  C7479096 B4CB2D62 EA2F505D\
+          \ C7B062A4 6811D95B E8250FC4 5D5D5FB8 8F27D191\n  C55F0D76 61F9A4CD 3D992327\
+          \ A8BB03BD 4E6D7069 7CBADF8B DF5F4368 95135E44\n  DFC7C6CF 04DD7FD1 02030100\
+          \ 01A34230 40300E06 03551D0F 0101FF04 04030201\n  06300F06 03551D13 0101FF04\
+          \ 05300301 01FF301D 0603551D 0E041604 1449DC85\n  4B3D31E5 1B3E6A17 606AF333\
+          \ 3D3B4C73 E8300D06 092A8648 86F70D01 010B0500\n  03820101 00507F24 D3932A66\
+          \ 86025D9F E838AE5C 6D4DF6B0 49631C78 240DA905\n  604EDCDE FF4FED2B 77FC460E\
+          \ CD636FDB DD44681E 3A5673AB 9093D3B1 6C9E3D8B\n  D98987BF E40CBD9E 1AECA0C2\
+          \ 2189BB5C 8FA85686 CD98B646 5575B146 8DFC66A8\n  467A3DF4 4D565700 6ADF0F0D\
+          \ CF835015 3C04FF7C 21E878AC 11BA9CD2 55A9232C\n  7CA7B7E6 C1AF74F6 152E99B7\
+          \ B1FCF9BB E973DE7F 5BDDEB86 C71E3B49 1765308B\n  5FB0DA06 B92AFE7F 494E8A9E\
+          \ 07B85737 F3A58BE1 1A48A229 C37C1E69 39F08678\n  80DDCD16 D6BACECA EEBC7CF9\
+          \ 8428787B 35202CDC 60E4616A B623CDBD 230E3AFB\n  418616A9 4093E049 4D10AB75\
+          \ 27E86F73 932E35B5 8862FDAE 0275156F 719BB2F0\n  D697DF7F 28\n  \tquit\n\
+          crypto pki certificate chain TP-self-signed-1388023157\n certificate self-signed\
+          \ 01\n  30820330 30820218 A0030201 02020101 300D0609 2A864886 F70D0101 0D050030\n\
+          \  31312F30 2D060355 04030C26 494F532D 53656C66 2D536967 6E65642D 43657274\n\
+          \  69666963 6174652D 31333838 30323331 3537301E 170D3236 30373036 31323037\n\
+          \  35325A17 0D333630 37303531 32303735 325A3031 312F302D 06035504 030C2649\n\
+          \  4F532D53 656C662D 5369676E 65642D43 65727469 66696361 74652D31 33383830\n\
+          \  32333135 37308201 22300D06 092A8648 86F70D01 01010500 0382010F 00308201\n\
+          \  0A028201 01008BC7 0BC3663E 9F374432 BE3BC502 1D6DB3D9 D1C6A1FB 4672F590\n\
+          \  10D2C3B2 7B53E8FE 236FFC8E AB000D53 855FCC7A C41FB698 47F1E655 1CF55BA2\n\
+          \  A971CD5B 3A719B8B DF7F045B 54754B20 C87B4BC8 17D8CE2D 1B03CAA3 9FC3E338\n\
+          \  1B4572A2 9BB509C0 2CA1579D 756C910D 900715E9 5AEEFAA6 6A7A7E5B 0B613420\n\
+          \  0735F4B9 6226350D ADBD8E6F D13DDD9E 39A98771 F48D70C2 C8D4CDDD A28D037E\n\
+          \  4E166F59 08304CBA EA985D18 337562B3 E2F7E41B 86B59959 8BC592F5 BEE86604\n\
+          \  E59419C9 F2CF7263 16291C60 DE895F2A 0333C2CA 7605C3CE 5176CA37 FB77FFE0\n\
+          \  ABD5ADEA 3529CFAA 2E918173 70945256 6C8061DE 78E29537 04CA8D65 8745CC45\n\
+          \  337CD4A3 D9410203 010001A3 53305130 1D060355 1D0E0416 04147EB6 7643CE04\n\
+          \  98E2B786 BD8B8111 ADA9E8E6 0404301F 0603551D 23041830 1680147E B67643CE\n\
+          \  0498E2B7 86BD8B81 11ADA9E8 E6040430 0F060355 1D130101 FF040530 030101FF\n\
+          \  300D0609 2A864886 F70D0101 0D050003 82010100 69A62CD1 59612C40 A0E2C694\n\
+          \  733011A6 B94E210F 39ADBCAC E6FD5778 F6B93ECB 28BC4D19 D45597E9 D1D9DF8F\n\
+          \  598BF409 BCC930E8 45CADBB0 0C7FADE9 C36EDE84 07953F21 243D8FB9 0D001CC0\n\
+          \  9B306C4E BFC75214 BD395A59 F35BD78D F62CE05E 28CA0DD4 6A152C67 8030A775\n\
+          \  402DEC05 CFCAFB31 CB5C319F C2B20232 B4833A48 19741D64 8E280F33 08A37A01\n\
+          \  2F95DE2E C0F93FF5 D601F351 7E0C07B9 AD457154 7F4A0A34 24B05393 3604A0A4\n\
+          \  37ECA0C1 D43F2D93 6C3AE985 734C7916 BFA5918F 46C6E228 808B3325 232BD31C\n\
+          \  CC32D0EE A63EDD35 0DD1C212 59780411 82634C7B 850797D0 88AC71B0 6429CEA4\n\
+          \  503037F3 1C882D1E 0515612F EA6286D8 DC6AC81F\n  \tquit\n!\n!\nlicense\
+          \ udi pid C8000V sn 9VMV2THCMEW\nmemory free low-watermark processor 201711\n\
+          diagnostic bootup level minimal\n!\n!\n!\nenable password C1sco12345\n!\n\
+          username cisco privilege 15 password 0 cisco\nusername net-admin privilege\
+          \ 15 password 0 C1sco12345\n!\nredundancy\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n\
+          interface GigabitEthernet1\n vrf forwarding Mgmt-vrf\n ip address 198.18.128.110\
+          \ 255.255.192.0\n negotiation auto\n no shutdown\n!\ninterface GigabitEthernet2\n\
+          \ no ip address\n negotiation auto\n no shutdown\n!\ninterface GigabitEthernet2.100\n\
           \ description dhcp-server-green\n encapsulation dot1Q 100\n vrf forwarding\
           \ green\n ip address 198.18.143.100 255.255.255.0\n!\ninterface GigabitEthernet2.110\n\
           \ description dhcp-server-blue\n encapsulation dot1Q 110\n vrf forwarding\
           \ blue\n ip address 198.18.144.100 255.255.255.0\n!\ninterface GigabitEthernet2.120\n\
           \ description dhcp-server-global\n encapsulation dot1Q 120\n ip address\
           \ 198.19.2.78 255.255.255.252\n!\ninterface GigabitEthernet3\n no ip address\n\
-          \ negotiation auto\n!\ninterface GigabitEthernet3.101\n description dhcp-server-green-dmz2\n\
-          \ encapsulation dot1Q 101\n vrf forwarding green\n ip address 198.18.145.100\
-          \ 255.255.255.0\n!\ninterface GigabitEthernet3.111\n description dhcp-server-blue-dmz2\n\
-          \ encapsulation dot1Q 111\n vrf forwarding blue\n ip address 198.18.146.100\
-          \ 255.255.255.0\n!\ninterface GigabitEthernet4\n no ip address\n shutdown\n\
-          \ negotiation auto\n!\nip forward-protocol nd\nip forward-protocol udp\n\
-          !\nno ip http server\nip http secure-server\nip route 0.0.0.0 0.0.0.0 198.19.2.77\n\
-          ip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1\nip route vrf blue 0.0.0.0\
-          \ 0.0.0.0 198.18.144.1\nip route vrf green 0.0.0.0 0.0.0.0 198.18.143.1\n\
-          ip ssh bulk-mode 131072\n!\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n\
-          \ exec-timeout 0 0\n stopbits 1\nline aux 0\nline vty 0 4\n exec-timeout\
-          \ 0 0\n transport input ssh\n!\n!\n!\n!\n!\n!\n!\nnetconf-yang\nend"
+          \ negotiation auto\n no shutdown\n!\ninterface GigabitEthernet3.101\n description\
+          \ dhcp-server-green-dmz2\n encapsulation dot1Q 101\n vrf forwarding green\n\
+          \ ip address 198.18.145.100 255.255.255.0\n!\ninterface GigabitEthernet3.111\n\
+          \ description dhcp-server-blue-dmz2\n encapsulation dot1Q 111\n vrf forwarding\
+          \ blue\n ip address 198.18.146.100 255.255.255.0\n!\ninterface GigabitEthernet4\n\
+          \ no ip address\n shutdown\n negotiation auto\n!\nip forward-protocol nd\n\
+          ip forward-protocol udp\n!\nno ip http server\nip http secure-server\nip\
+          \ route 0.0.0.0 0.0.0.0 198.19.2.77\nip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0\
+          \ 198.18.128.1\nip route vrf blue 0.0.0.0 0.0.0.0 198.18.144.1\nip route\
+          \ vrf green 0.0.0.0 0.0.0.0 198.18.143.1\nip ssh bulk-mode 131072\n!\n!\n\
+          !\n!\n!\ncontrol-plane\n!\n!\nline con 0\n exec-timeout 0 0\n stopbits 1\n\
+          line aux 0\nline vty 0 4\n exec-timeout 0 0\n transport input ssh\n!\n!\n\
+          !\n!\n!\n!\n!\nnetconf-yang\nend"
     cpu_limit: null
     cpus: null
     data_volume: null
@@ -4445,7 +4535,8 @@ nodes:
     node_definition: cat8000v
     parameters: {}
     ram: null
-    tags: []
+    tags:
+      - dhcp-server
     x: -400
     y: -200
     interfaces:
@@ -4507,6 +4598,7 @@ nodes:
     tags:
       - green-202
       - dhcp-client
+      - client
     x: 560
     y: 520
     interfaces:
@@ -4552,6 +4644,7 @@ nodes:
       - red
       - red-102
       - dhcp-client
+      - client
     x: -440
     y: 640
     interfaces:
@@ -4732,6 +4825,7 @@ nodes:
     ram: null
     tags:
       - blue-201
+      - client
     x: 160
     y: 520
     interfaces:
@@ -4767,6 +4861,7 @@ nodes:
     ram: null
     tags:
       - green-202
+      - client
     x: 760
     y: 400
     interfaces:
@@ -5003,6 +5098,8 @@ nodes:
     tags:
       - ipsec
       - '65004'
+      - dmz
+      - dmz02
     x: 240
     y: -400
     interfaces:
@@ -5135,6 +5232,43 @@ nodes:
         mac_address: null
         type: physical
         slot: 24
+  - boot_disk_size: null
+    configuration:
+      - name: node.cfg
+        content: |-
+          # this is a shell script which will be sourced at boot
+          hostname red05
+          # configurable user account
+          USERNAME=cisco
+          PASSWORD=cisco
+
+          kill $(cat /var/run/udhcpc.eth0.pid 2>/dev/null) 2>/dev/null
+          ip addr flush dev eth0
+          ip link set dev eth0 address 00:00:00:01:03:05
+          ip addr add 198.18.103.20/24 dev eth0
+          ip route add default via 198.18.103.1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n24
+    image_definition: null
+    label: red-05
+    node_definition: alpine
+    parameters: {}
+    ram: null
+    tags:
+      - red
+      - red-103
+      - client
+    x: -80
+    y: 760
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
 links:
   - id: l0
     n1: n4
@@ -5458,6 +5592,13 @@ links:
     i2: i3
     conditioning: {}
     label: dmz2-GigabitEthernet1/0/5<->dhcp-server-GigabitEthernet3
+  - id: l46
+    n1: n24
+    n2: n2
+    i1: i0
+    i2: i9
+    conditioning: {}
+    label: red-05-eth0<->leaf2-GigabitEthernet1/0/8
 lab:
   description: To be used for BGP EVPN Fabric Builds with GitOps via Ansible and or
     Cisco Workflows
