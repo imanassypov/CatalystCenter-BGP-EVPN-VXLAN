@@ -1,0 +1,210 @@
+# DEFN Template Editor — schema registry
+# Maps DEFN-*.j2 variables to UI bindings and column definitions.
+
+version: 1
+
+sheets:
+  Control:
+    description: Project folder, Load/Save actions, status log
+  VNIOFFSETS:
+    file: DEFN-VNIOFFSETS.j2
+  ROLES:
+    file: DEFN-ROLES.j2
+  VRF:
+    file: DEFN-VRF.j2
+  OVERLAY:
+    file: DEFN-OVERLAY.j2
+  L3OUT:
+    file: DEFN-L3OUT.j2
+  LOOPBACKS:
+    file: DEFN-LOOPBACKS.j2
+  CLIENT_PORTS:
+    file: DEFN-CLIENT-PORTS.j2
+  MCAST:
+    file: DEFN-MCAST.j2
+  BORDER_TUNNELS:
+    file: DEFN-BORDER-DMZ-TUNNELS.j2
+  NAC:
+    file: DEFN-NAC.j2
+  TELEMETRY:
+    file: DEFN-TELEMETRY-SPLUNK.j2
+
+files:
+  DEFN-VNIOFFSETS.j2:
+    variables:
+      - name: L2VNIOFFSET
+        binding: scalar
+        sheet: VNIOFFSETS
+        cell: B2
+      - name: L3VNIOFFSET
+        binding: scalar
+        sheet: VNIOFFSETS
+        cell: B3
+
+  DEFN-ROLES.j2:
+    variables:
+      - name: DEFN_NODE_ROLES
+        binding: role_host_table
+        sheet: ROLES
+        table: tblRoles
+        columns: [role, hostname]
+
+  DEFN-VRF.j2:
+    variables:
+      - name: DEFN_VRF
+        binding: row_table
+        sheet: VRF
+        table: tblVrf
+        columns: [id, name, mdt_default, mdt_data]
+      - name: DEFN_VRF_TO_NODE
+        binding: matrix_table
+        sheet: VRF
+        table: tblVrfToNode
+        columns: [hostname, vrf_ids]
+
+  DEFN-OVERLAY.j2:
+    variables:
+      - name: FABRIC_BGP_ASN
+        binding: scalar
+        sheet: OVERLAY
+        cell: B2
+      - name: FABRIC_UNDERLAY
+        binding: key_value_table
+        sheet: OVERLAY
+        table: tblFabricUnderlay
+        columns: [key, value]
+      - name: DEFN_OVERLAY
+        binding: overlay_vlan_table
+        sheet: OVERLAY
+        table: tblOverlayVlans
+        columns: [vrf, vlan_id, name, ipaddr, mac, dhcp_helper, bum_addr, network]
+
+  DEFN-L3OUT.j2:
+    variables:
+      - name: DEFN_L3OUT
+        binding: l3out_table
+        sheet: L3OUT
+        table: tblL3outInterfaces
+        columns: [vrf, node, neighbour_asn, ifname, parent, name, vlan, ipaddr, neighbour]
+      - name: DEFN_L3OUT_AGGREGATES
+        binding: prefix_list_table
+        sheet: L3OUT
+        table: tblL3outAggregates
+        columns: [prefix]
+      - name: DEFN_L3OUT_NODES
+        binding: host_list_table
+        sheet: L3OUT
+        table: tblL3outNodes
+        columns: [hostname]
+
+  DEFN-LOOPBACKS.j2:
+    variables:
+      - name: DEFN_LOOP_UNDERLAY
+        binding: key_value_table
+        sheet: LOOPBACKS
+        table: tblLoopUnderlay
+        columns: [key, value]
+        section: Underlay Loopbacks
+      - name: DEFN_LOOP_MCLUSTER
+        binding: nested_dict_table
+        sheet: LOOPBACKS
+        table: tblLoopMcluster
+        columns: [hostname, ip, asn, gre_src]
+        section: MCLUSTER Loopbacks
+      - name: DEFN_LOOP_OVERLAY
+        binding: key_value_table
+        sheet: LOOPBACKS
+        table: tblLoopOverlay
+        columns: [key, value]
+        section: Overlay Prefixes
+      - name: DEFN_LOOP_NAME
+        binding: key_value_table
+        sheet: LOOPBACKS
+        table: tblLoopName
+        columns: [key, value]
+        section: Loopback Names
+      - name: DEFN_LOOP_GRE_SRC
+        binding: key_value_table
+        sheet: LOOPBACKS
+        table: tblLoopGreSrc
+        columns: [key, value]
+        section: GRE Source (Border Lo1)
+      - name: DEFN_LOOP_GRE_PEER
+        binding: key_value_table
+        sheet: LOOPBACKS
+        table: tblLoopGrePeer
+        columns: [key, value]
+        section: GRE Peer (Border Lo2)
+
+  DEFN-CLIENT-PORTS.j2:
+    variables:
+      - name: DEFN_CLIENT_PORTS
+        binding: client_port_table
+        sheet: CLIENT_PORTS
+        table: tblClientPorts
+        columns: [hostname, port, vlan, description, portfast, mode]
+      - name: DEFN_CLIENT_PORT_DEVICES
+        binding: host_list_table
+        sheet: CLIENT_PORTS
+        table: tblClientPortDevices
+        columns: [hostname]
+        derived_from: DEFN_CLIENT_PORTS
+
+  DEFN-MCAST.j2:
+    variables:
+      - name: FABRIC_RP_ADDR
+        binding: scalar
+        sheet: MCAST
+        cell: B2
+      - name: FABRIC_RP_SCOPES
+        binding: prefix_list_table
+        sheet: MCAST
+        table: tblFabricRpScopes
+        columns: [prefix]
+      - name: ENTERPRISE_RP_ADDR
+        binding: scalar
+        sheet: MCAST
+        cell: B5
+      - name: ENTERPRISE_RP_SCOPES
+        binding: prefix_list_table
+        sheet: MCAST
+        table: tblEnterpriseRpScopes
+        columns: [prefix]
+
+  DEFN-BORDER-DMZ-TUNNELS.j2:
+    variables:
+      - name: DEFN_TUNNELS
+        binding: row_table
+        sheet: BORDER_TUNNELS
+        table: tblTunnels
+        columns: [node, remote, ifname, addr, mask, source, dest]
+
+  DEFN-NAC.j2:
+    variables:
+      - name: DEFN_NAC_IOT
+        binding: row_table
+        sheet: NAC
+        table: tblNacIot
+        columns: [vrf, nac_ip, nac_key, dnac_managed]
+        sensitive_columns: [nac_key]
+
+  DEFN-TELEMETRY-SPLUNK.j2:
+    variables:
+      - name: DEFN_TELEMETRY_SPLUNK_RECEIVER_IP
+        binding: scalar
+        sheet: TELEMETRY
+        cell: B2
+      - name: DEFN_TELEMETRY_SPLUNK_RECEIVER_PORT
+        binding: scalar
+        sheet: TELEMETRY
+        cell: B3
+      - name: DEFN_TELEMETRY_SPLUNK_ROLES
+        binding: host_list_table
+        sheet: TELEMETRY
+        table: tblTelemetryRoles
+        columns: [role]
+      - name: DEFN_TELEMETRY_SPLUNK
+        binding: telemetry_subscription_table
+        sheet: TELEMETRY
+        table: tblTelemetrySubscriptions
+        columns: [section, xpath, subscription_id, policy, period]
