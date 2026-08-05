@@ -29,7 +29,7 @@
 # Post: git_tree_prefix                — "<subfolder path>/" filter prefix
 #       api_template_files             — blobs matching *.j2 under the prefix
 #       api_composite_files            — blobs matching *.yml under the prefix
-#       projectName                    — subfolder_item.project_name, else the
+#       project_name                   — subfolder_item.project_name, else the
 #                                        subfolder basename, else the first
 #                                        template's parent folder basename
 #       enriched_template_files        — [{name, path, content, commit_message,
@@ -154,13 +154,13 @@
     #          "path":         "Catalyst Center Templates/Site BGP EVPN Templates",
     #          "project_name": "Building P0"
     #        }
-    #   Out: projectName = "Building P0"
+    #   Out: project_name = "Building P0"
     #
     # Example - no project_name, path present (rule 2)
     #   In : subfolder_item = {
     #          "path": "Catalyst Center Templates/DMZ BGP EVPN Templates"
     #        }
-    #   Out: projectName = "DMZ BGP EVPN Templates"
+    #   Out: project_name = "DMZ BGP EVPN Templates"
     #
     # Example - repo-root scan, falls back to the first template's folder (rule 3)
     #   In : subfolder_item    = { "path": "" }
@@ -169,12 +169,12 @@
     #            "mode": "100644", "type": "blob",
     #            "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048 }
     #        ]
-    #   Out: projectName = "Site BGP EVPN Templates"
-    # projectName must match an existing Template Programmer project, or the
+    #   Out: project_name = "Site BGP EVPN Templates"
+    # project_name must match an existing Template Programmer project, or the
     # workflow manager creates one with that name.
     - name: Resolve Catalyst Center project name for this subfolder
       set_fact:
-        projectName: >-
+        project_name: >-
           {{
             subfolder_item.project_name
             if (subfolder_item.project_name is defined and subfolder_item.project_name | length > 0)
@@ -186,14 +186,14 @@
     - name: --DEBUG-- Subfolder and project
       when: catc_debug | default(false) | bool
       debug:
-        msg: "Subfolder '{{ subfolder_item.path | default('(repo root)') }}' -> project '{{ projectName }}'"
+        msg: "Subfolder '{{ subfolder_item.path | default('(repo root)') }}' -> project '{{ project_name }}'"
 
     - name: Fetch template file contents from GitHub
       uri:
         url: "https://raw.githubusercontent.com/{{ git_repo_slug }}/{{ git_branch | default('HEAD') }}/{{ item.path | replace(' ', '%20') }}"
         method: GET
         headers: "{{ git_auth_header }}"
-        return_content: yes
+        return_content: true
         status_code: 200
       loop: "{{ api_template_files }}"
       loop_control:
@@ -295,7 +295,7 @@
         url: "https://raw.githubusercontent.com/{{ git_repo_slug }}/{{ git_branch | default('HEAD') }}/{{ item.path | replace(' ', '%20') }}"
         method: GET
         headers: "{{ git_auth_header }}"
-        return_content: yes
+        return_content: true
         status_code: 200
       loop: "{{ api_composite_files }}"
       loop_control:
@@ -511,7 +511,7 @@
       vars:
         project_summary:
           subfolder: "{{ subfolder_item.path | default('(repo root)') }}"
-          project: "{{ projectName }}"
+          project: "{{ project_name }}"
           templates_synced: "{{ template_workflow_configs | default([]) | length }}"
           composites_synced: "{{ composite_workflow_configs | default([]) | length }}"
 
@@ -519,6 +519,6 @@
       debug:
         msg:
           - "Subfolder synced: {{ subfolder_item.path | default('(repo root)') }}"
-          - "Project: {{ projectName }}"
+          - "Project: {{ project_name }}"
           - "Regular templates synced: {{ template_workflow_configs | default([]) | length }}"
           - "Composite templates synced: {{ composite_workflow_configs | default([]) | length }}"

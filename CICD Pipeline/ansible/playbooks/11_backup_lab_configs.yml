@@ -51,19 +51,23 @@
       - dhcp-server
   tasks:
     # backup_timestamp: "20260706-161042" — one value for the whole run
-    - ansible.builtin.import_role:
+    - name: Set backup run timestamp
+      ansible.builtin.import_role:
         name: backup_configs
         tasks_from: set_timestamp
     # settings_data — central data model, used for credential lookup below
-    - ansible.builtin.import_role:
+    - name: Load settings.json
+      ansible.builtin.import_role:
         name: catc_common
         tasks_from: load_settings
     # backup_target_hosts — union of groups[tag] for every backup_cml_tags entry
-    - ansible.builtin.import_role:
+    - name: Resolve backup targets
+      ansible.builtin.import_role:
         name: backup_configs
         tasks_from: resolve_backup_targets
     # ansible_user / ansible_password for the lab devices
-    - ansible.builtin.import_role:
+    - name: Load device credentials
+      ansible.builtin.import_role:
         name: backup_configs
         tasks_from: load_device_credentials
     # Split the tag scope by platform so each play uses the right connection
@@ -89,7 +93,8 @@
   vars:
     backup_output_dir: "{{ backup_root_dir }}/{{ hostvars['localhost']['backup_timestamp'] }}"
   tasks:
-    - ansible.builtin.import_role:
+    - name: Back up IOS-XE device configs
+      ansible.builtin.import_role:
         name: backup_configs
         tasks_from: backup_iosxe
 
@@ -100,7 +105,8 @@
   vars:
     backup_output_dir: "{{ backup_root_dir }}/{{ hostvars['localhost']['backup_timestamp'] }}"
   tasks:
-    - ansible.builtin.import_role:
+    - name: Back up NX-OS device configs
+      ansible.builtin.import_role:
         name: backup_configs
         tasks_from: backup_nxos
 
@@ -111,6 +117,7 @@
   hosts: localhost
   gather_facts: false
   tasks:
-    - ansible.builtin.import_role:
+    - name: Prune old backups per retention policy
+      ansible.builtin.import_role:
         name: backup_configs
         tasks_from: prune_backup_retention

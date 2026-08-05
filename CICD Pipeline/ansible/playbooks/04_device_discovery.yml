@@ -58,7 +58,8 @@
       dnac_log_level: "{{ dnac_log_level }}"
       dnac_log: "{{ dnac_log }}"
   pre_tasks:
-    - ansible.builtin.import_role:
+    - name: Load settings.json
+      ansible.builtin.import_role:
         name: catc_common
         tasks_from: load_settings
   roles:

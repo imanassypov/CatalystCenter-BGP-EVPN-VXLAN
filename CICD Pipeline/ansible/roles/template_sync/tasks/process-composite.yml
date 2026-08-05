@@ -22,7 +22,7 @@
 # Pre:  composite_file (loop var): { name, path, content }
 #         content is YAML: { composite_name (optional),
 #                            templates: [{name: "FABRIC-VRF.j2"}] }
-#       projectName — resolved CatC project for this subfolder
+#       project_name — resolved CatC project for this subfolder
 #       default_device_types, default_software_type, default_software_variant,
 #       default_template_version
 #
@@ -96,7 +96,7 @@
 # Example - member list trimmed to two entries; each stub is identical apart
 # from name, so two is enough to show the shape.
 #   In : composite_template_names = ["FABRIC-VRF.j2", "FABRIC-LOOPBACKS.j2"]
-#        projectName              = "Building P0"
+#        project_name             = "Building P0"
 #        default_software_type    = "IOS"
 #        default_software_variant = "XE"
 #        default_device_types = [
@@ -159,13 +159,13 @@
 # order stage 10 deploys the members in.
 - name: Build containing templates list
   set_fact:
-    containing_templates_list: "{{ containing_templates_list | default([]) + [{'name': item, 'composite': false, 'project_name': projectName, 'description': 'description','language': 'JINJA', 'device_types': default_device_types,'software_type': default_software_type, 'software_variant': default_software_variant, 'templateParams': [], 'tags': []}] }}"
+    containing_templates_list: "{{ containing_templates_list | default([]) + [{'name': item, 'composite': false, 'project_name': project_name, 'description': 'description','language': 'JINJA', 'device_types': default_device_types,'software_type': default_software_type, 'software_variant': default_software_variant, 'templateParams': [], 'tags': []}] }}"
   with_items: "{{ composite_template_names }}"
 
 # Example - containing_templates shown with a single member for brevity of the
 # nested block; in practice it holds every entry built by the task above.
 #   In : composite_name           = "BGP-EVPN-BUILD.j2"
-#        projectName              = "Building P0"
+#        project_name             = "Building P0"
 #        default_software_type    = "IOS"
 #        default_software_variant = "XE"
 #        default_template_version = "1.0"
@@ -242,7 +242,7 @@
     composite_config:
       configuration_templates:
         template_name: "{{ composite_name }}"
-        project_name: "{{ projectName }}"
+        project_name: "{{ project_name }}"
         composite: true
         language: "JINJA"
         template_content: ""

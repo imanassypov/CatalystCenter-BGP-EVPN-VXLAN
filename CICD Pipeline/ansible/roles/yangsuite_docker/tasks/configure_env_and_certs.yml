@@ -63,4 +63,6 @@
         yangsuite_cert_stats.results[0].stat.exists
         and yangsuite_cert_stats.results[1].stat.exists
       )
+  # Guarded by the stat check above, so reaching this task always writes a cert.
+  changed_when: true
   notify: Restart YANG Suite Docker Compose stack

@@ -68,7 +68,7 @@
 # memberTemplateDeploymentInfo, forcePushTemplate, copyingConfig, responseMsg).
 # Sending versionedTemplateId results in HTTP 400 BAD_REQUEST.
 #
-- name: "[{{ deploy_entry.template_name }}] Fetch all project templates with versionsInfo"
+- name: "Fetch all project templates with versionsInfo | {{ deploy_entry.template_name }}"
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/template-programmer/template?projectNames={{ deploy_entry.project_name | urlencode }}"
     method: GET
@@ -117,7 +117,7 @@
 # Note that versionsInfo arrived out of order (v1, v3, v2) and the sort picked
 # v3 - Catalyst Center does not return versions chronologically. A template with
 # an empty versionsInfo falls back to its rootId as versionId.
-- name: "[{{ deploy_entry.template_name }}] Build template name → version/root ID map"
+- name: "Build template name → version/root ID map | {{ deploy_entry.template_name }}"
   # Builds a dict keyed by template name:
   #   { 'TEMPLATE-NAME': { 'rootId': '<uuid>', 'versionId': '<uuid>' }, ... }
   # versionId = the versionsInfo entry with the highest versionTime (latest committed).
@@ -133,7 +133,7 @@
       {%- endfor -%}
       {{ ns.result }}
 
-- name: "[{{ deploy_entry.template_name }}] Assert composite template found"
+- name: "Assert composite template found | {{ deploy_entry.template_name }}"
   assert:
     that: deploy_entry.template_name in _template_version_map
     fail_msg: >-
@@ -158,13 +158,13 @@
 #        _composite_main_id     = "e1000000-0000-4000-8000-000000000001"
 # templateId in the deploy body must be the latest version UUID while
 # mainTemplateId must be the root UUID - swapping them deploys a stale version.
-- name: "[{{ deploy_entry.template_name }}] Extract composite template root and version IDs"
+- name: "Extract composite template root and version IDs | {{ deploy_entry.template_name }}"
   set_fact:
     _composite_raw_id:        "{{ _template_version_map[deploy_entry.template_name].rootId }}"
     _composite_template_id:   "{{ _template_version_map[deploy_entry.template_name].versionId }}"
     _composite_main_id:       "{{ _template_version_map[deploy_entry.template_name].rootId }}"
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- Composite template version/root IDs"
+- name: "--DEBUG-- Composite template version/root IDs | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     msg:
@@ -179,7 +179,7 @@
 # a second call to the detail endpoint to get the list of member templates.
 # IDs (version + root) are already sourced from _template_version_map above.
 #
-- name: "[{{ deploy_entry.template_name }}] Fetch composite template detail (containingTemplates)"
+- name: "Fetch composite template detail (containingTemplates) | {{ deploy_entry.template_name }}"
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/template-programmer/template/{{ _composite_raw_id }}"
     method: GET
@@ -217,11 +217,11 @@
 #        ]
 # containingTemplates is only returned by the detail endpoint, never by the
 # list endpoint used in Step A - hence the second API call.
-- name: "[{{ deploy_entry.template_name }}] Extract member templates list"
+- name: "Extract member templates list | {{ deploy_entry.template_name }}"
   set_fact:
     _member_templates: "{{ _template_detail_result.json.containingTemplates | default([]) }}"
 
-- name: "[{{ deploy_entry.template_name }}] Assert member templates are defined"
+- name: "Assert member templates are defined | {{ deploy_entry.template_name }}"
   assert:
     that: _member_templates | length > 0
     fail_msg: >-
@@ -229,7 +229,7 @@
       containingTemplates. Ensure the template is composite and has been
       configured with member templates in Catalyst Center.
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- Composite template IDs and members"
+- name: "--DEBUG-- Composite template IDs and members | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     msg:
@@ -243,7 +243,7 @@
 # Returns a `response` array; first element carries `id` (device UUID)
 # and `hostname` used to populate targetInfo entries.
 #
-- name: "[{{ deploy_entry.template_name }}] Resolve device UUIDs for target IPs"
+- name: "Resolve device UUIDs for target IPs | {{ deploy_entry.template_name }}"
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/network-device?managementIpAddress={{ item }}"
     method: GET
@@ -282,7 +282,7 @@
 # Keyed by the API's managementIpAddress rather than the loop item. hostname
 # falls back to the IP when the device has none, so targetInfo.hostName is
 # never empty.
-- name: "[{{ deploy_entry.template_name }}] Build IP → { uuid, hostname } map"
+- name: "Build IP → { uuid, hostname } map | {{ deploy_entry.template_name }}"
   set_fact:
     _device_uuid_map: >-
       {%- set ns = namespace(result={}) -%}
@@ -299,12 +299,12 @@
       {%- endfor -%}
       {{ ns.result }}
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- Device UUID map"
+- name: "--DEBUG-- Device UUID map | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     var: _device_uuid_map
 
-- name: "[{{ deploy_entry.template_name }}] Validate all target IPs resolved to device UUIDs"
+- name: "Validate all target IPs resolved to device UUIDs | {{ deploy_entry.template_name }}"
   assert:
     that: item in _device_uuid_map
     fail_msg: >-
@@ -370,7 +370,7 @@
 # params is empty at the top level - member parameters go in
 # memberTemplateDeploymentInfo instead. An IP missing from _device_uuid_map is
 # silently dropped, which the preceding assert already prevents.
-- name: "[{{ deploy_entry.template_name }}] Build top-level targetInfo"
+- name: "Build top-level targetInfo | {{ deploy_entry.template_name }}"
   set_fact:
     _target_info: >-
       {%- set tns = namespace(targets=[]) -%}
@@ -390,7 +390,7 @@
       {%- endfor -%}
       {{ tns.targets }}
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- targetInfo"
+- name: "--DEBUG-- targetInfo | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     var: _target_info
@@ -455,7 +455,7 @@
 # containingTemplates entry: the detail endpoint returns the member's root ID,
 # which would deploy the uncommitted draft rather than the latest version.
 # A member absent from member_template_params gets params: {}.
-- name: "[{{ deploy_entry.template_name }}] Build memberTemplateDeploymentInfo"
+- name: "Build memberTemplateDeploymentInfo | {{ deploy_entry.template_name }}"
   set_fact:
     _member_deployment_info: >-
       {%- set ns = namespace(result=[]) -%}
@@ -491,12 +491,12 @@
       {%- endfor -%}
       {{ ns.result }}
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- memberTemplateDeploymentInfo"
+- name: "--DEBUG-- memberTemplateDeploymentInfo | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     var: _member_deployment_info
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- Full deploy payload (first device)"
+- name: "--DEBUG-- Full deploy payload (first device) | {{ deploy_entry.template_name }}"
   when: (catc_debug | default(false) | bool) and (_device_uuid_map | dict2items | length > 0)
   vars:
     _first_dev: "{{ (_device_uuid_map | dict2items | first).value }}"
@@ -540,7 +540,7 @@
 #   - isComposite: false (each member)
 #   - One API call per device (single-element targetInfo)
 #
-- name: "[{{ deploy_entry.template_name }}] Deploy composite template"
+- name: "Deploy composite template | {{ deploy_entry.template_name }}"
   vars:
     _single_target:
       - id:       "{{ item.value.uuid }}"
@@ -583,7 +583,7 @@
   register: _deploy_results
   ignore_errors: true
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- Raw deploy module responses"
+- name: "--DEBUG-- Raw deploy module responses | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     var: _deploy_results
@@ -614,7 +614,7 @@
 # Devices whose call returned no taskId are dropped rather than polled, so a
 # single rejected device does not stall the run. ignore_errors on the deploy
 # task is what allows this list to be partial.
-- name: "[{{ deploy_entry.template_name }}] Extract async task IDs from deploy responses"
+- name: "Extract async task IDs from deploy responses | {{ deploy_entry.template_name }}"
   # The v2 deploy API returns { "response": { "taskId": "...", "url": "..." } }.
   # With ansible.builtin.uri the response is under .json (not .dnac_response).
   set_fact:
@@ -628,7 +628,7 @@
       {%- endfor -%}
       {{ ns.ids }}
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- Deploy task IDs per device"
+- name: "--DEBUG-- Deploy task IDs per device | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     var: _deploy_task_ids
@@ -640,7 +640,7 @@
 # registered the deployment, allowing Step F2 to poll actual push success/failure.
 # Note: CatC's own field name has a typo — "Template Deployemnt Id" (not "Deployment").
 #
-- name: "[{{ deploy_entry.template_name }}] Poll async task status"
+- name: "Poll async task status | {{ deploy_entry.template_name }}"
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/task/{{ item.taskId }}"
     method: GET
@@ -659,7 +659,7 @@
   delay:   "{{ task_poll_delay   | int }}"
   ignore_errors: true
 
-- name: "[{{ deploy_entry.template_name }}] --DEBUG-- Task poll responses (progress/isError/endTime)"
+- name: "--DEBUG-- Task poll responses (progress/isError/endTime) | {{ deploy_entry.template_name }}"
   when: catc_debug | default(false) | bool
   debug:
     msg: >-
@@ -730,7 +730,7 @@
 # An empty failureReason is the only SUCCESS signal - Catalyst Center does not
 # return a status enum here. The regex matches both progress formats because
 # older releases used the misspelled "Template Deployemnt Id:" marker.
-- name: "[{{ deploy_entry.template_name }}] Extract Template Deployment IDs and failure reasons from task progress"
+- name: "Extract Template Deployment IDs and failure reasons from task progress | {{ deploy_entry.template_name }}"
   # ── Step F2: Extract deployment result from task progress ─────────────────
   #
   # The CatC v2 Deploy Template API (2.3.7.9) is specified to return deploymentId
@@ -741,8 +741,8 @@
   # Older CatC versions used "Template Deployemnt Id: <uuid> | failureReason: <reason>"
   # (CatC's own typo: "Deployemnt"). We match both formats. An empty failureReason means SUCCESS.
   #
-  # NOTE: CatC returns deploymentId only for the parent composite template, not for each member template.  
-  # The member templates' deployment status must be inferred from the overall task success/failure and the presence of the 
+  # NOTE: CatC returns deploymentId only for the parent composite template, not for each member template.
+  # The member templates' deployment status must be inferred from the overall task success/failure and the presence of the
   # member template names in the task progress logs.
   set_fact:
     _deployment_status_ids: >-
@@ -761,7 +761,7 @@
       {%- endfor -%}
       {{ ns.result }}
 
-- name: "[{{ deploy_entry.template_name }}] Template Deployment IDs and push results"
+- name: "Template Deployment IDs and push results | {{ deploy_entry.template_name }}"
   debug:
     msg: >-
       {%- set ns = namespace(out=[]) -%}
@@ -817,7 +817,7 @@
 # "API errors" reports HTTP-level failures on the deploy call itself, which is
 # a different condition from a per-device push failure - a device can be
 # accepted with 202 and still fail to receive config.
-- name: "[{{ deploy_entry.template_name }}] Deployment summary - build table"
+- name: "Deployment summary - build table | {{ deploy_entry.template_name }}"
   set_fact:
     _summary_lines: >-
       {%- set SEP  = '─' -%}
@@ -847,7 +847,6 @@
       {%- set _ = ns.lines.append(bot) -%}
       {{ ns.lines }}
 
-- name: "[{{ deploy_entry.template_name }}] Deployment summary"
+- name: "Deployment summary | {{ deploy_entry.template_name }}"
   debug:
     msg: "{{ _summary_lines }}"
-

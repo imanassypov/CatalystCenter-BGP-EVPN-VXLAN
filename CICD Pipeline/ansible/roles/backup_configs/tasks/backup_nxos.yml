@@ -32,4 +32,3 @@
     dest: "{{ backup_output_dir }}/{{ inventory_hostname }}.cfg"
     mode: "0600"
   delegate_to: localhost
-

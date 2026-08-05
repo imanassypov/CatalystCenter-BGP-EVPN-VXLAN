@@ -24,7 +24,7 @@
 # (e.g. "Global/PODS/POD 0/Building P0/Floor 1").  The response array's first
 # element carries `id` — the site UUID required by provisionDevices.
 #
-- name: "[{{ site_entry.key }}] Resolve site UUID"
+- name: "Resolve site UUID | {{ site_entry.key }}"
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/site?name={{ site_entry.key | urlencode }}"
     method: GET
@@ -34,7 +34,7 @@
     status_code: 200
   register: _site_result
 
-- name: "[{{ site_entry.key }}] Assert site found"
+- name: "Assert site found | {{ site_entry.key }}"
   assert:
     that:
       - _site_result.json.response is defined
@@ -53,11 +53,11 @@
 #          }
 #        ]
 #   Out: _site_uuid = "a1000000-0000-4000-8000-000000000005"
-- name: "[{{ site_entry.key }}] Extract site UUID"
+- name: "Extract site UUID | {{ site_entry.key }}"
   set_fact:
     _site_uuid: "{{ _site_result.json.response[0].id }}"
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Site UUID"
+- name: "--DEBUG-- Site UUID | {{ site_entry.key }}"
   when: catc_debug | default(false) | bool
   debug:
     msg: "Site '{{ site_entry.key }}' → UUID: {{ _site_uuid }}"
@@ -69,7 +69,7 @@
 # Returns a `response` array; first element carries `id` (device UUID) and
 # `hostname`, both used in the provision payload and summary output.
 #
-- name: "[{{ site_entry.key }}] Resolve device UUIDs for all management IPs"
+- name: "Resolve device UUIDs for all management IPs | {{ site_entry.key }}"
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/network-device?managementIpAddress={{ item }}"
     method: GET
@@ -109,7 +109,7 @@
 # device answering on a different management IP than the one queried still maps
 # correctly. Devices with an empty response array are dropped silently and are
 # caught by the assert that follows.
-- name: "[{{ site_entry.key }}] Build IP → { uuid, hostname } map"
+- name: "Build IP → { uuid, hostname } map | {{ site_entry.key }}"
   set_fact:
     _device_uuid_map: >-
       {%- set ns = namespace(result={}) -%}
@@ -126,12 +126,12 @@
       {%- endfor -%}
       {{ ns.result }}
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Device UUID map"
+- name: "--DEBUG-- Device UUID map | {{ site_entry.key }}"
   when: catc_debug | default(false) | bool
   debug:
     var: _device_uuid_map
 
-- name: "[{{ site_entry.key }}] Assert all target IPs resolved to device UUIDs"
+- name: "Assert all target IPs resolved to device UUIDs | {{ site_entry.key }}"
   assert:
     that: item in _device_uuid_map
     fail_msg: >-
@@ -147,7 +147,7 @@
 # Any device UUID already in the response is skipped during the provision
 # step unless force_reprovision=true is set in inventory.
 #
-- name: "[{{ site_entry.key }}] Fetch already-provisioned devices for this site"
+- name: "Fetch already-provisioned devices for this site | {{ site_entry.key }}"
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/sda/provisionDevices?siteId={{ _site_uuid }}&limit=500"
     method: GET
@@ -177,7 +177,7 @@
 # Two different UUIDs are in play: networkDeviceId identifies the device, id
 # identifies the provisioning record. The PUT re-provision body needs the
 # record id, which is why the map exists alongside the flat list.
-- name: "[{{ site_entry.key }}] Build set of already-provisioned device UUIDs"
+- name: "Build set of already-provisioned device UUIDs | {{ site_entry.key }}"
   set_fact:
     _already_provisioned_ids: >-
       {{ (_provisioned_result.json.response | default([]))
@@ -190,7 +190,7 @@
       {%- endfor -%}
       {{ ns.result }}
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Already-provisioned device UUIDs at site"
+- name: "--DEBUG-- Already-provisioned device UUIDs at site | {{ site_entry.key }}"
   when: catc_debug | default(false) | bool
   debug:
     msg:
@@ -248,7 +248,7 @@
 # The re-provision entry carries the provisioning record id as well as the
 # device id - Catalyst Center returns NCHS20405 if a POST is used on a device
 # that is already provisioned.
-- name: "[{{ site_entry.key }}] Build provision and re-provision payloads"
+- name: "Build provision and re-provision payloads | {{ site_entry.key }}"
   set_fact:
     _provision_payload: >-
       {%- set ns = namespace(result=[]) -%}
@@ -284,14 +284,14 @@
       {%- endfor -%}
       {{ ns.result }}
 
-- name: "[{{ site_entry.key }}] Report skipped (already provisioned) devices"
+- name: "Report skipped (already provisioned) devices | {{ site_entry.key }}"
   when: _skipped_ips | length > 0
   debug:
     msg: >-
       Skipping {{ _skipped_ips | length }} already-provisioned device(s)
       (set force_reprovision=true to override): {{ _skipped_ips | join(', ') }}
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Provision payload"
+- name: "--DEBUG-- Provision payload | {{ site_entry.key }}"
   when: catc_debug | default(false) | bool
   debug:
     var: _provision_payload
@@ -308,7 +308,7 @@
 # Each call returns one async taskId.  Both task IDs are collected and polled
 # independently in Step F; their child task IDs are merged for Step H.
 #
-- name: "[{{ site_entry.key }}] Submit POST provision request (new devices)"
+- name: "Submit POST provision request (new devices) | {{ site_entry.key }}"
   when: _provision_payload | length > 0
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/sda/provisionDevices"
@@ -323,7 +323,7 @@
   register: _provision_result
   ignore_errors: true
 
-- name: "[{{ site_entry.key }}] Submit PUT re-provision request (already provisioned, force)"
+- name: "Submit PUT re-provision request (already provisioned, force) | {{ site_entry.key }}"
   when: _reprovision_payload | length > 0
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/sda/provisionDevices"
@@ -338,7 +338,7 @@
   register: _reprovision_result
   ignore_errors: true
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Raw provision API responses"
+- name: "--DEBUG-- Raw provision API responses | {{ site_entry.key }}"
   when: (catc_debug | default(false) | bool) and (_provision_payload | length > 0 or _reprovision_payload | length > 0)
   debug:
     msg:
@@ -369,13 +369,13 @@
 #        _any_submitted       = false
 # Both task IDs default to "" rather than being left undefined, so the polling
 # and assert tasks below can gate on length instead of is defined.
-- name: "[{{ site_entry.key }}] Collect task IDs from both provision calls"
+- name: "Collect task IDs from both provision calls | {{ site_entry.key }}"
   set_fact:
     _provision_task_id: "{{ (_provision_result.json.response | default({})).taskId | default('') }}"
     _reprovision_task_id: "{{ (_reprovision_result.json.response | default({})).taskId | default('') }}"
     _any_submitted: "{{ (_provision_payload | length > 0) or (_reprovision_payload | length > 0) }}"
 
-- name: "[{{ site_entry.key }}] Assert task ID received from POST provision"
+- name: "Assert task ID received from POST provision | {{ site_entry.key }}"
   when: _provision_payload | length > 0
   assert:
     that: _provision_task_id | length > 0
@@ -384,7 +384,7 @@
       HTTP status: {{ _provision_result.status | default('unknown') }}
       Response: {{ _provision_result.json | default({}) | to_json }}
 
-- name: "[{{ site_entry.key }}] Assert task ID received from PUT re-provision"
+- name: "Assert task ID received from PUT re-provision | {{ site_entry.key }}"
   when: _reprovision_payload | length > 0
   assert:
     that: _reprovision_task_id | length > 0
@@ -393,7 +393,7 @@
       HTTP status: {{ _reprovision_result.status | default('unknown') }}
       Response: {{ _reprovision_result.json | default({}) | to_json }}
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Provision task IDs"
+- name: "--DEBUG-- Provision task IDs | {{ site_entry.key }}"
   when: (catc_debug | default(false) | bool) and _any_submitted | bool
   debug:
     msg:
@@ -405,7 +405,7 @@
 # Poll the POST task (new devices) and PUT task (re-provisions) independently.
 # Each task tracks its own batch of child operations.
 #
-- name: "[{{ site_entry.key }}] Poll POST provision task"
+- name: "Poll POST provision task | {{ site_entry.key }}"
   when: _provision_task_id | length > 0
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/task/{{ _provision_task_id }}"
@@ -422,7 +422,7 @@
   delay:   "{{ task_poll_delay   | int }}"
   ignore_errors: true
 
-- name: "[{{ site_entry.key }}] Poll PUT re-provision task"
+- name: "Poll PUT re-provision task | {{ site_entry.key }}"
   when: _reprovision_task_id | length > 0
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/task/{{ _reprovision_task_id }}"
@@ -439,7 +439,7 @@
   delay:   "{{ task_poll_delay   | int }}"
   ignore_errors: true
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Task poll final responses"
+- name: "--DEBUG-- Task poll final responses | {{ site_entry.key }}"
   when: (catc_debug | default(false) | bool) and _any_submitted | bool
   debug:
     msg:
@@ -488,7 +488,7 @@
 #        _status         = "FAILURE"
 # The _progress filter drops any line that starts with a UUID: Catalyst Center
 # echoes the task ID as the first progress line, which is noise in the summary.
-- name: "[{{ site_entry.key }}] Provisioning result summary"
+- name: "Provisioning result summary | {{ site_entry.key }}"
   vars:
     _task_resp:        "{{ (_task_poll_result.json.response | default({})) if _provision_task_id | length > 0 else {} }}"
     _reprov_resp:      "{{ (_reprovision_task_poll_result.json.response | default({})) if _reprovision_task_id | length > 0 else {} }}"
@@ -527,7 +527,7 @@
       - "│ Error         : {{ _failure_reason if _is_error | bool else 'none' }}"
       - "└─────────────────────────────────────────────────────────────────┘"
 
-- name: "[{{ site_entry.key }}] Fail play if any provisioning task reported an error"
+- name: "Fail play if any provisioning task reported an error | {{ site_entry.key }}"
   when:
     - _any_submitted | bool
     - (_task_resp.isError | default(false) | bool) or (_reprov_resp.isError | default(false) | bool)
@@ -549,7 +549,7 @@
 # Extract IDs from both the POST task and the PUT task, merge them, then
 # query GET /dna/intent/api/v1/task/<childId> for each and display results.
 #
-- name: "[{{ site_entry.key }}] Extract child task IDs from POST and PUT parent tasks"
+- name: "Extract child task IDs from POST and PUT parent tasks | {{ site_entry.key }}"
   when: _any_submitted | bool
   set_fact:
     _child_task_ids: >-
@@ -574,12 +574,12 @@
       {%- endfor -%}
       {{ ns.ids }}
 
-- name: "[{{ site_entry.key }}] --DEBUG-- Child task IDs"
+- name: "--DEBUG-- Child task IDs | {{ site_entry.key }}"
   when: (catc_debug | default(false) | bool) and _any_submitted | bool
   debug:
     var: _child_task_ids
 
-- name: "[{{ site_entry.key }}] Fetch child task results"
+- name: "Fetch child task results | {{ site_entry.key }}"
   when: _any_submitted | bool and _child_task_ids | length > 0
   ansible.builtin.uri:
     url: "https://{{ dnac_host }}:{{ dnac_port }}/dna/intent/api/v1/task/{{ item }}"
@@ -591,7 +591,7 @@
   loop: "{{ _child_task_ids }}"
   register: _child_task_results
 
-- name: "[{{ site_entry.key }}] Per-device provisioning task results"
+- name: "Per-device provisioning task results | {{ site_entry.key }}"
   when: _any_submitted | bool and _child_task_ids | length > 0
   debug:
     msg: >-
@@ -610,4 +610,3 @@
         ] -%}
       {%- endfor -%}
       {{ ['── Per-device provisioning task results ──'] + ns.rows }}
-

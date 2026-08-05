@@ -69,7 +69,7 @@
 #        _site_id = ""
 # Every DELETE below is skipped when _exists is false — this is what makes
 # re-runs safe.
-- name: "Derive path / ID / exists  | {{ _parent }}/{{ _name }}"
+- name: "Derive path / ID / exists  | {{ _parent ~ '/' ~ _name }}"
   set_fact:
     _path:    "{{ _parent + '/' + _name }}"
     _exists:  "{{ (_parent + '/' + _name) in site_id_map }}"

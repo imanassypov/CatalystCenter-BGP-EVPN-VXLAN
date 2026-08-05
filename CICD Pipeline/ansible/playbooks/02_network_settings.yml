@@ -34,7 +34,7 @@
   vars_files:
     - ../inventory/group_vars/catalyst_center/vault.yml
   module_defaults:
-    cisco.catalystcenter.sites_info: &catc_auth
+    cisco.catalystcenter.sites_info:
       catalystcenter_host: "{{ catc_host }}"
       catalystcenter_username: "{{ catc_username }}"
       catalystcenter_password: "{{ catc_password }}"
@@ -43,7 +43,8 @@
       catalystcenter_version: "{{ catc_version }}"
       catalystcenter_debug: "{{ catc_debug }}"
   pre_tasks:
-    - ansible.builtin.import_role:
+    - name: Load settings.json
+      ansible.builtin.import_role:
         name: catc_common
         tasks_from: load_settings
   roles:

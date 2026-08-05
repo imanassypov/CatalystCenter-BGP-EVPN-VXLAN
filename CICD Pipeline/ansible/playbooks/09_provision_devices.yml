@@ -39,11 +39,13 @@
   vars:
     catc_debug: "{{ lookup('env', 'DEBUG') | default(false) | bool }}"
   pre_tasks:
-    - ansible.builtin.import_role:
+    - name: Obtain Catalyst Center auth token
+      ansible.builtin.import_role:
         name: catc_common
         tasks_from: auth_token
 
-    - ansible.builtin.import_role:
+    - name: Load settings.json
+      ansible.builtin.import_role:
         name: catc_common
         tasks_from: load_settings
   roles:

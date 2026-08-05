@@ -46,7 +46,7 @@
     _name:   "{{ site_config.site[site_config.site_type].name }}"
     _parent: "{{ site_config.site[site_config.site_type].parent_name }}"
 
-- name: "DEBUG | Step 1 — type={{ _type }}  name={{ _name }}  parent={{ _parent }}"
+- name: "DEBUG | Step 1 — type/name/parent derived"
   debug:
     msg:
       type:   "{{ _type }}"
@@ -87,14 +87,14 @@
 #        _exists    = true
 #        _site_id   = "a1000000-0000-4000-8000-000000000004"
 #        → UPDATE tasks fire, CREATE tasks skip
-- name: "Derive path / IDs / exists  | {{ _parent }}/{{ _name }}"
+- name: "Derive path / IDs / exists  | {{ _parent ~ '/' ~ _name }}"
   set_fact:
     _path:      "{{ _parent + '/' + _name }}"
     _parent_id: "{{ site_id_map.get(_parent, '') }}"
     _exists:    "{{ (_parent + '/' + _name) in site_id_map }}"
     _site_id:   "{{ site_id_map.get(_parent + '/' + _name, '') }}"
 
-- name: "DEBUG | Step 2 — path={{ _path }}  parent_id={{ _parent_id }}  exists={{ _exists }}  site_id={{ _site_id }}"
+- name: "DEBUG | Step 2 — path/parent_id/exists/site_id derived"
   debug:
     msg:
       path:      "{{ _path }}"
@@ -281,7 +281,7 @@
 # retries + until provides resilience: CatC may take a few seconds to commit
 # the newly created site before it becomes visible in GET /v1/sites.
 #
-- name: "Query ID for newly created {{ _type }}  | {{ _path }}"
+- name: "Query ID for newly created site  | {{ _path }}"
   # GET /dna/intent/api/v1/sites?nameHierarchy=<path>
   cisco.catalystcenter.sites_info:
     nameHierarchy: "{{ _path }}"
@@ -326,7 +326,7 @@
 #        The next iteration creating "Global/PODS/POD 0/Building P0/Floor 1"
 #        now resolves _parent_id = "a1000000-0000-4000-8000-000000000004"
 #        instead of "".
-- name: "Add {{ _path }} to site_id_map"
+- name: "Add to site_id_map  | {{ _path }}"
   set_fact:
     site_id_map: >-
       {{ site_id_map | combine(

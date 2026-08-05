@@ -37,6 +37,7 @@
   vars:
     swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
   tasks:
-    - ansible.builtin.import_role:
+    - name: Run SWIM pre-flight checks
+      ansible.builtin.import_role:
         name: swim
         tasks_from: preflight

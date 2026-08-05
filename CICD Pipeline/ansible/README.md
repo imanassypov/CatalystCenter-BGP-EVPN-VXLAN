@@ -149,6 +149,43 @@ an `Example` block. `defaults/` and `handlers/` are excluded by design — they 
 flat data and hook declarations with no transformation to document. When you add a
 new `set_fact` or payload-assembly task, add its `Example` block in the same commit.
 
+### Task naming convention
+
+`ansible-lint`'s `name[template]` rule requires that a task name contain **at most one
+Jinja expression, positioned at the very end**. The static leading text is what Ansible
+callbacks, log aggregation and `--start-at-task` key off, so it must be stable across
+loop iterations.
+
+```yaml
+# ✅ correct — static text first, one trailing template
+- name: "Assert composite template found | {{ deploy_entry.template_name }}"
+- name: "Resolve site UUID | {{ site_entry.key }}"
+
+# ❌ violates name[template] — template leads the name
+- name: "[{{ deploy_entry.template_name }}] Assert composite template found"
+
+# ❌ violates name[template] — two templates separated by static text
+- name: "Derive path | {{ _parent }}/{{ _name }}"
+# ✅ fix — concatenate into a single expression
+- name: "Derive path | {{ _parent ~ '/' ~ _name }}"
+
+# ❌ violates name[template] — counts/state embedded mid-name
+- name: "Phase B — Create/update sites ({{ site_configs_list | length }} total)"
+# ✅ fix — keep the name static, report the count from the task's own output
+- name: "Phase B — Create/update sites"
+```
+
+Rules:
+
+- Loop-variable suffixes stay — they are the only thing disambiguating otherwise
+  identical banners across iterations. They just move to the end after a ` | ` separator.
+- Counts, states and derived values never belong in a name. Move them into the
+  `debug`/`assert` message of the same task, where they are already visible.
+- Lint rules the project deliberately suppresses live in
+  [`.ansible-lint`](../../.ansible-lint) at the repository root — one file shared by
+  the CLI and the VS Code Ansible extension, which lints from the workspace root.
+  `name[template]` is **not** among them — fix violations rather than skipping the rule.
+
 ### SWIM (stage 6)
 
 Run in numeric order — `06.0` stages the images on the HTTP server that `06.2` imports from:

@@ -1,0 +1,17 @@
+---
+# Repo-root config so both the CLI (run from CICD Pipeline/ansible/) and the
+# VS Code Ansible extension (run from the workspace root) share one rule set.
+skip_list:
+  - yaml[line-length]
+  - name[casing]
+  - role-name[path]
+  - var-naming[no-role-prefix]
+  # Roles use short-form set_fact/debug/assert throughout; FQCN adds noise.
+  - fqcn
+  # Task names and debug msg maps are column-aligned for readability.
+  - yaml[colons]
+  # cisco.dnac.* connection args come from play-level module_defaults, which
+  # ansible-lint cannot see when linting a role in isolation.
+  - args[module]
+  # Cosmetic whitespace inside {{ }}; the suggested rewrites do not change output.
+  - jinja[spacing]

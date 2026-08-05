@@ -22,7 +22,7 @@
 #
 # Pre:  template_file (loop var): { name, path, content, commit_message,
 #                                   diff_content }
-#       projectName        — resolved CatC project for this subfolder
+#       project_name       — resolved CatC project for this subfolder
 #       include_diff_header - prepend the last commit diff as {## ... ##} comments
 #       git_repo, git_branch, default_device_types, default_software_type,
 #       default_software_variant, default_template_version
@@ -39,7 +39,7 @@
 # =============================================================================
 
 # Example - include_diff_header disabled (the inventory default)
-#   In : projectName         = "Building P0"
+#   In : project_name        = "Building P0"
 #        include_diff_header = false
 #        template_file = {
 #          "name":    "FABRIC-VRF.j2",
@@ -62,7 +62,7 @@
 - name: Extract template metadata for {{ template_file.name }}
   set_fact:
     template_name: "{{ template_file.name }}"
-    template_content_raw: "{{ template_file.content | replace('{{ TEMPLATE_PROJECT_NAME }}', projectName) }}"
+    template_content_raw: "{{ template_file.content | replace('{{ TEMPLATE_PROJECT_NAME }}', project_name) }}"
     commit_message: "{{ template_file.commit_message }}"
     diff_content_raw: "{{ template_file.diff_content | regex_replace('([^\\n]+)', '{## \\1 ##}') + '\\n' if (include_diff_header and template_file.diff_content) else '' }}"
 
@@ -83,7 +83,7 @@
 
 # Example
 #   In : template_name    = "FABRIC-VRF.j2"
-#        projectName      = "Building P0"
+#        project_name     = "Building P0"
 #        template_content = "{% include \"Building P0/DEFN-VRF.j2\" %}\nvrf definition red\n"
 #        git_repo         = "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
 #        git_branch       = "main"
@@ -138,10 +138,10 @@
     template_config:
       configuration_templates:
         template_name: "{{ template_name }}"
-        project_name: "{{ projectName }}"
+        project_name: "{{ project_name }}"
         language: "JINJA"
         template_content: "{{ template_content }}"
-        #template_content_file_path: "{{ processed_template_path }}"
+        # template_content_file_path: "{{ processed_template_path }}"
         template_description: "Template synced from Git {{ git_repo }} repository, branch {{ git_branch }}"
         device_types: "{{ default_device_types }}"
         software_type: "{{ default_software_type }}"

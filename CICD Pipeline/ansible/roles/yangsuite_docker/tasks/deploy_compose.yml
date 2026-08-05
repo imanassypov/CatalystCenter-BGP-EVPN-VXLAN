@@ -34,7 +34,7 @@
     )
   failed_when: yangsuite_compose_up.rc != 0
 
-- name: Show docker compose output when changed
+- name: Show docker compose output when changed  # noqa: no-handler
   ansible.builtin.debug:
     var: yangsuite_compose_up.stdout_lines
   when: yangsuite_compose_up.changed

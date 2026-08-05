@@ -263,12 +263,12 @@
     var: all_site_paths
   when: catc_debug | default(false) | bool
 
-- name: Display site paths to be provisioned ({{ all_site_paths | length }} total)
+- name: Display site paths to be provisioned
   # Informational — shows the ordered path list before any API calls are made.
   # For state=merged the list is shallow-first (parents created first).
   # For state=deleted it will be reversed below (children deleted first).
   debug:
-    msg: "{{ all_site_paths }}"
+    msg: "{{ all_site_paths | length }} total: {{ all_site_paths }}"
 
     # ── Step 4: Pre-compute site config payload list ───────────────────────────
     #
@@ -419,9 +419,9 @@
   set_fact:
     site_id_map: "{{ _named_map | combine({'Global': _global_id}) }}"
 
-- name: "Phase A — site_id_map ({{ site_id_map | length }} existing sites)"
+- name: "Phase A — site_id_map summary"
   debug:
-    msg: "{{ site_id_map }}"
+    msg: "{{ site_id_map | length }} existing sites: {{ site_id_map }}"
 
     # ── Phase B: Create / update sites (state=merged, default) ────────────────
     #
@@ -448,7 +448,7 @@
     #     PUT  /dna/intent/api/v2/buildings/{id}    (building)
     #     PUT  /dna/intent/api/v2/floors/{id}       (floor)
     #
-- name: "Phase B — Create/update sites ({{ site_configs_list | length }} total)"
+- name: "Phase B — Create/update sites"
   ansible.builtin.include_tasks: create_or_update_site.yml
   loop: "{{ site_configs_list }}"
   loop_control:
@@ -472,7 +472,7 @@
     #   DELETE /dna/intent/api/v2/buildings/{id}  (building)
     #   DELETE /dna/intent/api/v2/floors/{id}     (floor)
     #
-- name: "Phase C — Delete sites ({{ site_configs_list | length }} total, children first)"
+- name: "Phase C — Delete sites (children first)"
   ansible.builtin.include_tasks: delete_site.yml
   loop: "{{ site_configs_list | reverse | list }}"
   loop_control:
@@ -482,7 +482,12 @@
          }}/{{ site_config.site[site_config.site_type].name }}
   when: (state | default('merged')) == 'deleted'
 
-    # ── Summary ───────────────────────────────────────────────────────────────
+# ── Summary ───────────────────────────────────────────────────────────────────
 - name: Site hierarchy provisioning complete
   # Final confirmation message — no API call, purely informational.
   debug:
+    msg:
+      - >-
+        {{ 'Deleted' if (state | default('merged')) == 'deleted'
+           else 'Created/updated' }} {{ site_configs_list | length }} site(s)
+      - "Site paths: {{ all_site_paths | join(', ') }}"

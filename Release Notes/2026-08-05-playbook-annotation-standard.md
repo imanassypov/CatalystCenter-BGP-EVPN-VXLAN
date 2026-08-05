@@ -87,7 +87,7 @@ non-obvious reason it exists.
 | File | Contract now documented |
 |---|---|
 | `deploy_composite/deploy_entry.yml` | `deploy_entry` loop var → `_template_version_map`, `_composite_template_id`/`_main_id`, `_member_templates`, `_device_uuid_map`, `_target_info`, `_member_deployment_info`, `_deploy_task_ids`, `_deployment_status_ids`, `_summary_lines`; steps A–G |
-| `template_sync/process-subfolder.yml` | `subfolder_item` + `repo_tree_response` → `api_template_files`, `api_composite_files`, `projectName`, `enriched_*`, `sorted_template_files`, `sync_summary`; project-name resolution order |
+| `template_sync/process-subfolder.yml` | `subfolder_item` + `repo_tree_response` → `api_template_files`, `api_composite_files`, `project_name`, `enriched_*`, `sorted_template_files`, `sync_summary`; project-name resolution order |
 | `template_sync/process-template.yml` | `template_file` → `template_content`, appended `template_workflow_configs[]`; `TEMPLATE_PROJECT_NAME` substitution |
 | `template_sync/process-composite.yml` | `composite_file` → `composite_name`, `containing_templates_list`, appended `composite_workflow_configs[]` |
 | `http_image_server/preflight.yml` | `image_local_paths` → `local_images.results[]`; why the example placeholder path is rejected |
