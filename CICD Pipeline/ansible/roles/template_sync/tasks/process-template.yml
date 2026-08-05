@@ -8,10 +8,35 @@
 # ============================================================================
 
 ---
-# process-template.yml — included per .j2 blob from process-subfolder.yml
-# Loop var: template_file { name, content, commit_message, diff_content }
-# Pre:  template_file.content — raw Jinja2 from GitHub blob API
-# Post: template_workflow_configs[] entry for template_workflow_manager
+# =============================================================================
+# template_sync / process-template.yml  —  Stage 07: build one template config
+# =============================================================================
+# Turns one .j2 blob fetched from GitHub into a template_workflow_manager
+# config entry. Included once per element of sorted_template_files by
+# process-subfolder.yml. Sets no CatC state itself — it only appends to the
+# queue that process-subfolder.yml submits in bulk.
+#
+# The literal {{ TEMPLATE_PROJECT_NAME }} placeholder inside each .j2 is
+# substituted with the resolved project name, so templates can `include`
+# siblings without hardcoding the CatC project.
+#
+# Pre:  template_file (loop var): { name, path, content, commit_message,
+#                                   diff_content }
+#       projectName        — resolved CatC project for this subfolder
+#       include_diff_header — prepend the last commit diff as {## … ##} comments
+#       git_repo, git_branch, default_device_types, default_software_type,
+#       default_software_variant, default_template_version
+#
+# Post: template_name             — basename of the .j2 file
+#       template_content_raw      — blob with TEMPLATE_PROJECT_NAME substituted
+#       diff_content_raw          — diff wrapped in {## … ##}, or ""
+#       template_content          — diff_content_raw ~ template_content_raw
+#       template_workflow_configs — appended with one entry:
+#         { configuration_templates: { template_name, project_name,
+#           language: JINJA, template_content, template_description,
+#           device_types, software_type, software_variant,
+#           failure_policy: ABORT_TARGET_ON_ERROR, version, tags } }
+# =============================================================================
 
 - name: Extract template metadata for {{ template_file.name }}
   set_fact:

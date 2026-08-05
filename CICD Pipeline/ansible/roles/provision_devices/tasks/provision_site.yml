@@ -4,7 +4,8 @@
 # Processes one site provisioning entry from settings.json.
 #
 # Input variable (set by loop in provision_devices.yml):
-#   site_entry.key    — full site hierarchy path (e.g. Global/PODS/POD 0/…)
+#   site_entry.key    — full site hierarchy path
+#                       (e.g. Global/PODS/POD 0/Building P0/Floor 1)
 #   site_entry.value  — list of management IPs to provision to this site
 #
 # Variables read from inventory / parent play scope:

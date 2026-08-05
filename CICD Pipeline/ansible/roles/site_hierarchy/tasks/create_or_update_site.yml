@@ -29,8 +29,17 @@
 # =============================================================================
 
 # ── Step 1: Extract scalars from the site_config dict ────────────────────────
-# site_config.site_type      → "area" | "building" | "floor"
-# site_config.site.<type>    → the typed sub-dict with name, parent_name, ...
+# Example
+#   In : site_config = { "site_type": "building",
+#                        "site": { "building": {
+#                          "name": "Building P0",
+#                          "parent_name": "Global/PODS/POD 0",
+#                          "address": "45 O'Connor St, Ottawa, Ontario, Canada",
+#                          "country": "Canada",
+#                          "latitude": 45.4215, "longitude": -75.6972 } } }
+#   Out: _type   = "building"
+#        _name   = "Building P0"
+#        _parent = "Global/PODS/POD 0"
 - name: "Extract type / name / parent  | {{ site_config.site_type }}"
   set_fact:
     _type:   "{{ site_config.site_type }}"
@@ -49,6 +58,35 @@
 # These cannot be set in the same task as Step 1 because Ansible resolves all
 # set_fact values in a single template pass — _type/_name/_parent would be
 # undefined if referenced in the same task.
+#
+# Example — parent exists, site does not (CREATE path)
+#   In : _name   = "Building P0"
+#        _parent = "Global/PODS/POD 0"
+#        site_id_map = {
+#          "Global":            "a1000000-0000-4000-8000-000000000001",
+#          "Global/PODS":       "a1000000-0000-4000-8000-000000000002",
+#          "Global/PODS/POD 0": "a1000000-0000-4000-8000-000000000003"
+#        }
+#   Out: _path      = "Global/PODS/POD 0/Building P0"
+#        _parent_id = "a1000000-0000-4000-8000-000000000003"
+#        _exists    = false
+#        _site_id   = ""
+#        → CREATE tasks fire, UPDATE tasks skip
+#
+# Example — site already present (UPDATE path)
+#   In : _name   = "Building P0"
+#        _parent = "Global/PODS/POD 0"
+#        site_id_map = {
+#          "Global":                        "a1000000-0000-4000-8000-000000000001",
+#          "Global/PODS":                   "a1000000-0000-4000-8000-000000000002",
+#          "Global/PODS/POD 0":             "a1000000-0000-4000-8000-000000000003",
+#          "Global/PODS/POD 0/Building P0": "a1000000-0000-4000-8000-000000000004"
+#        }
+#   Out: _path      = "Global/PODS/POD 0/Building P0"
+#        _parent_id = "a1000000-0000-4000-8000-000000000003"
+#        _exists    = true
+#        _site_id   = "a1000000-0000-4000-8000-000000000004"
+#        → UPDATE tasks fire, CREATE tasks skip
 - name: "Derive path / IDs / exists  | {{ _parent }}/{{ _name }}"
   set_fact:
     _path:      "{{ _parent + '/' + _name }}"
@@ -267,6 +305,27 @@
 # Because this is inside include_tasks (not a plain loop), this set_fact takes
 # effect immediately: the NEXT iteration of the include_tasks loop sees the
 # updated map, making the UUID available as parentId for any children.
+#
+# Example
+#   In : site_id_map = {
+#          "Global":             "a1000000-0000-4000-8000-000000000001",
+#          "Global/PODS":        "a1000000-0000-4000-8000-000000000002",
+#          "Global/PODS/POD 0":  "a1000000-0000-4000-8000-000000000003"
+#        }
+#        _path = "Global/PODS/POD 0/Building P0"
+#        _new_site_info.catalystcenter_response.response = [
+#          { "id": "a1000000-0000-4000-8000-000000000004",
+#            "nameHierarchy": "Global/PODS/POD 0/Building P0" }
+#        ]
+#   Out: site_id_map = {
+#          "Global":                        "a1000000-0000-4000-8000-000000000001",
+#          "Global/PODS":                   "a1000000-0000-4000-8000-000000000002",
+#          "Global/PODS/POD 0":             "a1000000-0000-4000-8000-000000000003",
+#          "Global/PODS/POD 0/Building P0": "a1000000-0000-4000-8000-000000000004"
+#        }
+#        The next iteration creating "Global/PODS/POD 0/Building P0/Floor 1"
+#        now resolves _parent_id = "a1000000-0000-4000-8000-000000000004"
+#        instead of "".
 - name: "Add {{ _path }} to site_id_map"
   set_fact:
     site_id_map: >-

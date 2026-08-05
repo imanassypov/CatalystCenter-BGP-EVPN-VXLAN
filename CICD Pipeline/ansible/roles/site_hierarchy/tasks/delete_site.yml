@@ -16,14 +16,59 @@
 #   DELETE /dna/intent/api/v2/floors/{id}     (floor)
 # =============================================================================
 
-# ── Step 1: Extract scalars from the site_config dict ────────────────────────
+# ── Step 1: Extract scalars from the site_config dict ────────────────────
+# Example
+#   In : site_config = {
+#          "site_type": "floor",
+#          "site": {
+#            "floor": {
+#              "name":         "Floor 1",
+#              "parent_name":  "Global/PODS/POD 0/Building P0",
+#              "rf_model":     "Cubes And Walled Offices",
+#              "width":        100,
+#              "length":       100,
+#              "height":       10,
+#              "floor_number": 1
+#            }
+#          }
+#        }
+#   Out: _type   = "floor"
+#        _name   = "Floor 1"
+#        _parent = "Global/PODS/POD 0/Building P0"
 - name: "Extract type / name / parent  | {{ site_config.site_type }}"
   set_fact:
     _type:   "{{ site_config.site_type }}"
     _name:   "{{ site_config.site[site_config.site_type].name }}"
     _parent: "{{ site_config.site[site_config.site_type].parent_name }}"
 
-# ── Step 2: Derive path, UUID, and existence flag ────────────────────────────
+# ── Step 2: Derive path, UUID, and existence flag ──────────────────────
+# Example — site present (DELETE fires)
+#   In : _name   = "Floor 1"
+#        _parent = "Global/PODS/POD 0/Building P0"
+#        site_id_map = {
+#          "Global":                                "a1000000-0000-4000-8000-000000000001",
+#          "Global/PODS":                           "a1000000-0000-4000-8000-000000000002",
+#          "Global/PODS/POD 0":                     "a1000000-0000-4000-8000-000000000003",
+#          "Global/PODS/POD 0/Building P0":         "a1000000-0000-4000-8000-000000000004",
+#          "Global/PODS/POD 0/Building P0/Floor 1": "a1000000-0000-4000-8000-000000000005"
+#        }
+#   Out: _path    = "Global/PODS/POD 0/Building P0/Floor 1"
+#        _exists  = true
+#        _site_id = "a1000000-0000-4000-8000-000000000005"
+#
+# Example — already deleted (repeat run)
+#   In : _name   = "Floor 1"
+#        _parent = "Global/PODS/POD 0/Building P0"
+#        site_id_map = {
+#          "Global":            "a1000000-0000-4000-8000-000000000001",
+#          "Global/PODS":       "a1000000-0000-4000-8000-000000000002",
+#          "Global/PODS/POD 0": "a1000000-0000-4000-8000-000000000003"
+#        }
+#   Out: _path    = "Global/PODS/POD 0/Building P0/Floor 1"
+#        _exists  = false
+#        _site_id = ""
+# Every DELETE below is skipped when _exists is false — this is what makes
+# re-runs safe.
 - name: "Derive path / ID / exists  | {{ _parent }}/{{ _name }}"
   set_fact:
     _path:    "{{ _parent + '/' + _name }}"

@@ -38,7 +38,7 @@ unchanged — only the *source* of `swim_details` changed.
 
 ### Files added
 
-> **Note (2026-07):** Numbered stage directories (`1.0`–`11.0`) were removed; paths below are historical. Current code lives under `CICD Pipeline/ansible/roles/swim/` and `playbooks/06_swim_*.yml`.
+> **Note (2026-07):** Numbered stage directories (`1.0`–`11.0`) were removed; paths below are historical. Current code lives under `CICD Pipeline/ansible/roles/swim/` and `playbooks/06.x_swim_*.yml`.
 
 - `CICD Pipeline/ansible/roles/swim/tasks/load_swim_details.yml`
   - Resolves `settings_json_path`, loads and validates `settings.json`, derives `site_name`

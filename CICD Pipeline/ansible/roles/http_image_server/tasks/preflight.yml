@@ -1,6 +1,21 @@
 ---
 # =============================================================================
-# http_image_server / preflight.yml
+# http_image_server / preflight.yml  —  Stage 06.0: validate inputs
+# =============================================================================
+# Fails fast before anything is installed or transferred: confirms the operator
+# actually set image_local_paths, and records which of those files exist on the
+# control node so stage_images.yml can decide what to upload.
+#
+# The example placeholder path from vars.yml.example is rejected explicitly —
+# otherwise a forgotten copy of the example silently produces an empty server.
+#
+# Pre:  image_local_paths — absolute .bin paths on the CONTROL NODE, from
+#         inventory/group_vars/image_servers/vars.yml or an -e override
+#
+# Post: local_images.results[] — one stat result per path, in input order:
+#         .item       — the original absolute path
+#         .stat.exists — whether the file is present on the control node
+#       Consumed by stage_images.yml, which zips it with the remote stat.
 # =============================================================================
 
 # Task: Assert image_local_paths is configured

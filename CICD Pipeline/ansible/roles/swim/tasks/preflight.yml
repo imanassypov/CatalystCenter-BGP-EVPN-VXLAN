@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# swim / preflight.yml  —  Stage 6.0 (manual lifecycle)
+# swim / preflight.yml  —  Stage 06.1: pre-upgrade baseline
 # =============================================================================
 # Pre-flight before SWIM import/distribute/activate: load swim_details from
 # settings.json, resync device inventory at target sites, baseline IMAGE
@@ -13,9 +13,18 @@
 - name: Load SWIM image details from settings.json
   ansible.builtin.import_tasks: load_swim_details.yml
 
-# Task: Derive target sites from golden tag images
-# Pre:  swim_details.golden_tag_images[].tagging_details.site_name
-# Post: swim_target_sites: ["Global/PODS/POD 0/Building P0/Floor 1", …]
+# Example
+#   In : swim_details.golden_tag_images = [
+#          { "tagging_details": { "site_name": "Global/PODS/POD 0/Building P0/Floor 1" } },
+#          { "tagging_details": { "site_name": "Global/PODS/POD 1/Building P1/Floor 2" } },
+#          { "tagging_details": { "site_name": "Global/PODS/POD 0/Building P0/Floor 1" } }
+#        ]
+#   Out: swim_target_sites = [
+#          "Global/PODS/POD 0/Building P0/Floor 1",
+#          "Global/PODS/POD 1/Building P1/Floor 2"
+#        ]
+#   map → 3 site strings, unique → drops the repeated POD 0 entry, so each site
+#   is resynced and compliance-checked once no matter how many images target it.
 - name: Derive target sites from golden tag images
   ansible.builtin.set_fact:
     swim_target_sites: >-
@@ -82,6 +91,36 @@
     content: "{{ {'resync': preflight_resync | default({}), 'compliance': precheck_compliance} | to_nice_json }}"
     mode: "0640"
 
+# Example
+#   In : precheck_compliance.results = [
+#          {
+#            "item":   "Global/PODS/POD 0/Building P0/Floor 1",
+#            "failed": false,
+#            "msg": {
+#              "Run Compliance Check Skipped for following device(s)": {
+#                "skipped_devices": ["leaf01.dcloud.cisco.com"]
+#              }
+#            }
+#          },
+#          {
+#            "item":   "Global/PODS/POD 1/Building P1/Floor 2",
+#            "failed": true,
+#            "msg":    "An error occurred while running compliance check"
+#          }
+#        ]
+#        preflight_resync.failed = false
+#   Out: preflight_skipped_devices = ["leaf01.dcloud.cisco.com"]
+#        preflight_failed_compliance = [
+#          {
+#            "item":   "Global/PODS/POD 1/Building P1/Floor 2",
+#            "failed": true,
+#            "msg":    "An error occurred while running compliance check"
+#          }
+#        ]
+#        preflight_resync_failed = false
+#        preflight_has_issues    = true
+#   select('mapping') drops entries whose msg is a plain error string, so the
+#   skipped-device walk never faults on a failed site.
 - name: Evaluate pre-flight results for issues
   vars:
     compliance_results: "{{ precheck_compliance.results | default([]) }}"

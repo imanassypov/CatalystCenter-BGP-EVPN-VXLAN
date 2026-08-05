@@ -1,6 +1,21 @@
 ---
 # =============================================================================
-# yangsuite_docker / install_docker.yml
+# yangsuite_docker / install_docker.yml  —  install Docker engine + Compose v2
+# =============================================================================
+# Installs Docker only when it is actually missing. Every apt task is gated on
+# a prior version probe, so re-runs on a host that already has Docker (possibly
+# a newer upstream build) touch nothing.
+#
+# containerd is installed separately because the Ubuntu 20.04 docker.io package
+# does not pull it in reliably.
+#
+# Pre:  become: true; target is Debian/Ubuntu with apt
+#
+# Post: yangsuite_docker_cli_check.rc     — 0 when `docker --version` works
+#       yangsuite_docker_compose_check.rc — 0 when `docker compose version` works
+#       apt_cache_update                  — registered, never fails the play
+#       On the target host: docker.io + docker-compose-v2 present, docker
+#       service started and enabled.
 # =============================================================================
 
 - name: Check whether Docker CLI is already installed

@@ -1,6 +1,22 @@
 ---
 # =============================================================================
-# http_image_server / configure_nginx.yml  —  Appendix A.3
+# http_image_server / configure_nginx.yml  —  Stage 06.0 (A.3): serve the images
+# =============================================================================
+# Installs the server block that publishes image_dir as a binary download. The
+# default site is removed so the SWIM block is the only listener on TCP/80 —
+# Catalyst Center's remote import requires application/octet-stream, which the
+# stock default site does not guarantee for .bin files.
+#
+# Pre:  templates/swim-images.conf.j2 — rendered with image_web_root and
+#                                       image_url_subdir
+#       image_dir populated by stage_images.yml
+#
+# Post: On the target host:
+#         /etc/nginx/sites-available/swim-images  (root:root 0644)
+#         /etc/nginx/sites-enabled/swim-images    (symlink)
+#         /etc/nginx/sites-enabled/default        (removed)
+#       Serves http://<image_server_ip>/<image_url_subdir>/<file.bin>
+#       Notifies the "Reload nginx" handler; `nginx -t` gates the reload.
 # =============================================================================
 
 - name: Deploy the SWIM images nginx server block

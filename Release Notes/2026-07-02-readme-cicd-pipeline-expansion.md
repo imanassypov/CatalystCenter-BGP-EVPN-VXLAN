@@ -14,6 +14,8 @@ complete, numbered collection of CICD playbooks instead of only the template Git
 ## Stage inventory (authoritative playbook filenames)
 
 > **Superseded (2026-07):** Per-stage playbooks were consolidated under `CICD Pipeline/ansible/playbooks/`. The table below reflects the layout at the time of this note.
+>
+> **Superseded (2026-08-05):** SWIM playbooks were renumbered to `06.0`–`06.5_swim_*.yml` and the orchestrator `site.yml` became `00_site_deploy.yml`. See `2026-08-05-playbook-renumbering.md`.
 
 | Stage | Playbook |
 |-------|----------|

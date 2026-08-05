@@ -1,6 +1,17 @@
 ---
 # =============================================================================
-# http_image_server / configure_firewall.yml  —  Appendix A.4
+# http_image_server / configure_firewall.yml  —  Stage 06.0 (A.4): open TCP/80
+# =============================================================================
+# Allows inbound HTTP so Catalyst Center can reach the image URLs. Every task
+# is conditional: hosts without ufw, or with ufw installed but inactive, are
+# left untouched rather than having a firewall enabled behind the operator's back.
+#
+# Pre:  manage_ufw — defaults true; set false to skip firewall management
+#
+# Post: ufw_bin.stat.exists — whether /usr/sbin/ufw is present
+#       ufw_status.stdout   — raw `ufw status` output
+#       On the target host: allow rule for TCP/80, only when ufw is both
+#       installed and reporting "Status: active".
 # =============================================================================
 
 - name: Check whether ufw is installed

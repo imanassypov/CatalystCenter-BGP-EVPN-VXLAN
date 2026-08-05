@@ -387,12 +387,13 @@ See [`CICD Pipeline/ansible/README.md`](CICD%20Pipeline/ansible/README.md) for v
 
 | Stage | Playbook | Purpose |
 |-------|----------|---------|
+| 0 Orchestrator | `playbooks/00_site_deploy.yml` | Run stages 1–10 end-to-end (excludes SWIM and backup) |
 | 1 Site Hierarchy | `playbooks/01_site_hierarchy.yml` | Create/update the CatC site hierarchy (areas, buildings, floors) |
 | 2 Settings | `playbooks/02_network_settings.yml` | Apply per-site network settings (DNS, DHCP, NTP, SNMP, Syslog, AAA, banner) |
 | 3 Credentials | `playbooks/03_credentials.yml` | Create/assign device credentials (CLI, SNMPv2c, NETCONF) and bind to sites |
 | 4 Device Discovery | `playbooks/04_device_discovery.yml` | Discover reachable devices and add them to CatC inventory |
 | 5 Assign To Site | `playbooks/05_assign_to_site.yml` | Move discovered devices from Global into their designated site |
-| 6 SWIM | `06_swim_preflight.yml` → `06_swim_import_and_tag.yml` → `06_swim_distribute.yml` → `06_swim_activate.yml` → `06_swim_postcheck.yml` (rollback: `06_swim_rollback.yml`) | Phased software image lifecycle |
+| 6 SWIM | `06.0_swim_deploy_http_image_server.yml` → `06.1_swim_preflight.yml` → `06.2_swim_import_and_tag.yml` → `06.3_swim_distribute.yml` → `06.4_swim_activate.yml` → `06.5_swim_postcheck.yml` (rollback: `06.6_swim_rollback.yml`) | Phased software image lifecycle |
 | 7 Templates (GitOps) | `playbooks/07_template_sync.yml` | Sync Jinja2 templates from GitHub into a CatC Template Project (incl. composites) |
 | 8 Network Profile | `playbooks/08_network_profile.yml` | Create switching network profiles and bind Day-N templates to sites |
 | 9 Provision Devices | `playbooks/09_provision_devices.yml` | Provision devices to their sites (push site settings + licensing) |
@@ -401,7 +402,7 @@ See [`CICD Pipeline/ansible/README.md`](CICD%20Pipeline/ansible/README.md) for v
 
 Supporting directories:
 - [`Settings/`](CICD%20Pipeline/Settings/) — `settings.json`, the single declarative source-of-truth
-- [`ansible/playbooks/deploy_http_image_server.yml`](CICD%20Pipeline/ansible/playbooks/deploy_http_image_server.yml) — HTTP image server for SWIM import (run before `06_swim_import_and_tag.yml`)
+- [`ansible/playbooks/06.0_swim_deploy_http_image_server.yml`](CICD%20Pipeline/ansible/playbooks/06.0_swim_deploy_http_image_server.yml) — HTTP image server for SWIM import (run before `06.2_swim_import_and_tag.yml`)
 - [`utils/mcp-ssh-server/`](CICD%20Pipeline/utils/mcp-ssh-server/) — MCP stdio server for live device CLI verification during triage
 
 #### Template GitOps (Stage 7.0) in detail

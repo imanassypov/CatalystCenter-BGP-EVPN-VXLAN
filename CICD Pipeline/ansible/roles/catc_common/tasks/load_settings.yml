@@ -14,12 +14,13 @@
 #   catc_debug          — optional; dumps resolved path and raw JSON when true
 # =============================================================================
 
-# Task: Resolve settings_json_path to absolute
-# Purpose: Ansible file lookup requires a resolvable path; relative paths are
-#          anchored to playbook_dir (the playbooks/ directory).
-# Pre:  settings_json_path: "../../Settings/settings.json"
-#       playbook_dir:       "/…/CICD Pipeline/ansible/playbooks"
-# Post: _resolved_json_path: "/…/CICD Pipeline/Settings/settings.json"
+# Ansible's file lookup needs a resolvable path; relative paths anchor to playbooks/.
+# Example
+#   In : settings_json_path = "../../Settings/settings.json"
+#        playbook_dir      = "/repo/CICD Pipeline/ansible/playbooks"
+#   Out: _resolved_json_path =
+#        "/repo/CICD Pipeline/ansible/playbooks/../../Settings/settings.json"
+#   An already-absolute settings_json_path passes through unchanged.
 - name: Resolve settings_json_path to absolute
   ansible.builtin.set_fact:
     _resolved_json_path: >-
@@ -33,20 +34,97 @@
     var: _resolved_json_path
   when: catc_debug | default(false) | bool
 
-# Task: Load settings JSON
-# Purpose: Parse settings.json into a Jinja2-accessible dict for all pipeline roles.
-# Pre:  _resolved_json_path → absolute file path (file must exist on control node)
-# Post: settings_data (dict) — top-level keys include at minimum:
-#       settings_data:
-#         project:
-#           - HierarchyParent: "Global"
-#             HierarchyArea:   "PODS"
-#             HierarchyBldg:   "POD 0"
-#             HierarchyFloor:  "Floor 1"
-#             device_list:     "198.19.1.3,198.19.1.4"
-#             network_settings: { … }
-#             network_profile:  { … }
-#             device_credentials: { … }
+# Example — one project entry shown in full. settings.json carries one entry
+# per fabric site; every downstream stage loops settings_data.project.
+#   In : raw file text at _resolved_json_path
+#   Out: settings_data = {
+#          "project": [
+#            {
+#              "HierarchyParent":      "Global/PODS",
+#              "HierarchyArea":        "POD 0",
+#              "HierarchyBldg":        "Building P0",
+#              "HierarchyFloor":       "Floor 1",
+#              "HierarchyBldgAddress": "45 O'Connor St, Ottawa, Ontario, Canada",
+#              "network_settings": {
+#                "dhcp_server": ["198.18.133.1"],
+#                "dns_server": {
+#                  "domain_name":          "dcloud.cisco.com",
+#                  "primary_ip_address":   "198.18.133.1",
+#                  "secondary_ip_address": null
+#                },
+#                "ntp_server": ["198.18.133.1"],
+#                "timezone":   "America/Toronto",
+#                "message_of_the_day": {
+#                  "banner_message":         "DNAC Template Lab P0!",
+#                  "retain_existing_banner": false
+#                },
+#                "snmp_server":    { "configure_dnac_ip": true,
+#                                    "ip_addresses": ["198.18.133.27"] },
+#                "syslog_server":  { "configure_dnac_ip": true,
+#                                    "ip_addresses": ["198.18.133.27"] },
+#                "netflow_server": { "configure_dnac_ip": true,
+#                                    "ip_address": "198.18.133.27",
+#                                    "port": 2055 },
+#                "network_aaa": null,
+#                "client_and_endpoint_aaa": {
+#                  "server_type":              "ISE",
+#                  "primary_server_address":   "198.18.133.27",
+#                  "pan_address":              "198.18.133.27",
+#                  "protocol":                 "RADIUS",
+#                  "shared_secret":            "C1sco12345",
+#                  "secondary_server_address": null
+#                }
+#              },
+#              "device_credentials": {
+#                "cli_credential": {
+#                  "description":     "CLI-net-admin",
+#                  "username":        "net-admin",
+#                  "password":        "C1sco12345",
+#                  "enable_password": "C1sco12345"
+#                },
+#                "snmp_v2c_read":  { "description": "RO", "read_community":  "RO" },
+#                "snmp_v2c_write": { "description": "RW", "write_community": "RW" },
+#                "netconf_credential": { "description":  "NETCONF-netadmin",
+#                                        "netconf_port": "830" }
+#              },
+#              "device_list": "198.19.1.1,198.19.1.2,198.19.1.3,198.19.1.4,198.19.1.5,198.19.1.6",
+#              "network_profile": {
+#                "profile_name": "BGP-EVPN-Switching",
+#                "DayNTemplateNames": [
+#                  {
+#                    "TemplateName":   "BGP-EVPN-BUILD.j2",
+#                    "TemplateTag":    "DEMO",
+#                    "Project":        "Building P0",
+#                    "TemplateTarget": ["198.19.1.1", "198.19.1.2", "198.19.1.3",
+#                                       "198.19.1.4", "198.19.1.5", "198.19.1.6"],
+#                    "DeployTemplate": true
+#                  }
+#                ],
+#                "Day0TemplateNames": [
+#                  {
+#                    "TemplateName":   null,
+#                    "TemplateTag":    null,
+#                    "Project":        null,
+#                    "TemplateTarget": [],
+#                    "DeployTemplate": null
+#                  }
+#                ]
+#              },
+#              "swim": {
+#                "image_server_base_url":    "http://198.18.134.28/images",
+#                "device_family_identifier": "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+#                "device_family_name":       "Switches and Hubs",
+#                "device_series_name":       "Cisco Catalyst 9000 Series Virtual Switches",
+#                "device_role":              "ALL",
+#                "upgrade_image":            "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#                "rollback_image":           "cat9kv-universalk9.17.15.03.SPA.bin",
+#                "activation": { "device_upgrade_mode":  "install",
+#                                "distribute_if_needed": true,
+#                                "schedule_validate":    false }
+#              }
+#            }
+#          ]
+#        }
 - name: Load settings JSON
   ansible.builtin.set_fact:
     settings_data: "{{ lookup('file', _resolved_json_path) | from_json }}"

@@ -8,12 +8,45 @@
 # ============================================================================
 
 ---
-# process-subfolder.yml
-# Syncs a single repository subfolder (`subfolder_item`) into its own Catalyst
-# Center Template-Programmer Project. Included once per entry in
-# `normalized_subfolders` by playbooks/07_template_sync.yml. The repository file tree
-# (`repo_tree_response`) is fetched once at the play level and re-filtered here
-# per subfolder.
+# =============================================================================
+# template_sync / process-subfolder.yml  —  Stage 07: sync one repo subfolder
+# =============================================================================
+# Syncs a single repository subfolder into its own Catalyst Center Template
+# Programmer project. Included once per entry of git_repo_subfolders by
+# roles/template_sync/tasks/main.yml. The repository file tree is fetched once
+# at play level and re-filtered here per subfolder.
+#
+# Processing order is derived from the composite definitions, not hardcoded:
+# regular templates are pushed first so that composite members already exist.
+#
+# Pre:  subfolder_item (loop var): { path, project_name }
+#       repo_tree_response.json.tree — full recursive GitHub tree (play level)
+#       git_repo_slug, git_branch, git_api_base, git_auth_header
+#       template_extension (j2), include_diff_header,
+#       catc_template_summary_maxchar, default_device_types,
+#       default_software_type / _variant, default_template_version
+#
+# Post: git_tree_prefix                — "<subfolder path>/" filter prefix
+#       api_template_files             — blobs matching *.j2 under the prefix
+#       api_composite_files            — blobs matching *.yml under the prefix
+#       projectName                    — subfolder_item.project_name, else the
+#                                        subfolder basename, else the first
+#                                        template's parent folder basename
+#       enriched_template_files        — [{name, path, content, commit_message,
+#                                          diff_content}]
+#       enriched_composite_files       — [{name, path, content}]
+#       composite_referenced_templates — member names pulled from composites
+#       priority_template_list / regular_template_list
+#       sorted_template_files          — regular first, then composite members
+#       template_workflow_configs      — built by process-template.yml
+#       composite_workflow_configs     — built by process-composite.yml
+#       template_sync_result / composite_sync_result — WFM module results
+#       sync_summary                   — appended {subfolder, project,
+#                                        templates_synced, composites_synced}
+#       In Catalyst Center: one project per subfolder, populated and versioned.
+#
+# Module: cisco.dnac.template_workflow_manager (state: merged)
+# =============================================================================
 
 # Reset per-subfolder accumulators so facts never leak across iterations/projects.
 # Pre:  prior loop iteration may have left enriched_* lists populated

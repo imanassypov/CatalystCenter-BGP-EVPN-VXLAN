@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# swim / rollback.yml  —  Stage 6.0: emergency rollback (destructive)
+# swim / rollback.yml  —  Stage 06.6: emergency rollback (destructive)
 # =============================================================================
 # Requires explicit confirmation extra-vars to prevent accidental reload:
 #   -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK

@@ -1,6 +1,25 @@
 ---
 # =============================================================================
-# yangsuite_docker / clone_repository.yml
+# yangsuite_docker / clone_repository.yml  —  fetch upstream CiscoDevNet/yangsuite
+# =============================================================================
+# Clones the upstream repo on first run only. Subsequent runs deliberately skip
+# the git module: patch_compose_ports.yml edits docker-compose.yml in place, and
+# a re-clone with force would silently revert those port bindings.
+#
+# Set yangsuite_repo_force=true to intentionally discard local edits and
+# re-pull upstream.
+#
+# Pre:  yangsuite_repo_url     — https://github.com/CiscoDevNet/yangsuite.git
+#       yangsuite_repo_version — branch/tag/sha (default: main)
+#       yangsuite_repo_force   — false; true re-clones over local edits
+#       yangsuite_install_dir  — /opt/yangsuite
+#       yangsuite_docker_dir   — {{ yangsuite_install_dir }}/docker
+#
+# Post: yangsuite_repo_stat.stat.exists — whether <install_dir>/.git is present
+#       yangsuite_git.changed — drives the "changed" verdict in deploy_compose.yml;
+#                               forced to false when the clone was skipped
+#       On the target host: repo at yangsuite_install_dir, plus the persistent
+#       ys-data/ and ys-backup/ directories under yangsuite_docker_dir.
 # =============================================================================
 
 - name: Install git for repository clone

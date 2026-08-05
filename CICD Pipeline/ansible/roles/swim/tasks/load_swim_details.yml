@@ -10,21 +10,30 @@
 # Load & synthesise swim_details from the central data model (settings.json).
 #
 # This task file is imported at the top of every SWIM playbook. It reads the
-# same settings.json consumed by stages 1.0 (site hierarchy), 4.0 (discovery)
-# and 9.0 (provisioning), then synthesises the exact swim_details structure the
+# same settings.json consumed by stages 01 (site hierarchy), 04 (discovery)
+# and 09 (provisioning), then synthesises the exact swim_details structure the
 # playbooks already loop over:
 #
-#   swim_details.import_images       → 10_import_and_tag.yml (import task)
-#   swim_details.golden_tag_images   → 10_import_and_tag.yml (tag task)
-#   swim_details.distribute_images   → 20_distribute.yml
-#   swim_details.activate_images     → 30_activate.yml
-#   swim_details.rollback_images     → 35_rollback.yml
+#   swim_details.import_images       → import_and_tag.yml (import task)   [06.2]
+#   swim_details.golden_tag_images   → import_and_tag.yml (tag task)      [06.2]
+#   swim_details.distribute_images   → distribute.yml                     [06.3]
+#   swim_details.activate_images     → activate.yml                       [06.4]
+#   swim_details.rollback_images     → rollback.yml                       [06.6]
 #
 # All image facts come from the per-project `swim` block in settings.json; the
 # site_name is DERIVED from the same HierarchyParent/Area/Bldg/Floor fields used
 # by the site-hierarchy and provisioning stages — never hardcoded here.
 ---
 # ── Resolve & load the central data model ───────────────────────────────────
+# Example
+#   In : settings_json_path = "../../Settings/settings.json"
+#        playbook_dir       = "/repo/CICD Pipeline/ansible/playbooks"
+#   Out: _resolved_json_path =
+#          "/repo/CICD Pipeline/ansible/playbooks/../../Settings/settings.json"
+#
+#   An already-absolute path is passed through unchanged:
+#   In : settings_json_path = "/repo/CICD Pipeline/Settings/settings.json"
+#   Out: _resolved_json_path = "/repo/CICD Pipeline/Settings/settings.json"
 - name: Resolve settings_json_path to absolute
   ansible.builtin.set_fact:
     _resolved_json_path: >-
@@ -36,6 +45,34 @@
     var: _resolved_json_path
   when: catc_debug | default(false) | bool
 
+# Example — only the keys this task file consumes are shown; settings.json
+# also carries network_settings, device_credentials, device_list and
+# network_profile per project entry, which SWIM ignores.
+#   In : raw file text at _resolved_json_path
+#   Out: settings_data = {
+#          "project": [
+#            {
+#              "HierarchyParent": "Global/PODS",
+#              "HierarchyArea":   "POD 0",
+#              "HierarchyBldg":   "Building P0",
+#              "HierarchyFloor":  "Floor 1",
+#              "swim": {
+#                "image_server_base_url":    "http://198.18.134.28/images",
+#                "device_family_identifier": "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+#                "device_family_name":       "Switches and Hubs",
+#                "device_series_name":       "Cisco Catalyst 9000 Series Virtual Switches",
+#                "device_role":              "ALL",
+#                "upgrade_image":            "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#                "rollback_image":           "cat9kv-universalk9.17.15.03.SPA.bin",
+#                "activation": {
+#                  "device_upgrade_mode":  "install",
+#                  "distribute_if_needed": true,
+#                  "schedule_validate":    false
+#                }
+#              }
+#            }
+#          ]
+#        }
 - name: Load settings JSON
   ansible.builtin.set_fact:
     settings_data: "{{ lookup('file', _resolved_json_path) | from_json }}"
@@ -61,9 +98,49 @@
     label: "{{ item.HierarchyParent | default('') }}/{{ item.HierarchyFloor | default('') }}"
 
 # ── Normalise each project entry into a flat SWIM record ─────────────────────
-# site_name is composed from the hierarchy fields exactly like stages 1.0 / 9.0:
+# site_name is composed from the hierarchy fields exactly like stages 01 / 09:
 #   HierarchyParent / HierarchyArea / HierarchyBldg / HierarchyFloor
 # Empty segments are skipped so partial hierarchies still yield a valid path.
+# Example
+#   In : settings_data.project = [
+#          {
+#            "HierarchyParent": "Global/PODS",
+#            "HierarchyArea":   "POD 0",
+#            "HierarchyBldg":   "Building P0",
+#            "HierarchyFloor":  "Floor 1",
+#            "swim": {
+#              "image_server_base_url":    "http://198.18.134.28/images",
+#              "device_family_identifier": "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+#              "device_family_name":       "Switches and Hubs",
+#              "device_series_name":       "Cisco Catalyst 9000 Series Virtual Switches",
+#              "device_role":              "ALL",
+#              "upgrade_image":            "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#              "rollback_image":           "cat9kv-universalk9.17.15.03.SPA.bin",
+#              "activation": {
+#                "device_upgrade_mode":  "install",
+#                "distribute_if_needed": true,
+#                "schedule_validate":    false
+#              }
+#            }
+#          }
+#        ]
+#   Out: _swim_records = [
+#          {
+#            "site_name":            "Global/PODS/POD 0/Building P0/Floor 1",
+#            "base_url":             "http://198.18.134.28/images",
+#            "family_identifier":    "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+#            "family_name":          "Switches and Hubs",
+#            "series_name":          "Cisco Catalyst 9000 Series Virtual Switches",
+#            "role":                 "ALL",
+#            "upgrade_image":        "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            "rollback_image":       "cat9kv-universalk9.17.15.03.SPA.bin",
+#            "device_upgrade_mode":  "install",
+#            "distribute_if_needed": true,
+#            "schedule_validate":    false
+#          }
+#        ]
+#   One record per project entry — the nested swim/activation sub-dicts are
+#   flattened away so downstream loops never have to guard for missing keys.
 - name: Normalise per-project SWIM records
   ansible.builtin.set_fact:
     _swim_records: >-
@@ -97,14 +174,127 @@
       {{ ns.items }}
 
 # ── Synthesise swim_details (same schema the playbooks already consume) ──────
-# Task: Synthesise swim_details from the central data model
-# Pre:  _swim_records: [{ site_name, base_url, upgrade_image, rollback_image, … }]
-# Post: swim_details:
-#         import_images:       [{ name, import_image_details: { type: remote, url_details } }]
-#         golden_tag_images:   [{ name, tagging_details: { site_name, device_role, … } }]
-#         distribute_images:   [{ name, image_distribution_details: { … } }]
-#         activate_images:     [{ name, image_activation_details: { … } }]
-#         rollback_images:     { tag: [...], activate: [...] }
+# Example — single project entry, both upgrade and rollback images defined.
+#   In : _swim_records = [
+#          {
+#            "site_name":            "Global/PODS/POD 0/Building P0/Floor 1",
+#            "base_url":             "http://198.18.134.28/images",
+#            "family_identifier":    "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+#            "family_name":          "Switches and Hubs",
+#            "series_name":          "Cisco Catalyst 9000 Series Virtual Switches",
+#            "role":                 "ALL",
+#            "upgrade_image":        "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            "rollback_image":       "cat9kv-universalk9.17.15.03.SPA.bin",
+#            "device_upgrade_mode":  "install",
+#            "distribute_if_needed": true,
+#            "schedule_validate":    false
+#          }
+#        ]
+#   Out: swim_details = {
+#          "import_images": [
+#            {
+#              "name": "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#              "import_image_details": {
+#                "type": "remote",
+#                "url_details": {
+#                  "payload": [
+#                    {
+#                      "source_url": ["http://198.18.134.28/images/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin"],
+#                      "is_third_party": false
+#                    }
+#                  ]
+#                }
+#              }
+#            },
+#            {
+#              "name": "cat9kv-universalk9.17.15.03.SPA.bin",
+#              "import_image_details": {
+#                "type": "remote",
+#                "url_details": {
+#                  "payload": [
+#                    {
+#                      "source_url": ["http://198.18.134.28/images/cat9kv-universalk9.17.15.03.SPA.bin"],
+#                      "is_third_party": false
+#                    }
+#                  ]
+#                }
+#              }
+#            }
+#          ],
+#          "golden_tag_images": [
+#            {
+#              "name": "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin @ Global/PODS/POD 0/Building P0/Floor 1 / ALL",
+#              "tagging_details": {
+#                "image_name":               "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#                "device_role":              "ALL",
+#                "device_image_family_name": "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+#                "site_name":                "Global/PODS/POD 0/Building P0/Floor 1",
+#                "tagging":                  true
+#              }
+#            }
+#          ],
+#          "distribute_images": [
+#            {
+#              "name": "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin @ Global/PODS/POD 0/Building P0/Floor 1 / ALL",
+#              "image_distribution_details": {
+#                "image_name":         "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#                "site_name":          "Global/PODS/POD 0/Building P0/Floor 1",
+#                "device_role":        "ALL",
+#                "device_family_name": "Switches and Hubs",
+#                "device_series_name": "Cisco Catalyst 9000 Series Virtual Switches"
+#              }
+#            }
+#          ],
+#          "activate_images": [
+#            {
+#              "name": "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin @ Global/PODS/POD 0/Building P0/Floor 1 / ALL",
+#              "image_activation_details": {
+#                "image_name":                   "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#                "site_name":                    "Global/PODS/POD 0/Building P0/Floor 1",
+#                "device_role":                  "ALL",
+#                "device_family_name":           "Switches and Hubs",
+#                "device_series_name":           "Cisco Catalyst 9000 Series Virtual Switches",
+#                "activate_lower_image_version": false,
+#                "device_upgrade_mode":          "install",
+#                "distribute_if_needed":         true,
+#                "schedule_validate":            false
+#              }
+#            }
+#          ],
+#          "rollback_images": {
+#            "tag": [
+#              {
+#                "name": "cat9kv-universalk9.17.15.03.SPA.bin @ Global/PODS/POD 0/Building P0/Floor 1 / ALL",
+#                "tagging_details": {
+#                  "image_name":               "cat9kv-universalk9.17.15.03.SPA.bin",
+#                  "device_role":              "ALL",
+#                  "device_image_family_name": "Cisco Catalyst 9000 UADP 8 Port Virtual Switch",
+#                  "site_name":                "Global/PODS/POD 0/Building P0/Floor 1",
+#                  "tagging":                  true
+#                }
+#              }
+#            ],
+#            "activate": [
+#              {
+#                "name": "cat9kv-universalk9.17.15.03.SPA.bin @ Global/PODS/POD 0/Building P0/Floor 1 / ALL",
+#                "image_activation_details": {
+#                  "image_name":                   "cat9kv-universalk9.17.15.03.SPA.bin",
+#                  "site_name":                    "Global/PODS/POD 0/Building P0/Floor 1",
+#                  "device_role":                  "ALL",
+#                  "device_family_name":           "Switches and Hubs",
+#                  "device_series_name":           "Cisco Catalyst 9000 Series Virtual Switches",
+#                  "activate_lower_image_version": true,
+#                  "distribute_if_needed":         true,
+#                  "schedule_validate":            true
+#                }
+#              }
+#            ]
+#          }
+#        }
+#   import_images is de-duplicated across projects via ns.seen, so the same
+#   image referenced by several sites is imported once. When rollback_image is
+#   "" the rollback_images tag/activate lists are both [] and the second
+#   import_images entry is absent.
 - name: Synthesise swim_details from the central data model
   ansible.builtin.set_fact:
     swim_details:

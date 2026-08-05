@@ -42,7 +42,7 @@ CICD Pipeline/
 ├── Settings/settings.json       # SSOT for all stages
 └── ansible/
     ├── inventory/               # CML dynamic (cml.yml) + static_inventory + group_vars
-    ├── playbooks/               # 01–11, site.yml, deploy_* utilities
+    ├── playbooks/               # 00_site_deploy orchestrator, 01–11 stages, deploy_* utilities
     ├── roles/                   # site_hierarchy, swim, template_sync, http_image_server, yangsuite_docker, …
     ├── config-backups/          # stage 11 output (gitignored timestamps)
     ├── logs/                    # SWIM evidence JSON (gitignored)
@@ -54,35 +54,110 @@ CICD Pipeline/
 Full orchestrator (stages 1–10, excludes SWIM and backup):
 
 ```bash
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/00_site_deploy.yml
 ```
 
 | Playbook | Stage | Description |
 |----------|-------|-------------|
+| `00_site_deploy.yml` | 0 | Orchestrator — imports stages 1–10 |
 | `01_site_hierarchy.yml` | 1 | Build site hierarchy |
 | `02_network_settings.yml` | 2 | Apply network settings |
 | `03_credentials.yml` | 3 | CLI/SNMP/NETCONF credentials |
 | `04_device_discovery.yml` | 4 | Device discovery |
 | `05_assign_to_site.yml` | 5 | Assign devices to sites |
-| `06_swim_*.yml` | 6 | SWIM lifecycle (run in order; see below) |
+| `06.0`–`06.5_swim_*.yml` | 6 | SWIM lifecycle (run in order; see below) |
+| `06.6_swim_rollback.yml` | 6 | SWIM rollback — manual, guarded (see Common Overrides) |
 | `07_template_sync.yml` | 7 | GitHub template sync |
 | `08_network_profile.yml` | 8 | Network profiles |
 | `09_provision_devices.yml` | 9 | Device provisioning |
 | `10_deploy_composite.yml` | 10 | Composite template deploy |
 | `11_backup_lab_configs.yml` | 11 | IOS-XE/NX-OS config backup |
-| `deploy_http_image_server.yml` | 6 prep | HTTP image server |
 | `deploy_yangsuite.yml` | util | Cisco YANG Suite (Docker) |
+
+### Playbook annotation convention
+
+Every playbook and role task file opens with a boxed header block. Read it
+first — it is the fastest way to understand a stage without tracing the role.
+
+```yaml
+---
+# =============================================================================
+# <filename>  —  Pipeline stage <NN>
+# =============================================================================
+# What the stage does and why it exists.
+#
+# Sourced:
+#   settings.json → settings_data.project[]: <exact keys consumed>
+#   connection.yml / vault.yml: <exact vars consumed>
+#
+# Produced:
+#   <exact facts set, with example values>
+#   In Catalyst Center: <objects created or changed>
+#
+# Depends on: <prior stages>
+# Module: <collection module driven via module_defaults>
+#
+# Run: ansible-playbook playbooks/<filename>
+# =============================================================================
+```
+
+Rules:
+
+- `Sourced:` / `Produced:` must name **real** variables and nested key paths, with example values — never a vague summary.
+- Disruptive playbooks are marked `*DISRUPTIVE*` on the title line (`06.4`, `06.6`).
+- Multi-play files (`11_backup_lab_configs.yml`) get a `# ── Play N: … ──` divider above each play.
+- Inline `# ── section ── ` dividers separate logical blocks inside role task files.
+
+### Data-manipulation task annotation
+
+Any task that transforms data — `set_fact`, `json_query`, accumulator loops,
+payload assembly — carries an `Example` block directly above it showing the
+payload going **in** and the payload coming **out**:
+
+```yaml
+# Example — <scoping note, e.g. "single project entry, rollback image defined">
+#   In : <var> = {
+#          "key": "value"
+#        }
+#   Out: <var> = [
+#          { "key": "value" }
+#        ]
+# <one or two lines stating what the filters did and why>
+- name: <task name>
+  ansible.builtin.set_fact:
+```
+
+Rules:
+
+- **No elisions.** Never write `…`, `...`, or `and so on` inside an example
+  data structure. Every key and every value is written out in full, including
+  long image filenames, all six device IPs, and complete UUIDs. A reader must
+  be able to copy the example into a scratch playbook and get the documented
+  result.
+- Values come from the **real** `Settings/settings.json` and
+  `inventory/group_vars/catalyst_center/connection.yml` — not invented data.
+- Where a task has branching outcomes (create vs update vs no-op), give one
+  complete `In:`/`Out:` pair **per branch** and state which tasks fire.
+- Opaque secrets (auth tokens, Git PATs, blob SHAs) use a complete
+  well-formed literal of the right shape, never a truncated one.
+- The trailing note explains the non-obvious filter behaviour — deduplication,
+  `select('mapping')` guards, keys that get dropped, type coercions — not what
+  the next line already says.
 
 ### SWIM (stage 6)
 
+Run in numeric order — `06.0` stages the images on the HTTP server that `06.2` imports from:
+
 ```bash
-ansible-playbook playbooks/deploy_http_image_server.yml
-ansible-playbook playbooks/06_swim_preflight.yml
-ansible-playbook playbooks/06_swim_import_and_tag.yml
-ansible-playbook playbooks/06_swim_distribute.yml
-ansible-playbook playbooks/06_swim_activate.yml
-ansible-playbook playbooks/06_swim_postcheck.yml
+ansible-playbook playbooks/06.0_swim_deploy_http_image_server.yml
+ansible-playbook playbooks/06.1_swim_preflight.yml
+ansible-playbook playbooks/06.2_swim_import_and_tag.yml
+ansible-playbook playbooks/06.3_swim_distribute.yml
+ansible-playbook playbooks/06.4_swim_activate.yml
+ansible-playbook playbooks/06.5_swim_postcheck.yml
 ```
+
+`06.4_swim_activate.yml` reloads devices. `06.6_swim_rollback.yml` is out-of-band and runs only on failure.
 
 ### YANG Suite (Docker)
 
@@ -128,8 +203,8 @@ On **every** `ansible-playbook` or `ansible-inventory` run from `ansible/`, Ansi
 | Playbook(s) | `hosts:` target | Uses CML fabric hosts? |
 |-------------|-----------------|------------------------|
 | `11_backup_lab_configs.yml` | `Campus Fabric`, `IP Core`, `dmz`, `dhcp-server` (→ `iosxe` / `nxos`) | **Yes** — SSH backup to CML-tagged fabric devices |
-| `01`–`10`, `06_swim_*`, `site.yml` | `catalyst_center` | No — Catalyst Center REST API on localhost |
-| `deploy_http_image_server.yml` | `image_servers` | No — static host from `static_inventory.yml` |
+| `01`–`10`, `06.1`–`06.6_swim_*`, `00_site_deploy.yml` | `catalyst_center` | No — Catalyst Center REST API on localhost |
+| `06.0_swim_deploy_http_image_server.yml` | `image_servers` | No — static host from `static_inventory.yml` |
 | `deploy_yangsuite.yml` | `yangsuite_servers` | No — static host from `static_inventory.yml` |
 
 Only **stage 11** SSHs to fabric devices. Stages 1–10 and SWIM talk to Catalyst Center API only. Even so, if CML is unreachable, inventory parsing for `cml.yml` can **fail the whole run** — including playbooks that never touch a router.
@@ -236,8 +311,8 @@ ansible-playbook playbooks/11_backup_lab_configs.yml -e '{"backup_cml_tags":["dm
 ```bash
 DEBUG=true ansible-playbook playbooks/04_device_discovery.yml
 ansible-playbook playbooks/01_site_hierarchy.yml -e state=deleted
-ansible-playbook playbooks/06_swim_rollback.yml -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK
-ansible-playbook playbooks/deploy_http_image_server.yml \
+ansible-playbook playbooks/06.6_swim_rollback.yml -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK
+ansible-playbook playbooks/06.0_swim_deploy_http_image_server.yml \
   -e '{"image_local_paths":["/abs/cat9kv.SSA.bin","/abs/cat9kv.SPA.bin"]}'
 ```
 

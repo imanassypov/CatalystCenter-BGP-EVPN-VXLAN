@@ -12,6 +12,14 @@
 #                Stage 1 site hierarchy must exist (site UUIDs required)
 # =============================================================================
 
+# Deepest populated hierarchy level wins: Floor > Building > Area > Parent.
+# One entry per project[] row — index alignment matters, the payload builder
+# below pairs settings_data.project[i] with site_names[i].
+# Example
+#   In : settings_data.project = [
+#          { "HierarchyParent": "Global/PODS", "HierarchyArea": "POD 0",
+#            "HierarchyBldg": "Building P0",   "HierarchyFloor": "Floor 1" } ]
+#   Out: site_names = ["Global/PODS/POD 0/Building P0/Floor 1"]
 - name: Build site name list from entries
   ansible.builtin.set_fact:
     site_names: >-
@@ -56,6 +64,13 @@
   register: _auth_response
   no_log: true
 
+# Example
+#   In : _auth_response.json = {
+#          "Token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2NTNhMWIyYyIsImV4cCI6MTc4NTkzNjEyN30.Qp7mR3xK9vL2sN4tY6uZ8wA1bC5dE0fG"
+#        }
+#   Out: _catc_token =
+#          "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2NTNhMWIyYyIsImV4cCI6MTc4NTkzNjEyN30.Qp7mR3xK9vL2sN4tY6uZ8wA1bC5dE0fG"
+#        consumed only by tasks/apply_network_settings.yml as X-Auth-Token.
 - name: Store auth token
   ansible.builtin.set_fact:
     _catc_token: "{{ _auth_response.json.Token }}"
@@ -85,6 +100,16 @@
   # attribute is nameHierarchy (not siteNameHierarchy).
   # The Global root entry has no nameHierarchy key — selectattr filters it
   # out so it never appears as an empty-string key in the map.
+  #
+  # Example
+  #   In : _all_sites_info.catalystcenter_response.response = [
+  #          { "id": "0000-0001", "type": "global" },          # dropped
+  #          { "id": "1111-1111", "nameHierarchy": "Global/PODS" },
+  #          { "id": "4444-4444",
+  #            "nameHierarchy": "Global/PODS/POD 0/Building P0/Floor 1" } ]
+  #   Out: _site_id_map = {
+  #          "Global/PODS": "1111-1111",
+  #          "Global/PODS/POD 0/Building P0/Floor 1": "4444-4444" }
   ansible.builtin.set_fact:
     _site_id_map: >-
       {%- set sites = _all_sites_info.catalystcenter_response.response | default([]) -%}
@@ -115,7 +140,7 @@
 #   ntp_server                          → ntpServer (array)
 #   timezone                            → timezone
 #   message_of_the_day.banner_message   → messageOfTheday.bannerMessage
-#   message_of_the_day.retain_…banner   → messageOfTheday.retainExistingBanner
+#   message_of_the_day.retain_existing_banner → messageOfTheday.retainExistingBanner
 #   snmp_server.configure_dnac_ip       → snmpServer.configureDnacIP
 #   snmp_server.ip_addresses            → snmpServer.ipAddresses
 #   syslog_server.configure_dnac_ip     → syslogServer.configureDnacIP
@@ -129,10 +154,58 @@
 #   network_aaa.protocol                → network_aaa.protocol
 #   network_aaa.shared_secret           → network_aaa.sharedSecret
 #   client_and_endpoint_aaa.server_type → clientAndEndpoint_aaa.servers
-#   client_and_endpoint_aaa.primary_…   → clientAndEndpoint_aaa.ipAddress
+#   client_and_endpoint_aaa.primary_server_address → clientAndEndpoint_aaa.ipAddress
 #   client_and_endpoint_aaa.pan_address → clientAndEndpoint_aaa.network
 #   client_and_endpoint_aaa.protocol    → clientAndEndpoint_aaa.protocol
-#   client_and_endpoint_aaa.shared_…   → clientAndEndpoint_aaa.sharedSecret
+#   client_and_endpoint_aaa.shared_secret → clientAndEndpoint_aaa.sharedSecret
+#
+# Example
+#   In : settings_data.project[0].network_settings = {
+#          "dhcp_server": ["198.18.133.1"],
+#          "dns_server": { "domain_name": "dcloud.cisco.com",
+#                          "primary_ip_address": "198.18.133.1",
+#                          "secondary_ip_address": null },
+#          "ntp_server": ["198.18.133.1"],
+#          "timezone": "America/Toronto",
+#          "message_of_the_day": { "banner_message": "DNAC Template Lab P0!",
+#                                  "retain_existing_banner": false },
+#          "snmp_server":    { "configure_dnac_ip": true, "ip_addresses": ["198.18.133.27"] },
+#          "syslog_server":  { "configure_dnac_ip": true, "ip_addresses": ["198.18.133.27"] },
+#          "netflow_server": { "configure_dnac_ip": true, "ip_address": "198.18.133.27",
+#                              "port": 2055 },
+#          "network_aaa": null,
+#          "client_and_endpoint_aaa": { "server_type": "ISE",
+#            "primary_server_address": "198.18.133.27", "pan_address": "198.18.133.27",
+#            "protocol": "RADIUS", "shared_secret": "C1sco12345",
+#            "secondary_server_address": null }
+#        }
+#        site_names[0]  = "Global/PODS/POD 0/Building P0/Floor 1"
+#        _site_id_map   = { "Global/PODS/POD 0/Building P0/Floor 1": "4444-4444" }
+#   Out: network_settings_list = [{
+#          "site_name": "Global/PODS/POD 0/Building P0/Floor 1",
+#          "site_id":   "4444-4444",
+#          "settings": {
+#            "dhcpServer": ["198.18.133.1"],
+#            "dnsServer": { "domainName": "dcloud.cisco.com",
+#                           "primaryIpAddress": "198.18.133.1" },
+#            "ntpServer": ["198.18.133.1"],
+#            "timezone": "America/Toronto",
+#            "messageOfTheday": { "bannerMessage": "DNAC Template Lab P0!",
+#                                 "retainExistingBanner": "false" },
+#            "syslogServer":     { "ipAddresses": ["198.18.133.27"], "configureDnacIP": true },
+#            "snmpServer":       { "ipAddresses": ["198.18.133.27"], "configureDnacIP": true },
+#            "netflowcollector": { "ipAddress": "198.18.133.27", "port": 2055,
+#                                  "configureDnacIP": true },
+#            "clientAndEndpoint_aaa": { "servers": "ISE", "ipAddress": "198.18.133.27",
+#              "network": "198.18.133.27", "protocol": "RADIUS",
+#              "sharedSecret": "C1sco12345" }
+#          }
+#        }]
+#   Note what is absent from the output: secondaryIpAddress (source was null)
+#   and network_aaa (source was null). Omitting them is what leaves those
+#   settings untouched at the site and avoids NCND01243. retainExistingBanner
+#   is emitted as the string "false" — the v1 API rejects a JSON boolean here.
+#   A project row whose payload ends up empty is dropped entirely.
 #
 - name: Build v1 network settings payload list
   ansible.builtin.set_fact:

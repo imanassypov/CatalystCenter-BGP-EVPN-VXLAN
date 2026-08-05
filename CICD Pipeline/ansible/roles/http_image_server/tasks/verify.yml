@@ -1,6 +1,27 @@
 ---
 # =============================================================================
-# http_image_server / verify.yml  —  Appendix A.5
+# http_image_server / verify.yml  —  Stage 06.0 (A.5): prove the URLs work
+# =============================================================================
+# Confirms each image is actually downloadable before stage 06.2 tries to
+# import it. Checks twice — from the server itself and from the control node —
+# because a working localhost fetch with an unreachable public IP is the common
+# failure mode (firewall or routing), and the two look identical in nginx logs.
+#
+# The Content-Type assertion is the important one: Catalyst Center's remote
+# import silently fails if the URL returns text/html or text/plain instead of
+# application/octet-stream.
+#
+# Pre:  image_plan          — [{path, filename, local_exists, remote_exists}]
+#                             from stage_images.yml
+#       image_server_ip, image_url_subdir
+#       Handlers are flushed first so a pending nginx reload has applied.
+#
+# Post: http_check          — HEAD results from localhost on the server
+#       http_check_remote   — HEAD results from the control node over the
+#                             public IP; .status, .content_type, .content_length
+#       Asserts per image: status 200 and content_type application/octet-stream.
+#       Prints the published URL for each image — these must match
+#       settings.json swim.image_server_base_url used by stage 06.2.
 # =============================================================================
 
 - name: Flush handlers before verification

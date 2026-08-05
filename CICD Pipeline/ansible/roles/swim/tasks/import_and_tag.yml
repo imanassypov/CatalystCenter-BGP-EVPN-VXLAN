@@ -1,14 +1,39 @@
 ---
 # =============================================================================
-# swim / import_and_tag.yml  —  Stage 6.0: remote import + golden tag
+# swim / import_and_tag.yml  —  Stage 06.2: remote import + golden tag
 # =============================================================================
 # Consumes swim_details.import_images and swim_details.golden_tag_images
-# (from load_swim_details.yml). Requires HTTP image server (deploy_http_image_server).
+# (from load_swim_details.yml). Requires HTTP image server (stage 06.0).
 #
 # Pre:  swim_details.import_images[].import_image_details.url_details.source_url
 # Post: images in CatC repository; golden tags applied per site/role
 # =============================================================================
 
+# ── Build swim_details from the central data model ───────────────────────────
+# Sources CICD Pipeline/Settings/settings.json (path from `settings_json_path`,
+# relative paths resolved against playbook_dir). For every `project[]` entry it
+# reads the `swim` block:
+#   image_server_base_url, upgrade_image, rollback_image,
+#   device_family_identifier, device_family_name, device_series_name, device_role,
+#   activation.{device_upgrade_mode, distribute_if_needed, schedule_validate}
+# `site_name` is derived by joining HierarchyParent/Area/Bldg/Floor — the same
+# composition used by stages 01 and 09 — so it is never hardcoded here.
+#
+# Produces the full `swim_details` dict. This file consumes only two of its keys:
+#   swim_details.import_images[]     — de-duplicated union of upgrade_image and
+#     rollback_image across all projects. Each item:
+#       name: "<image filename>"
+#       import_image_details.type: "remote"
+#       import_image_details.url_details.payload[0].source_url:
+#         ["<image_server_base_url>/<image filename>"]   ← served by stage 06.0
+#       import_image_details.url_details.payload[0].is_third_party: false
+#   swim_details.golden_tag_images[] — one item per project entry:
+#       name: "<upgrade_image> @ <site_name> / <device_role>"
+#       tagging_details: { image_name, device_role, device_image_family_name,
+#                          site_name, tagging: true }
+#
+# The remaining keys (distribute_images, activate_images, rollback_images) are
+# built here but consumed by stages 06.3–06.6.
 - name: Load SWIM image details from settings.json
   ansible.builtin.import_tasks: load_swim_details.yml
 

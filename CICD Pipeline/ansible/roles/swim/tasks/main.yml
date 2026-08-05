@@ -2,8 +2,9 @@
 # =============================================================================
 # swim / main.yml
 # =============================================================================
-# Stub entry — playbooks 06_swim_*.yml invoke action task files directly via
-# import_role tasks_from: preflight | import_and_tag | distribute | …
+# Stub entry — playbooks 06.x_swim_*.yml invoke action task files directly via
+# import_role tasks_from: preflight | import_and_tag | distribute | activate |
+#                         rollback | postcheck
 # =============================================================================
 
 - name: Dispatch SWIM action

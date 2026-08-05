@@ -12,6 +12,28 @@
 # Inventory: git_repo, git_branch, git_repo_subfolders, git_token (optional)
 # =============================================================================
 
+# Example
+#   In : ansible_date_time (gathered fact)
+#   Out: start_timestamp = {
+#          "year":         "2026",
+#          "month":        "08",
+#          "day":          "05",
+#          "hour":         "14",
+#          "minute":       "22",
+#          "second":       "07",
+#          "date":         "2026-08-05",
+#          "time":         "14:22:07",
+#          "epoch":        "1785936127",
+#          "epoch_int":    "1785936127",
+#          "iso8601":      "2026-08-05T18:22:07Z",
+#          "iso8601_basic": "20260805T142207123456",
+#          "tz":           "EDT",
+#          "tz_offset":    "-0400",
+#          "weekday":      "Wednesday",
+#          "weekday_number": "3",
+#          "weeknumber":   "31"
+#        }
+#        Snapshotted once so the closing summary reports run start, not end.
 - name: Set execution timestamp
   ansible.builtin.set_fact:
     start_timestamp: "{{ ansible_date_time }}"
@@ -21,10 +43,11 @@
   ansible.builtin.debug:
     msg: "{{ start_timestamp.date + ' ' + start_timestamp.time }}"
 
-# Task: Parse GitHub repository slug from git_repo URL
-# Pre:  git_repo: "https://github.com/org/repo.git"
-# Post: git_repo_slug: "org/repo"
-#       git_api_base:  "https://api.github.com"
+# Example
+#   In : git_repo = "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
+#        git_api_base_url undefined
+#   Out: git_repo_slug = "imanassypov/CatalystCenter-BGP-EVPN-VXLAN"
+#        git_api_base  = "https://api.github.com"
 - name: Parse GitHub repository slug from git_repo URL
   ansible.builtin.set_fact:
     git_repo_slug: "{{ git_repo | regex_replace('https://github\\.com/', '') | regex_replace('\\.git$', '') }}"
@@ -33,6 +56,14 @@
 # git_token is optional for public repositories.
 # When defined (private repos or to raise API rate limits), an Authorization header is included.
 # When absent, requests are made unauthenticated (GitHub allows ~60 requests/hour for public repos).
+# Example
+#   In : git_token = "ghp_AbCd1234EfGh5678IjKl9012MnOp3456Qr"
+#   Out: git_auth_header = {
+#          "Authorization": "Bearer ghp_AbCd1234EfGh5678IjKl9012MnOp3456Qr"
+#        }
+#   In : git_token undefined or ""
+#   Out: git_auth_header = {}   — combined into every request header dict, so
+#                               an empty dict simply adds nothing.
 - name: Build GitHub auth header
   ansible.builtin.set_fact:
     git_auth_header: "{{ {'Authorization': 'Bearer ' + git_token} if (git_token is defined and git_token | length > 0) else {} }}"
@@ -71,11 +102,21 @@
     msg: "Branch '{{ git_branch | default('HEAD') }}' not found in '{{ git_repo_slug }}'. Verify git_branch in inventory (HTTP {{ git_branch_check.status }})."
   when: git_branch_check.status != 200
 
-# Task: Fetch repository file tree from GitHub API
-# Pre:  git_repo_slug, git_branch, git_auth_header
-# Post: repo_tree_response.json.tree:
-#         - { path: "Catalyst Center Templates/…/foo.j2", type: "blob", sha: "…" }
-#         - { path: "…/composite.yml", type: "blob", … }
+# Example
+#   In : GET {git_api_base}/repos/{git_repo_slug}/git/trees/main?recursive=1
+#   Out: repo_tree_response.json.tree = [
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048 },
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+#            "mode": "100644", "type": "blob",
+#            "sha":  "d4e5f6a7b8c9d0e1f2031425364758697a8b9c0d", "size": 512 },
+#          { "path": "Catalyst Center Templates/DMZ BGP EVPN Templates",
+#            "mode": "040000", "type": "tree",
+#            "sha":  "99aabbccddeeff00112233445566778899aabbcc" } ]
+#        repo_tree_response.json.truncated = false
+#   One recursive call returns the whole repo; process-subfolder.yml filters
+#   this single tree per subfolder instead of re-querying GitHub.
 - name: Fetch repository file tree from GitHub API
   ansible.builtin.uri:
     url: "{{ git_api_base }}/repos/{{ git_repo_slug }}/git/trees/{{ git_branch | default('HEAD') }}?recursive=1"
@@ -93,6 +134,15 @@
     msg: "git_repo_subfolders must be defined in group_vars as a non-empty list of { path, project_name } entries."
   when: git_repo_subfolders is not defined or git_repo_subfolders | length == 0
 
+# Example
+#   In : git_repo_subfolders = [
+#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates",
+#            "project_name": "Building P0" },
+#          { "path": "Catalyst Center Templates/DMZ BGP EVPN Templates",
+#            "project_name": "DMZ 01" } ]
+#   Out: normalized_subfolders = same list, passed through unchanged
+#   Kept as a separate fact so the include loop has one stable name to iterate
+#   if the inventory shape ever needs pre-processing.
 - name: Build normalized subfolder list
   ansible.builtin.set_fact:
     normalized_subfolders: "{{ git_repo_subfolders }}"
@@ -102,6 +152,11 @@
   ansible.builtin.debug:
     msg: "{{ normalized_subfolders }}"
 
+# Example
+#   In : (nothing)
+#   Out: sync_summary = []
+#        process-subfolder.yml appends one entry per subfolder, e.g.
+#        { "project": "Building P0", "templates": 14, "composites": 1 }
 - name: Initialize aggregate sync summary
   ansible.builtin.set_fact:
     sync_summary: []

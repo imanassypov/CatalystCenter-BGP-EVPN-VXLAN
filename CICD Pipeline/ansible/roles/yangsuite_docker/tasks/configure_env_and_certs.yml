@@ -1,8 +1,28 @@
 ---
 # =============================================================================
-# yangsuite_docker / configure_env_and_certs.yml
+# yangsuite_docker / configure_env_and_certs.yml  —  env file + TLS material
 # =============================================================================
-# Replaces interactive start_yang_suite.sh env + certificate prompts.
+# Replaces the interactive prompts in the upstream start_yang_suite.sh: writes
+# setup.env non-interactively and generates the nginx certificate.
+#
+# The certificate is only generated when both files are missing, so re-runs do
+# not invalidate a browser-trusted exception or a manually installed CA cert.
+# Self-signed is lab-only — set yangsuite_generate_self_signed_certs=false and
+# drop real material into <docker_dir>/nginx/ for anything shared.
+#
+# Pre:  templates/setup.env.j2 — rendered from vault_yangsuite_admin_user /
+#         _password / _email and yangsuite_allowed_hosts
+#       yangsuite_docker_dir
+#       yangsuite_generate_self_signed_certs, yangsuite_cert_days (365),
+#       yangsuite_cert_key_bits (2048), yangsuite_server_ip (cert CN)
+#
+# Post: yangsuite_cert_stats.results[] — stat for the .cert and .key
+#       On the target host:
+#         <docker_dir>/yangsuite/setup.env         (mode 0600, no_log)
+#         <docker_dir>/nginx/nginx-self-signed.cert
+#         <docker_dir>/nginx/nginx-self-signed.key
+#       Both tasks notify "Restart YANG Suite Docker Compose stack".
+# =============================================================================
 
 - name: Render YANG Suite setup.env
   ansible.builtin.template:

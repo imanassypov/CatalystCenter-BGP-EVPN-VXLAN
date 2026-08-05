@@ -10,7 +10,7 @@
 # =============================================================================
 
 # Task: Ensure timestamped backup directory exists on controller
-# Pre:  backup_output_dir: "/…/config-backups/20260706-161042"
+# Pre:  backup_output_dir: "<repo>/Node Configs/config-backups/20260706-161042"
 # Post: directory created on localhost (mode 0750)
 - name: Ensure timestamped backup directory exists on controller
   ansible.builtin.file:

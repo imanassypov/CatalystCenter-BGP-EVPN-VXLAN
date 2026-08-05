@@ -96,6 +96,14 @@
 # then assert SUCCESS so the play fails fast with a useful error instead of
 # silently reporting success while leaving settings unchanged.
 #
+# Example
+#   In : _settings_result.json = {
+#          "executionId": "6cbb7d3a-0a1e-4c22-9b2b-1f0c2d5a7e11",
+#          "executionStatusUrl": "/dna/intent/api/v1/dnacaap/management/execution-status/6cbb7d3a-4f21-4b8e-9a07-2d1c5e8f0b34",
+#          "message": "The request has been accepted for execution" }
+#   Out: _exec_status_url = "/dna/intent/api/v1/dnacaap/management/execution-status/6cbb7d3a-4f21-4b8e-9a07-2d1c5e8f0b34"
+#   A 200 (synchronous) response carries no executionStatusUrl, so the fact is
+#   "" and the poll below is skipped rather than requesting a bare host URL.
 - name: "Extract execution status URL  | {{ site_config.site_name }}"
   set_fact:
     _exec_status_url: "{{ _settings_result.json.executionStatusUrl | default('') }}"

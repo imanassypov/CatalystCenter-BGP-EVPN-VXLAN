@@ -5,7 +5,7 @@
 # Orchestrates Appendix A from 6.0 SWIM README: nginx + image staging +
 # verification for Catalyst Center remote SWIM import.
 #
-# Playbook: playbooks/deploy_http_image_server.yml
+# Playbook: playbooks/06.0_swim_deploy_http_image_server.yml
 # Inventory: image_servers group (swim_image_server host)
 #
 # Required group_vars:

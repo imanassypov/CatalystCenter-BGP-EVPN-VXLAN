@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# swim / activate.yml  —  Stage 6.0: activate golden image (reload scheduled)
+# swim / activate.yml  —  Stage 06.4: activate golden image (reload scheduled)
 # =============================================================================
 # Pre:  swim_details.activate_images (image distributed to target devices)
 # Post: activation workflow started; devices reload per device_upgrade_mode

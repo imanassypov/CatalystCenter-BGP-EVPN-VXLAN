@@ -8,10 +8,34 @@
 # ============================================================================
 
 ---
-# process-composite.yml — included per composite .yml from process-subfolder.yml
-# Loop var: composite_file { name, content }
-# Pre:  composite_file.content — YAML defining composite_name + member templates[]
-# Post: composite_workflow_configs[] entry for template_workflow_manager
+# =============================================================================
+# template_sync / process-composite.yml  —  Stage 07: build one composite config
+# =============================================================================
+# Turns one composite definition .yml fetched from GitHub into a
+# template_workflow_manager config entry. Included once per element of
+# enriched_composite_files by process-subfolder.yml, after the member templates
+# have already been queued — CatC rejects a composite whose members do not exist.
+#
+# A composite carries no content of its own; it is a named ordered list of
+# member templates (containing_templates), which is what stage 10 deploys.
+#
+# Pre:  composite_file (loop var): { name, path, content }
+#         content is YAML: { composite_name: …, templates: [{name: …}, …] }
+#       projectName — resolved CatC project for this subfolder
+#       default_device_types, default_software_type, default_software_variant,
+#       default_template_version
+#
+# Post: composite_def              — parsed YAML definition
+#       composite_name             — composite_def.composite_name, else the
+#                                    filename with .yml swapped for .j2
+#       composite_template_names   — ordered member template names
+#       containing_templates_list  — member stubs {name, composite: false,
+#                                    project_name, language, device_types, …}
+#                                    reset to [] at the end of each iteration
+#       composite_workflow_configs — appended with one entry:
+#         { configuration_templates: { template_name, project_name,
+#           composite: true, template_content: "", containing_templates, … } }
+# =============================================================================
 
 - name: Load composite definition from {{ composite_file.name }}
   set_fact:

@@ -1,6 +1,27 @@
 ---
 # =============================================================================
-# yangsuite_docker / verify.yml
+# yangsuite_docker / verify.yml  —  confirm the UI is reachable, then report
+# =============================================================================
+# Verifies from both sides: on the server (127.0.0.1) and from the control node
+# over the server IP. A local-only success means the stack is healthy but the
+# firewall or routing is blocking access — the two are indistinguishable if
+# only one check is performed.
+#
+# Retries generously: the first `docker compose up --build` can take minutes
+# before Django starts answering.
+#
+# Pre:  yangsuite_https_port, yangsuite_restconf_port, yangsuite_http_port,
+#       yangsuite_publish_http, yangsuite_server_ip,
+#       vault_yangsuite_admin_user (reported, not verified)
+#       Handlers are flushed first so a pending stack restart has applied.
+#
+# Post: yangsuite_https_local  — UI response from the server itself
+#                                (180 s port wait, then 12 × 10 s retries)
+#       yangsuite_https_remote — UI response from the control node
+#                                (6 × 5 s retries)
+#       Accepts 200 or any 3xx redirect; validate_certs is false because the
+#       certificate is self-signed by configure_env_and_certs.yml.
+#       Prints the UI, RESTCONF, and HTTP-redirect URLs plus the login user.
 # =============================================================================
 
 - name: Flush handlers before verification

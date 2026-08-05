@@ -1,6 +1,28 @@
 ---
 # =============================================================================
-# http_image_server / stage_images.yml  —  Appendix A.2
+# http_image_server / stage_images.yml  —  Stage 06.0 (A.2): transfer images
+# =============================================================================
+# Uploads any image that is missing on the target, skipping those already
+# present. Transfers are resumable, because a single IOS-XE .bin is ~1.3 GB and
+# the dCloud VPN link drops long transfers.
+#
+# Pre:  image_local_paths       — absolute .bin paths on the control node
+#       local_images.results[]  — control-node stat results (preflight.yml)
+#       image_dir               — destination directory on the target
+#       image_rsync_retries / _delay / _timeout — resume tuning
+#       vault_image_server_user / vault_image_server_password — from vault.yml
+#
+# Post: remote_images.results[] — target-side stat per filename
+#       image_plan — the staging decision table, consumed by verify.yml:
+#         [{ path:          "/abs/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            filename:      "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            local_exists:  true,
+#            remote_exists: false }]
+#       rsync_upload — per-image transfer results
+#       On the target host: every planned image present in image_dir, owned
+#       recursively by www-data.
+#
+# Fails when an image exists neither on the target nor on the control node.
 # =============================================================================
 
 # Task: Check whether each image already exists on the target

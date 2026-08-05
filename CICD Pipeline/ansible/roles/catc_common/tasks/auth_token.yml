@@ -13,12 +13,15 @@
 #   _catc_token — bearer string for X-Auth-Token header (no_log on storage)
 # =============================================================================
 
-# Task: Authenticate with Catalyst Center
-# Purpose: POST /dna/system/api/v1/auth/token with HTTP Basic auth.
-# Pre:  catc_host: "198.18.129.100"
-#       catc_username / catc_password from vault
-# Post: _auth_response (register):
-#         _auth_response.json.Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6…"
+# POST /dna/system/api/v1/auth/token with HTTP Basic auth.
+# Example
+#   In : catc_host = "198.18.129.100", catc_port = 443
+#        catc_username / catc_password from vault.yml
+#   Out: _auth_response.status = 200
+#        _auth_response.json = {
+#          "Token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2NTNhMWIyYyIsImV4cCI6MTc4NTkzNjEyN30.Qp7mR3xK9vL2sN4tY6uZ8wA1bC5dE0fG"
+#        }
+# The response key is "Token" with a capital T, not "token".
 - name: Authenticate with Catalyst Center
   ansible.builtin.uri:
     url: "https://{{ catc_host }}:{{ catc_port }}/dna/system/api/v1/auth/token"
@@ -31,10 +34,13 @@
   register: _auth_response
   no_log: true
 
-# Task: Store auth token
-# Purpose: Promote token to play-scope fact for subsequent uri tasks in the role/play.
-# Pre:  _auth_response.json.Token present
-# Post: _catc_token: "<JWT string>"  (available to all hosts in the play)
+# Example
+#   In : _auth_response.json = {
+#          "Token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2NTNhMWIyYyIsImV4cCI6MTc4NTkzNjEyN30.Qp7mR3xK9vL2sN4tY6uZ8wA1bC5dE0fG"
+#        }
+#   Out: _catc_token =
+#          "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2NTNhMWIyYyIsImV4cCI6MTc4NTkzNjEyN30.Qp7mR3xK9vL2sN4tY6uZ8wA1bC5dE0fG"
+#        consumed as the X-Auth-Token header by every raw-REST uri task.
 - name: Store auth token
   ansible.builtin.set_fact:
     _catc_token: "{{ _auth_response.json.Token }}"

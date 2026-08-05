@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# swim / postcheck.yml  —  Stage 6.0: post-activation IMAGE compliance verify
+# swim / postcheck.yml  —  Stage 06.5: post-activation IMAGE compliance verify
 # =============================================================================
 # Pre:  activate.yml completed; devices reloaded
 # Post: compliance report per site (IMAGE category)
@@ -9,6 +9,12 @@
 - name: Load SWIM image details from settings.json
   ansible.builtin.import_tasks: load_swim_details.yml
 
+# Example
+#   In : swim_details.golden_tag_images = [
+#          { "tagging_details": { "site_name": "Global/PODS/POD 0/Building P0/Floor 1" } },
+#          { "tagging_details": { "site_name": "Global/PODS/POD 0/Building P0/Floor 1" } }
+#        ]
+#   Out: swim_compliance_sites = ["Global/PODS/POD 0/Building P0/Floor 1"]
 - name: Derive compliance sites from golden tag images
   ansible.builtin.set_fact:
     swim_compliance_sites: >-

@@ -1,6 +1,18 @@
 ---
 # =============================================================================
-# http_image_server / install_nginx.yml  —  Appendix A.1
+# http_image_server / install_nginx.yml  —  Stage 06.0 (A.1): install web server
+# =============================================================================
+# Installs nginx and creates the image web root. Runs before stage_images.yml
+# so the destination directory exists and is owned by www-data before rsync
+# writes into it.
+#
+# Pre:  image_dir — "{{ image_web_root }}/{{ image_url_subdir }}",
+#                   defaults to /var/www/html/images
+#       become: true (set at play level in 06.0_swim_deploy_http_image_server.yml)
+#
+# Post: apt_cache_update — registered but never fails the play
+#       On the target host: nginx installed, service started + enabled,
+#       image_dir created as www-data:www-data 0755.
 # =============================================================================
 
 # Best-effort apt update; third-party repo GPG failures must not block nginx install.
