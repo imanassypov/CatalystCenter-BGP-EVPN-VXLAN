@@ -1,0 +1,42 @@
+---
+# =============================================================================
+# 06.1_swim_preflight.yml  —  Pipeline stage 06.1 (SWIM lifecycle, read-only)
+# =============================================================================
+# Establishes the pre-upgrade baseline: resyncs device inventory at every SWIM
+# target site and captures IMAGE compliance *before* any image is touched.
+# Non-destructive — safe to run repeatedly. Role: swim, tasks_from: preflight.
+#
+# Sourced:
+#   settings.json → project[].swim (via swim/load_swim_details.yml):
+#     image_server_base_url, upgrade_image, rollback_image,
+#     device_family_identifier, device_family_name, device_series_name,
+#     device_role, activation{}
+#     HierarchyParent/Area/Bldg/Floor → site_name
+#   connection.yml: catalystcenter_* connection + logging params
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   swim_details        — normalised SWIM payloads (shared by all 06.x stages)
+#   swim_target_sites   — unique site paths from golden_tag_images[].tagging_details.site_name
+#   preflight_resync    — inventory resync task results per site
+#   Evidence file: ../logs/{{ swim_run_id }}-00_preflight.json
+#
+# swim_run_id is a per-invocation timestamp (YYYYmmdd-HHMMSS) that prefixes
+# every evidence file, so one upgrade window's artifacts group together.
+#
+# Depends on: stage 05 (devices must be assigned to sites)
+#
+# Run: ansible-playbook playbooks/06.1_swim_preflight.yml
+# =============================================================================
+- name: SWIM pre-flight checks
+  hosts: catalyst_center
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  tasks:
+    - ansible.builtin.import_role:
+        name: swim
+        tasks_from: preflight

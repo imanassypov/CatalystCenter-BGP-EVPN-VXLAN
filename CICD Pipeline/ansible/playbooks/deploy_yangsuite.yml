@@ -1,21 +1,33 @@
 ---
 # =============================================================================
-# Deploy Cisco YANG Suite (Docker Compose)
+# deploy_yangsuite.yml  —  Utility playbook (not part of the numbered pipeline)
+# =============================================================================
+# Deploys Cisco YANG Suite via Docker Compose onto a Linux host. Used to browse
+# YANG models and build the telemetry subscriptions consumed by the Splunk
+# assurance side of this project. Role: yangsuite_docker.
 #
 # Implements the Docker install from Cisco DevNet documentation:
 #   https://developer.cisco.com/docs/yangsuite/
 #   https://github.com/CiscoDevNet/yangsuite
 #
-# UI: https://{{ yangsuite_server_ip }}:8443/
-# HTTP port 80 redirects to HTTPS 8443 (nginx container).
+# Sourced:
+#   inventory group yangsuite_servers — the Linux target host
+#   group_vars/yangsuite_servers/vars.yml  — yangsuite_server_ip, repo/compose
+#                                            paths, exposed ports
+#   group_vars/yangsuite_servers/vault.yml — become/SSH credentials (ansible-vault)
+#
+# Produced:
+#   On the target host: Docker + Compose installed, the yangsuite repo cloned,
+#   .env and self-signed certs generated, compose ports patched, the stack up,
+#   and the firewall opened.
+#   UI: https://{{ yangsuite_server_ip }}:8443/  (port 80 redirects to 8443)
 #
 # Prerequisites:
 #   cp inventory/group_vars/yangsuite_servers/vars.yml.example vars.yml
 #   cp inventory/group_vars/yangsuite_servers/vault.yml.example vault.yml
 #   ansible-vault encrypt inventory/group_vars/yangsuite_servers/vault.yml
 #
-# Run:
-#   ansible-playbook playbooks/deploy_yangsuite.yml
+# Run: ansible-playbook playbooks/deploy_yangsuite.yml
 # =============================================================================
 - name: Deploy Cisco YANG Suite (Docker Compose)
   hosts: yangsuite_servers

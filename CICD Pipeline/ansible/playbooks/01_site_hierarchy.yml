@@ -1,4 +1,35 @@
 ---
+# =============================================================================
+# 01_site_hierarchy.yml  —  Pipeline stage 01
+# =============================================================================
+# Creates, updates, or deletes the Catalyst Center site hierarchy (areas,
+# buildings, floors). Every later stage resolves its targets by site path, so
+# this must run first. Role: site_hierarchy.
+#
+# Sourced:
+#   settings.json → settings_data.project[] (via catc_common.load_settings):
+#     HierarchyParent / HierarchyArea / HierarchyBldg / HierarchyFloor
+#     HierarchyBldgAddress — building street address for geocoding
+#   group_vars/catalyst_center/connection.yml:
+#     catc_host, catc_port, catc_version, catc_verify, catc_debug
+#     default_building_* / default_floor_* — fallbacks for unspecified attributes
+#   group_vars/catalyst_center/vault.yml: catc_username, catc_password
+#
+# Produced:
+#   site_data          — normalised { project: [ {HierarchyName, SiteType} ] }
+#   site_type_map      — site path → "area" | "building" | "floor"
+#   building_info_map  — site path → {address, country, lat, long}
+#   floor_info_map     — site path → {rf_model, width, length, height, floor_number}
+#   all_site_paths     — depth-sorted list of every path to touch
+#   site_id_map        — site path → CatC site UUID (updated after each CREATE)
+#   In Catalyst Center: the area/building/floor tree consumed by stages 02–10.
+#
+# Play var: state = merged (default) | deleted
+# Modules: cisco.catalystcenter.{sites_info, areas, buildings, floors}
+#
+# Run: ansible-playbook playbooks/01_site_hierarchy.yml
+#      ansible-playbook playbooks/01_site_hierarchy.yml -e state=deleted
+# =============================================================================
 - name: Build Catalyst Center Site Hierarchy from settings.json
   hosts: catalyst_center
   gather_facts: false

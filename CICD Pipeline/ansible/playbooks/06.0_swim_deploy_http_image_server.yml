@@ -1,0 +1,40 @@
+---
+# =============================================================================
+# 06.0_swim_deploy_http_image_server.yml  —  Pipeline stage 06.0 (SWIM prereq)
+# =============================================================================
+# Stands up an nginx image-distribution server on an Ubuntu host and stages the
+# IOS-XE .bin images onto it, so Catalyst Center can pull them by URL in stage
+# 06.2 instead of uploading them through the browser. Role: http_image_server.
+#
+# Serves:  http://{{ image_server_ip }}/{{ image_url_subdir }}/<image_filename>
+# This URL must match settings.json swim.image_server_base_url exactly.
+#
+# Sourced:
+#   inventory group image_servers — the Ubuntu target host
+#   group_vars/image_servers/vars.yml:
+#     image_server_ip     — address CatC will fetch from
+#     image_local_paths[] — absolute .bin paths on the *control node*
+#   group_vars/image_servers/vault.yml — become/SSH password (ansible-vault)
+#   roles/http_image_server/defaults/main.yml:
+#     image_web_root (/var/www/html), image_url_subdir (images),
+#     image_rsync_retries/delay/timeout — resume tuning for low-MTU VPN links,
+#     manage_ufw — open TCP/80 when ufw is active
+#
+# Produced:
+#   On the target host: nginx installed + running, /var/www/html/images
+#   populated with each image (transferred by `sshpass -e rsync
+#   --rsync-path="sudo rsync"`, resumable), ufw allowing TCP/80.
+#   Verified by an HTTP HEAD returning 200 + application/octet-stream per image.
+#
+# Run: ansible-playbook playbooks/06.0_swim_deploy_http_image_server.yml
+#
+# Override image paths at runtime:
+#   ansible-playbook playbooks/06.0_swim_deploy_http_image_server.yml \
+#     -e '{"image_local_paths":["/abs/a.SSA.bin","/abs/b.SPA.bin"]}'
+# =============================================================================
+- name: Deploy HTTP image-distribution server for Catalyst Center SWIM
+  hosts: image_servers
+  become: true
+  gather_facts: true
+  roles:
+    - role: http_image_server

@@ -1,0 +1,37 @@
+---
+# =============================================================================
+# 06.5_swim_postcheck.yml  —  Pipeline stage 06.5 (SWIM lifecycle, read-only)
+# =============================================================================
+# Verifies the upgrade landed: runs an IMAGE-category compliance check at every
+# SWIM target site and records the result. Role: swim, tasks_from: postcheck.
+# Compare against the 06.1 baseline to prove the change. Non-destructive.
+#
+# Sourced:
+#   settings.json → project[].swim (via swim/load_swim_details.yml):
+#     upgrade_image, device_family_name, device_role
+#     HierarchyParent/Area/Bldg/Floor → site_name
+#   connection.yml: catalystcenter_* connection params
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   swim_compliance_sites — unique sites from
+#                           swim_details.golden_tag_images[].tagging_details.site_name
+#   Per-site IMAGE compliance report (COMPLIANT once devices run the golden image).
+#   Evidence file: ../logs/{{ swim_run_id }}-40_postcheck.json
+#
+# Depends on: stage 06.4 (devices reloaded and back online)
+#
+# Run: ansible-playbook playbooks/06.5_swim_postcheck.yml
+# =============================================================================
+- name: Post-activation verification
+  hosts: catalyst_center
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  tasks:
+    - ansible.builtin.import_role:
+        name: swim
+        tasks_from: postcheck

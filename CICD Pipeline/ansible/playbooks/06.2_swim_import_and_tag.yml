@@ -1,0 +1,46 @@
+---
+# =============================================================================
+# 06.2_swim_import_and_tag.yml  —  Pipeline stage 06.2 (SWIM lifecycle)
+# =============================================================================
+# Imports IOS-XE images into the Catalyst Center repository over HTTP from the
+# server built in 06.0, then marks the upgrade image as Golden for the target
+# device family/role at each site. Role: swim, tasks_from: import_and_tag.
+#
+# Non-destructive — no device is touched; this only populates the CatC image
+# repository and sets the golden tag that 06.3/06.4 act on.
+#
+# Sourced:
+#   settings.json → project[].swim (via swim/load_swim_details.yml):
+#     image_server_base_url    — must match what 06.0 actually serves
+#     upgrade_image            — .bin filename to import and tag golden
+#     device_family_identifier / device_family_name / device_series_name
+#     device_role              — ALL | CORE | DISTRIBUTION | ACCESS | BORDER ROUTER
+#     HierarchyParent/Area/Bldg/Floor → site_name
+#   connection.yml: catalystcenter_* connection + logging params
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   swim_details.import_images      — remote-URL import payloads
+#   swim_details.golden_tag_images  — tagging_details{image_name, device_role,
+#                                     device_image_family_name, site_name}
+#   In Catalyst Center: images in the SWIM repository, upgrade image flagged
+#   Golden for the specified family/role/site.
+#   Evidence file: ../logs/{{ swim_run_id }}-10_import_and_tag.json
+#
+# Depends on: stage 06.0 (images reachable by URL), stage 05 (site membership)
+# Module: cisco.catalystcenter.swim_workflow_manager
+#
+# Run: ansible-playbook playbooks/06.2_swim_import_and_tag.yml
+# =============================================================================
+- name: Import IOS-XE images and tag golden
+  hosts: catalyst_center
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  tasks:
+    - ansible.builtin.import_role:
+        name: swim
+        tasks_from: import_and_tag

@@ -1,4 +1,33 @@
 ---
+# =============================================================================
+# 02_network_settings.yml  —  Pipeline stage 02
+# =============================================================================
+# Applies per-site network services (DHCP, DNS, NTP, syslog, SNMP, NetFlow,
+# AAA, banner) to each site created in stage 01. Role: network_settings.
+#
+# The role issues a raw composite PUT /dna/intent/api/v1/network/{siteId}
+# instead of the collection module, to avoid error NCND01243 when
+# clientAndEndpoint_aaa is supplied without network_aaa.
+#
+# Sourced:
+#   settings.json → settings_data.project[] (via catc_common.load_settings):
+#     HierarchyParent/Area/Bldg/Floor — composed into the target site path
+#     network_settings: { dhcp_server[], dns_server{}, ntp_server[],
+#                         syslog_server{}, snmp_server{}, netflow{},
+#                         network_aaa{}, clientAndEndpoint_aaa{}, banner{} }
+#   connection.yml: catc_host, catc_port, catc_version, catc_verify, catc_debug
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   site_names — list of site paths derived from the hierarchy fields
+#   In Catalyst Center: network settings bound to each resolved site UUID,
+#   inherited by devices when they are provisioned in stage 09.
+#
+# Depends on: stage 01 (site UUIDs must already exist)
+# Module: cisco.catalystcenter.sites_info (+ raw uri PUT)
+#
+# Run: ansible-playbook playbooks/02_network_settings.yml
+# =============================================================================
 - name: Apply Network Settings from settings.json
   hosts: catalyst_center
   gather_facts: false

@@ -1,30 +1,74 @@
 ---
-# Stage 11 — backup running-config from CML-tagged fabric devices.
-# Scope: union of hosts in backup_cml_tags (must match group_tags in inventory/cml.yml).
-# Platform tasks: IOS-XE (iosxe) and NX-OS (nxos) via platform_groups.yml.
+# =============================================================================
+# 11_backup_lab_configs.yml  —  Stage 11 (standalone, lab-specific)
+# =============================================================================
+# Snapshots running-config from the CML lab devices into a timestamped folder.
+# Not part of 00_site_deploy.yml — it SSHes into lab devices rather than
+# talking to Catalyst Center, so it is run on demand (typically before and
+# after a fabric change). Role: backup_configs.
+#
+# Scope = union of the CML tag groups listed in backup_cml_tags, intersected
+# with the platform groups from inventory/platform_groups.yml.
+#
+# Sourced:
+#   inventory/cml.yml       — dynamic CML inventory; group_tags must match
+#                             the backup_cml_tags values below
+#   inventory/platform_groups.yml — groups['iosxe'] and groups['nxos']
+#   group_vars/{iosxe,nxos}/connection.yml:
+#     backup_root_dir        — "{{ playbook_dir }}/../config-backups"
+#     backup_retention_count — 3 (older timestamped dirs are pruned)
+#   settings.json (via catc_common.load_settings) → device credentials
+#   env: IOSXE_PASS and friends (exported by CICD Pipeline/.envrc via direnv)
+#
+# Produced:
+#   backup_timestamp    — "20260706-161042" (set once on localhost, shared)
+#   backup_target_hosts — union of hosts across backup_cml_tags
+#   lab_backup_iosxe / lab_backup_nxos — in-memory groups built with add_host
+#   ../config-backups/<timestamp>/<hostname>.cfg  — one file per device
+#   Retention: only the newest backup_retention_count directories are kept.
+#
+# Play layout:
+#   1. localhost         — timestamp, settings, resolve scope, credentials, add_host
+#   2. lab_backup_iosxe  — backup_iosxe  (tag scope ∩ iosxe)
+#   3. lab_backup_nxos   — backup_nxos   (tag scope ∩ nxos)
+#   4. localhost         — prune_backup_retention
+#
+# Run: ansible-playbook playbooks/11_backup_lab_configs.yml
+# =============================================================================
 
+# ── Play 1: build the run context on the control node ───────────────────────
+# Everything downstream keys off facts set here, which is why they are set on
+# localhost and read via hostvars['localhost'] in the per-device plays.
 - name: Initialize backup run (timestamp, CML tag scope, device credentials)
   hosts: localhost
   gather_facts: false
   vars:
+    # Must match group_tags declared in inventory/cml.yml.
     backup_cml_tags:
       - Campus Fabric
       - IP Core
       - dmz
       - dhcp-server
   tasks:
+    # backup_timestamp: "20260706-161042" — one value for the whole run
     - ansible.builtin.import_role:
         name: backup_configs
         tasks_from: set_timestamp
+    # settings_data — central data model, used for credential lookup below
     - ansible.builtin.import_role:
         name: catc_common
         tasks_from: load_settings
+    # backup_target_hosts — union of groups[tag] for every backup_cml_tags entry
     - ansible.builtin.import_role:
         name: backup_configs
         tasks_from: resolve_backup_targets
+    # ansible_user / ansible_password for the lab devices
     - ansible.builtin.import_role:
         name: backup_configs
         tasks_from: load_device_credentials
+    # Split the tag scope by platform so each play uses the right connection
+    # plugin (network_cli + ios vs nxos). intersect() drops any tagged host
+    # that has no platform group, instead of failing at connection time.
     - name: Register IOS-XE hosts in tag scope for backup
       ansible.builtin.add_host:
         name: "{{ item }}"
@@ -36,6 +80,9 @@
         groups: lab_backup_nxos
       loop: "{{ backup_target_hosts | intersect(groups['nxos'] | default([])) }}"
 
+# ── Play 2: IOS-XE devices ─────────────────────────────────────────────
+# backup_output_dir resolves to ../config-backups/<timestamp>/ — the timestamp
+# comes from play 1 so IOS-XE and NX-OS files land in the same directory.
 - name: Backup running-config from IOS-XE devices (tag scope ∩ iosxe)
   hosts: lab_backup_iosxe
   gather_facts: false
@@ -46,6 +93,7 @@
         name: backup_configs
         tasks_from: backup_iosxe
 
+# ── Play 3: NX-OS devices ─────────────────────────────────────────────
 - name: Backup running-config from NX-OS devices (tag scope ∩ nxos)
   hosts: lab_backup_nxos
   gather_facts: false
@@ -56,6 +104,9 @@
         name: backup_configs
         tasks_from: backup_nxos
 
+# ── Play 4: retention ─────────────────────────────────────────────────
+# Sorts backup_root_dir children by mtime and deletes everything beyond
+# backup_retention_count (default 3).
 - name: Prune old timestamped backup directories
   hosts: localhost
   gather_facts: false

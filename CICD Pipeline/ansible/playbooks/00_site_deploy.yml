@@ -1,0 +1,36 @@
+---
+# =============================================================================
+# 00_site_deploy.yml  —  Full pipeline orchestrator (stages 01–10)
+# =============================================================================
+# Builds a Catalyst Center deployment end-to-end by importing each stage
+# playbook in dependency order. The orchestrator itself declares no vars and
+# calls no roles — every stage loads its own vault and settings.json.
+#
+# Sourced (indirectly, per imported stage):
+#   CICD Pipeline/Settings/settings.json      — declarative source of truth
+#   inventory/group_vars/catalyst_center/     — connection.yml + vault.yml
+#
+# Produced (cumulative state in Catalyst Center):
+#   site hierarchy → network settings → credentials → discovered devices →
+#   site assignments → synced templates → network profiles → provisioned
+#   devices → deployed Day-N composite templates
+#
+# Order is significant — each stage consumes objects created by the previous:
+#   01 hierarchy → 02 settings → 03 credentials → 04 discovery → 05 assign
+#   → 07 templates → 08 profiles → 09 provision → 10 composite deploy
+#
+# Excluded by design:
+#   06.x_swim_*.yml           — reloads devices; run manually, stage by stage
+#   11_backup_lab_configs.yml — SSHes to CML lab devices; lab-specific
+#
+# Run: ansible-playbook playbooks/00_site_deploy.yml
+# =============================================================================
+- import_playbook: 01_site_hierarchy.yml
+- import_playbook: 02_network_settings.yml
+- import_playbook: 03_credentials.yml
+- import_playbook: 04_device_discovery.yml
+- import_playbook: 05_assign_to_site.yml
+- import_playbook: 07_template_sync.yml
+- import_playbook: 08_network_profile.yml
+- import_playbook: 09_provision_devices.yml
+- import_playbook: 10_deploy_composite.yml

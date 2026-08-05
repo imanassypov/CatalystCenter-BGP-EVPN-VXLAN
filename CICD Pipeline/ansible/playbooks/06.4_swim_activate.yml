@@ -1,0 +1,42 @@
+---
+# =============================================================================
+# 06.4_swim_activate.yml  —  Pipeline stage 06.4 (SWIM lifecycle)  *DISRUPTIVE*
+# =============================================================================
+# Activates the golden image on the target devices. THIS RELOADS DEVICES — run
+# only inside an approved maintenance window. Role: swim, tasks_from: activate.
+#
+# Sourced:
+#   settings.json → project[].swim (via swim/load_swim_details.yml):
+#     upgrade_image, device_family_name, device_series_name, device_role
+#     activation.device_upgrade_mode    — e.g. "install"
+#     activation.distribute_if_needed   — auto-distribute when flash lacks the image
+#     activation.schedule_validate      — CatC pre-activation validation
+#     HierarchyParent/Area/Bldg/Floor → site_name
+#   connection.yml: catalystcenter_* connection, catalystcenter_api_task_timeout,
+#                   catalystcenter_task_poll_interval
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   swim_details.activate_images — per site/role activation payloads
+#   On devices: reload and boot into the golden image per device_upgrade_mode.
+#   Evidence file: ../logs/{{ swim_run_id }}-30_activate.json
+#
+# Depends on: stage 06.3 (image staged in flash — or distribute_if_needed=true)
+# Follow with: 06.5_swim_postcheck.yml to confirm IMAGE compliance
+# Recovery:    06.6_swim_rollback.yml
+# Module: cisco.catalystcenter.swim_workflow_manager
+#
+# Run: ansible-playbook playbooks/06.4_swim_activate.yml
+# =============================================================================
+- name: Activate image on targets (reloads devices)
+  hosts: catalyst_center
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  tasks:
+    - ansible.builtin.import_role:
+        name: swim
+        tasks_from: activate

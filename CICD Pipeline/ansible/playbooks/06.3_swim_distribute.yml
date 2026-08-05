@@ -1,0 +1,40 @@
+---
+# =============================================================================
+# 06.3_swim_distribute.yml  —  Pipeline stage 06.3 (SWIM lifecycle)
+# =============================================================================
+# Copies the golden image onto each target device's flash and waits for the
+# distribution task to complete. Role: swim, tasks_from: distribute.
+#
+# Non-disruptive — the running image is unchanged; only flash is written.
+# Run this well ahead of the maintenance window so 06.4 is a fast reload.
+#
+# Sourced:
+#   settings.json → project[].swim (via swim/load_swim_details.yml):
+#     upgrade_image, device_family_name, device_series_name, device_role
+#     HierarchyParent/Area/Bldg/Floor → site_name
+#   connection.yml: catalystcenter_* connection, catalystcenter_api_task_timeout
+#                   (3600s) and catalystcenter_task_poll_interval (30s)
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   swim_details.distribute_images — per site/role distribution payloads
+#   On devices: the golden image staged in flash.
+#   Evidence file: ../logs/{{ swim_run_id }}-20_distribute.json
+#
+# Depends on: stage 06.2 (image imported and tagged Golden)
+# Module: cisco.catalystcenter.swim_workflow_manager
+#
+# Run: ansible-playbook playbooks/06.3_swim_distribute.yml
+# =============================================================================
+- name: Distribute golden image to targets
+  hosts: catalyst_center
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  tasks:
+    - ansible.builtin.import_role:
+        name: swim
+        tasks_from: distribute

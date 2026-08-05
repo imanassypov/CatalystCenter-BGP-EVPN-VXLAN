@@ -1,0 +1,46 @@
+---
+# =============================================================================
+# 06.6_swim_rollback.yml  —  Pipeline stage 06.6 (SWIM recovery)  *DISRUPTIVE*
+# =============================================================================
+# Emergency recovery from a failed upgrade: re-tags the previous image as
+# Golden and activates it, RELOADING the devices a second time.
+# Role: swim, tasks_from: rollback.
+#
+# Guarded by two explicit confirmation gates so it can never run accidentally
+# (e.g. from a wildcard playbook glob) — the role asserts both before acting:
+#   -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK
+#
+# Sourced:
+#   settings.json → project[].swim (via swim/load_swim_details.yml):
+#     rollback_image  — the known-good .bin to return to
+#     device_family_name, device_series_name, device_role,
+#     activation.{device_upgrade_mode, distribute_if_needed, schedule_validate}
+#     HierarchyParent/Area/Bldg/Floor → site_name
+#   extra-vars: rollback_confirm, rollback_reload_ack
+#   connection.yml: catalystcenter_* connection params
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   swim_details.rollback_images.tag      — golden re-tag payload (rollback_image)
+#   swim_details.rollback_images.activate — activation payload
+#   On devices: reload back onto rollback_image.
+#   Evidence file: ../logs/{{ swim_run_id }}-35_rollback.json
+#
+# Prerequisite: rollback_image must already exist in the CatC repository
+#               (imported alongside upgrade_image in stage 06.2)
+#
+# Run: ansible-playbook playbooks/06.6_swim_rollback.yml \
+#        -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK
+# =============================================================================
+- name: Roll back to previous golden image (reloads devices)
+  hosts: catalyst_center
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../inventory/group_vars/catalyst_center/vault.yml
+  vars:
+    swim_run_id: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+  tasks:
+    - ansible.builtin.import_role:
+        name: swim
+        tasks_from: rollback

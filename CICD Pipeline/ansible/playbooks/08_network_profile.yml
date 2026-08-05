@@ -1,4 +1,36 @@
 ---
+# =============================================================================
+# 08_network_profile.yml  —  Pipeline stage 08
+# =============================================================================
+# Creates or updates Catalyst Center switching network profiles and binds them
+# to sites. The profile is the join between a site and the templates synced in
+# stage 07 — without it, provisioning has nothing to push. Role: network_profile.
+#
+# Sourced:
+#   settings.json → settings_data.project[] (via catc_common.load_settings):
+#     network_profile:
+#       profile_name        — e.g. "BGP-EVPN-Switching"
+#       DayNTemplateNames[] — [{TemplateName: "Building-P0-Composite",
+#                                Project: "Building P0"}]
+#       Day0TemplateNames[] — optional onboarding templates
+#     HierarchyParent/Area/Bldg/Floor — composed into the bound site path
+#   connection.yml: dnac_host, dnac_port, dnac_version, dnac_verify, dnac_debug
+#   vault.yml: catc_username, catc_password
+#
+# Produced:
+#   profile_list — PascalCase JSON flattened into WFM string lists:
+#     [{ profile_name: "BGP-EVPN-Switching",
+#        site_names: ["Global/PODS/POD 0/Building P0/Floor 1"],
+#        day_n_templates: ["Building-P0-Composite"],
+#        onboarding_templates: [] }]
+#   In Catalyst Center: a switching profile per project row, attached to its
+#   site, applied to devices during stage 09 provisioning.
+#
+# Depends on: stage 07 (referenced template names must already exist)
+# Module: cisco.dnac.network_profile_switching_workflow_manager
+#
+# Run: ansible-playbook playbooks/08_network_profile.yml
+# =============================================================================
 - name: Create and Assign Network Switching Profiles from settings.json
   hosts: catalyst_center
   gather_facts: false
