@@ -4,3 +4,5 @@ skip_list:
   - name[casing]
   - role-name[path]
   - var-naming[no-role-prefix]
+  # Roles use short-form set_fact/debug/assert throughout; FQCN adds noise.
+  - fqcn
