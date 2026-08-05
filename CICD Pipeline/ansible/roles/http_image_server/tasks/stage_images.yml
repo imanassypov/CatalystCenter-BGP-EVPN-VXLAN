@@ -16,6 +16,7 @@
 #       image_plan — the staging decision table, consumed by verify.yml:
 #         [{ path:          "/abs/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
 #            filename:      "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            display_path:  ".../cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
 #            local_exists:  true,
 #            remote_exists: false }]
 #       rsync_upload — per-image transfer results
@@ -52,10 +53,12 @@
 #   Out: image_plan = [
 #          { "path":          "/Users/net-admin/images/cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
 #            "filename":      "cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
+#            "display_path":  ".../cat9kv-universalk9.BLD_V262_THROTTLE_LATEST_20260529_003538.SSA.bin",
 #            "local_exists":  true,
 #            "remote_exists": true },
 #          { "path":          "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
 #            "filename":      "cat9kv-universalk9.17.15.03.SPA.bin",
+#            "display_path":  ".../cat9kv-universalk9.17.15.03.SPA.bin",
 #            "local_exists":  true,
 #            "remote_exists": false }
 #        ]
@@ -73,6 +76,7 @@
 #   Out: image_plan = [
 #          { "path":          "/Users/net-admin/images/cat9kv-universalk9.17.15.03.SPA.bin",
 #            "filename":      "cat9kv-universalk9.17.15.03.SPA.bin",
+#            "display_path":  ".../cat9kv-universalk9.17.15.03.SPA.bin",
 #            "local_exists":  false,
 #            "remote_exists": false }
 #        ]
@@ -81,12 +85,15 @@
 # loops iterate image_local_paths in the same order. The plan is accumulated one
 # element at a time rather than built in a single expression so the loop label
 # reports the filename being evaluated.
+# display_path is what every message prints; the absolute path stays in `path`,
+# which is only ever consumed by the no_log rsync task.
 - name: Build the per-image staging plan
   ansible.builtin.set_fact:
     image_plan: >-
       {{ image_plan | default([]) + [{
            'path': item.0.item,
            'filename': item.0.item | basename,
+           'display_path': '.../' ~ (item.0.item | basename),
            'local_exists': item.0.stat.exists,
            'remote_exists': item.1.stat.exists
          }] }}
@@ -98,7 +105,7 @@
   ansible.builtin.fail:
     msg: >-
       Image '{{ item.filename }}' is not present on {{ image_server_ip }}
-      and the local source '{{ item.path }}' does not exist on the
+      and the local source '{{ item.display_path }}' does not exist on the
       control node. Nothing to upload.
   loop: "{{ image_plan }}"
   loop_control:

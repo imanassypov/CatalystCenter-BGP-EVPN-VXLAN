@@ -11,8 +11,8 @@
 # import silently fails if the URL returns text/html or text/plain instead of
 # application/octet-stream.
 #
-# Pre:  image_plan          — [{path, filename, local_exists, remote_exists}]
-#                             from stage_images.yml
+# Pre:  image_plan          — [{path, filename, display_path, local_exists,
+#                             remote_exists}] from stage_images.yml
 #       image_server_ip, image_url_subdir
 #       Handlers are flushed first so a pending nginx reload has applied.
 #
@@ -20,8 +20,9 @@
 #       http_check_remote   — HEAD results from the control node over the
 #                             public IP; .status, .content_type, .content_length
 #       Asserts per image: status 200 and content_type application/octet-stream.
-#       Prints the published URL for each image — these must match
-#       settings.json swim.image_server_base_url used by stage 06.2.
+#       Prints the published URL, size and content type for each image — the URL
+#       must match settings.json swim.image_server_base_url used by stage 06.2.
+#       Output is filename-only; control-node paths are never printed.
 # =============================================================================
 
 - name: Flush handlers before verification
@@ -75,6 +76,9 @@
       Image '{{ item.item.filename | default('n/a') }}' reachable over HTTP
       as application/octet-stream
       ({{ item.content_length | default('n/a') }} bytes).
+    # Without quiet, assert echoes the whole uri result, which embeds the
+    # control-node source path from image_plan.
+    quiet: true
   loop: "{{ http_check_remote.results }}"
   loop_control:
     label: "{{ item.item.filename | default('n/a') }}"
@@ -84,8 +88,10 @@
   ansible.builtin.debug:
     msg: >-
       Image server ready:
-      http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ item.filename }}
-  loop: "{{ image_plan }}"
+      http://{{ image_server_ip }}/{{ image_url_subdir }}/{{ item.item.filename }}
+      ({{ item.content_length | default('n/a') }} bytes,
+      {{ item.content_type | default('n/a') }})
+  loop: "{{ http_check_remote.results }}"
   loop_control:
-    label: "{{ item.filename }}"
-  when: item.remote_exists or item.local_exists
+    label: "{{ item.item.filename | default('n/a') }}"
+  when: item is not skipped

@@ -10,23 +10,34 @@
 #                   defaults to /var/www/html/images
 #       become: true (set at play level in 06.0_swim_deploy_http_image_server.yml)
 #
-# Post: apt_cache_update — registered but never fails the play
+# Post: nginx_binary     — stat of /usr/sbin/nginx, gates the install path
+#       apt_cache_update — registered but never fails the play
 #       On the target host: nginx installed, service started + enabled,
 #       image_dir created as www-data:www-data 0755.
 # =============================================================================
 
+- name: Check whether nginx is already installed
+  ansible.builtin.stat:
+    path: /usr/sbin/nginx
+  register: nginx_binary
+
 # Best-effort apt update; third-party repo GPG failures must not block nginx install.
+# Skipped once nginx is present — apt update is the slowest task in this role over
+# the dCloud VPN and changes nothing when there is nothing left to install.
 - name: Refresh apt cache (best effort)
   ansible.builtin.apt:
     update_cache: true
+    cache_valid_time: 3600
   register: apt_cache_update
   failed_when: false
+  when: not nginx_binary.stat.exists
 
 - name: Install nginx
   ansible.builtin.apt:
     name: nginx
     state: present
     update_cache: false
+  when: not nginx_binary.stat.exists
 
 - name: Ensure nginx is enabled and running
   ansible.builtin.service:
