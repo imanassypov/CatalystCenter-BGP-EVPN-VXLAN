@@ -1,0 +1,36 @@
+---
+# Collection pins for the dCloud jump host, where `install-ansible.sh` builds a
+# Python 3.9 venv and Python 3.9 caps ansible-core at 2.15. Each version below
+# is the newest release whose `requires_ansible` still admits 2.15 — installing
+# the unpinned `requirements.yml` there pulls 2.16-only releases and each one
+# emits "Collection <name> does not support Ansible version 2.15.x".
+#
+# Use requirements.yml instead on a control node running ansible-core 2.17.
+#
+#   ansible-galaxy collection install -r collections/requirements-jumphost.yml
+collections:
+  # EXCEPTION — stays on 2.9.0 even though it declares requires_ansible >=2.16,
+  # so this one warning is expected and must be ignored. 2.3.1 (the newest
+  # 2.15-compatible release) returns results under `dnac_response`; every role
+  # here reads `catalystcenter_response`, which 2.4.0+ introduced. Downgrading
+  # silently yields an empty site_id_map and stage 01 fails with
+  # "[400] NCND00067: The request body is invalid" on an empty parentId.
+  # Verified working on ansible-core 2.15.13.
+  - name: cisco.catalystcenter
+    version: "2.9.0"
+  - name: cisco.dnac
+    version: "6.46.0"
+  - name: cisco.ios
+    version: "9.2.0"
+  - name: cisco.nxos
+    version: "9.4.0"
+  - name: cisco.cml
+    version: "1.2.0"
+  - name: ansible.utils
+    version: "5.1.2"
+  - name: ansible.netcommon
+    version: "7.2.0"
+  - name: ansible.posix
+    version: "2.1.0"
+  - name: community.general
+    version: "10.7.9"

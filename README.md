@@ -385,6 +385,8 @@ ansible-playbook playbooks/01_site_hierarchy.yml   # example — run stages in o
 
 See [`CICD Pipeline/ansible/README.md`](CICD%20Pipeline/ansible/README.md) for vault setup and the full playbook index.
 
+> First-time setup on the dCloud jump host: [`CICD Pipeline/ansible/GETTING_STARTED.md`](CICD%20Pipeline/ansible/GETTING_STARTED.md).
+
 | Stage | Playbook | Purpose |
 |-------|----------|---------|
 | 0 Orchestrator | `playbooks/00_site_deploy.yml` | Run stages 1–10 end-to-end (excludes SWIM and backup) |

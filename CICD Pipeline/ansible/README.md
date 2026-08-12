@@ -2,37 +2,30 @@
 
 Single Ansible project for Catalyst Center provisioning (stages 1–11), SWIM, and config backup. All automation runs from this directory.
 
-## Quick Start
+## Setup
+
+First-time environment setup — installer, vault password, group vaults, encryption, `.env` — lives in one place: **[GETTING_STARTED.md](GETTING_STARTED.md)**. Follow it once per jump host, then come back here for the playbook reference.
+
+Already set up? Every session needs:
 
 ```bash
-cd "CICD Pipeline/ansible"
-
-ansible-galaxy collection install -r collections/requirements.yml
-pip install 'virl2_client>=2.0.0,<2.10.0'
-
-# CML fabric inventory (lab must be running; CML_* from CICD Pipeline/.env via direnv)
-ansible-inventory -i inventory/cml.yml --graph
-
-# Vault password (once): echo 'passphrase' > "../.vault_pass" && chmod 600 "../.vault_pass"
-
-# Catalyst Center API (+ optional git_token for stage 7)
-cp inventory/group_vars/catalyst_center/vault.yml.example inventory/group_vars/catalyst_center/vault.yml
-ansible-vault encrypt inventory/group_vars/catalyst_center/vault.yml --vault-password-file ../.vault_pass
-
-# Stage 11 device SSH creds come from Settings/settings.json (no separate vault)
-
-# Image server (before SWIM import)
-cp inventory/group_vars/image_servers/vars.yml.example inventory/group_vars/image_servers/vars.yml
-cp inventory/group_vars/image_servers/vault.yml.example inventory/group_vars/image_servers/vault.yml
-ansible-vault encrypt inventory/group_vars/image_servers/vault.yml --vault-password-file ../.vault_pass
-
-# YANG Suite (NETCONF/YANG lab utility)
-cp inventory/group_vars/yangsuite_servers/vars.yml.example inventory/group_vars/yangsuite_servers/vars.yml
-cp inventory/group_vars/yangsuite_servers/vault.yml.example inventory/group_vars/yangsuite_servers/vault.yml
-ansible-vault encrypt inventory/group_vars/yangsuite_servers/vault.yml --vault-password-file ../.vault_pass
-
-ansible-playbook playbooks/01_site_hierarchy.yml
+source ~/tecops-venv/bin/activate
+cd "CICD Pipeline" && set -a && . ./.env && set +a
+cd ansible
 ```
+
+The optional group vaults for SWIM (`image_servers`) and YANG Suite (`yangsuite_servers`) are covered in [GETTING_STARTED.md](GETTING_STARTED.md#optional-group-vaults). Stage 11 device SSH credentials come from `Settings/settings.json` — there is no separate vault for them.
+
+### Collection requirements files
+
+| File | Target environment | Notes |
+|------|--------------------|-------|
+| `collections/requirements.yml` | Control node on ansible-core 2.17 (`../requirements-ansible.txt`) | Current releases |
+| `collections/requirements-jumphost.yml` | dCloud jump host — Python 3.9 venv, ansible-core 2.15 | Newest release of each collection that still declares `requires_ansible: >=2.15` |
+
+Python 3.9 caps ansible-core at 2.15, so the jump host cannot run the 2.16+ collection releases. Installing the wrong file produces `Collection <name> does not support Ansible version 2.15.x` for every 2.16-only collection.
+
+`cisco.catalystcenter` is the one deliberate exception: both files pin **2.9.0**, and the jump host therefore emits that warning for it. Every role reads results from `catalystcenter_response`, a key 2.4.0 introduced; 2.3.1 — the newest 2.15-compatible release — still returns `dnac_response`, so downgrading yields an empty `site_id_map` and stage 01 fails with `[400] NCND00067: The request body is invalid` on an empty `parentId`. 2.9.0 is verified working on ansible-core 2.15.13.
 
 ## Layout
 
@@ -41,6 +34,7 @@ CICD Pipeline/
 ├── .vault_pass
 ├── Settings/settings.json       # SSOT for all stages
 └── ansible/
+    ├── GETTING_STARTED.md       # first-time jump host setup (students start here)
     ├── inventory/               # CML dynamic (cml.yml) + static_inventory + group_vars
     ├── playbooks/               # 00_site_deploy orchestrator, 01–11 stages, deploy_* utilities
     ├── roles/                   # site_hierarchy, swim, template_sync, http_image_server, yangsuite_docker, …
