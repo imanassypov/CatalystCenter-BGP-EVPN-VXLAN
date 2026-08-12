@@ -20,6 +20,32 @@ Without direnv, source manually:
 set -a && source .env && set +a
 ```
 
+### macOS fork-safety (required)
+
+On macOS, Ansible forks a worker process per task. The `cisco.dnac`/`catalystcenter`
+SDK triggers CoreFoundation proxy and DNS lookups in the parent process, which
+initialises the Objective-C runtime. `fork()` after that aborts the child and
+Ansible reports:
+
+```
+TASK [site_hierarchy : Phase A — Fetch all existing sites from Catalyst Center]
+ERROR! A worker was found in a dead state
+```
+
+`.envrc` exports the two variables that prevent this, so with direnv enabled the
+fix is automatic. Without direnv, export them in the shell that runs the playbook
+(or add them to `~/.zshrc`):
+
+```bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+export no_proxy='*'
+```
+
+| Variable | Why |
+|---|---|
+| `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` | Stops the Objective-C runtime from aborting forked children |
+| `no_proxy='*'` | Skips the macOS SystemConfiguration proxy lookup that loads CoreFoundation |
+
 ## Quick checks
 
 ```bash

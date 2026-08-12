@@ -34,7 +34,7 @@
   register: distribute_result
 
 - name: Write distribution evidence
-  ansible.builtin.copy:
-    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-20_distribute.json"
-    content: "{{ distribute_result | to_nice_json }}"
-    mode: "0640"
+  ansible.builtin.include_tasks: write_evidence.yml
+  vars:
+    evidence_name: 20_distribute
+    evidence_data: "{{ distribute_result }}"

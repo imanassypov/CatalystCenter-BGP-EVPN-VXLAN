@@ -34,7 +34,7 @@
   register: activate_result
 
 - name: Write activation evidence
-  ansible.builtin.copy:
-    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-30_activate.json"
-    content: "{{ activate_result | to_nice_json }}"
-    mode: "0640"
+  ansible.builtin.include_tasks: write_evidence.yml
+  vars:
+    evidence_name: 30_activate
+    evidence_data: "{{ activate_result }}"

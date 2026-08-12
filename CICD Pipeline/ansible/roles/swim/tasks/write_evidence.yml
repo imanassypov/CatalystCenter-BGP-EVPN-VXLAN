@@ -1,0 +1,43 @@
+---
+# =============================================================================
+# swim / write_evidence.yml  —  sanitised evidence writer
+# =============================================================================
+# Serialises a registered module result to logs/<run-id>-<name>.json with all
+# controller-identifying metadata stripped.
+#
+# Required vars (set by the caller via include_tasks):
+#   evidence_name — file suffix, e.g. "00_preflight"
+#   evidence_data — the registered result (dict or register-with-loop dict)
+#
+# Sanitisation applied, in order:
+#   1. remove_keys        — drops the `invocation`/`module_args` blocks that
+#                           Ansible attaches to every module result. These embed
+#                           the controller's absolute filesystem paths (via
+#                           catalystcenter_log_file_path) alongside the target
+#                           host, port and username.
+#   2. repo-root redaction — any surviving absolute path under the repository
+#                           root is rewritten to <repo>/…
+#   3. home-dir redaction  — any surviving absolute path under $HOME (e.g. a
+#                           collection path outside the repo) becomes <home>/…
+#
+# Redaction is deliberately belt-and-braces: step 1 removes the known leak,
+# steps 2–3 catch anything a future collection version adds.
+# =============================================================================
+
+- name: Set evidence redaction roots
+  ansible.builtin.set_fact:
+    evidence_repo_root: "{{ playbook_dir | dirname | dirname | dirname }}"
+    evidence_home_root: "{{ lookup('ansible.builtin.env', 'HOME') }}"
+
+- name: Write {{ evidence_name }} evidence
+  ansible.builtin.copy:
+    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-{{ evidence_name }}.json"
+    content: >-
+      {{ evidence_data
+         | ansible.utils.remove_keys(target=['invocation', 'module_args'])
+         | to_json
+         | regex_replace(evidence_repo_root | regex_escape, '<repo>')
+         | regex_replace(evidence_home_root | regex_escape, '<home>')
+         | from_json
+         | to_nice_json }}
+    mode: "0640"

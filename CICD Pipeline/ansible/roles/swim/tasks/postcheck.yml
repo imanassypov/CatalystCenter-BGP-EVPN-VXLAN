@@ -56,7 +56,7 @@
     fail_msg: "Image compliance workflow call failed for one or more sites."
 
 - name: Write post-check evidence
-  ansible.builtin.copy:
-    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-40_postcheck.json"
-    content: "{{ post_compliance | to_nice_json }}"
-    mode: "0640"
+  ansible.builtin.include_tasks: write_evidence.yml
+  vars:
+    evidence_name: 40_postcheck
+    evidence_data: "{{ post_compliance }}"

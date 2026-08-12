@@ -32,3 +32,8 @@ CICD Pipeline/utils/mcp-ssh-server/.env
 **/dcloud-splunk-creds/
 **/splunk-creds/
 *.pem
+
+# Run logs and evidence artifacts (never commit — they capture controller paths,
+# Catalyst Center hostnames/usernames and API response bodies)
+*.log
+**/logs/

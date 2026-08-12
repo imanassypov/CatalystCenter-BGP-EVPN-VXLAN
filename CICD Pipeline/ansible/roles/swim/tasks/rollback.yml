@@ -68,7 +68,7 @@
   register: rollback_activate_result
 
 - name: Write rollback evidence
-  ansible.builtin.copy:
-    dest: "{{ playbook_dir }}/../logs/{{ swim_run_id }}-35_rollback.json"
-    content: "{{ {'tag': rollback_tag_result, 'activate': rollback_activate_result} | to_nice_json }}"
-    mode: "0640"
+  ansible.builtin.include_tasks: write_evidence.yml
+  vars:
+    evidence_name: 35_rollback
+    evidence_data: "{{ {'tag': rollback_tag_result, 'activate': rollback_activate_result} }}"
