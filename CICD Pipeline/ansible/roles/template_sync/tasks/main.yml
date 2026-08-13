@@ -2,14 +2,18 @@
 # =============================================================================
 # template_sync / main.yml  —  Pipeline stage 7.0
 # =============================================================================
-# Pulls Jinja2 templates and composite YAML from GitHub, pushes them into
-# Catalyst Center Template Programmer projects via template_workflow_manager.
+# Pulls Jinja2 templates and composite YAML from GitHub or from a local
+# directory, pushes them into Catalyst Center Template Programmer projects via
+# template_workflow_manager.
 #
 # Data flow:
-#   git_repo + git_repo_subfolders → GitHub API tree → process-subfolder.yml
+#   template_source == 'git'   → GitHub API tree   ┐
+#   template_source == 'local' → find under root   ├→ repo_tree_entries
+#   repo_tree_entries + git_repo_subfolders → process-subfolder.yml
 #   → process-template.yml / process-composite.yml → CatC WFM modules
 #
-# Inventory: git_repo, git_branch, git_repo_subfolders, git_token (optional)
+# Inventory: template_source, template_local_root, git_repo, git_branch,
+#            git_repo_subfolders, git_token (optional)
 # =============================================================================
 
 # Example
@@ -43,97 +47,172 @@
   ansible.builtin.debug:
     msg: "{{ start_timestamp.date + ' ' + start_timestamp.time }}"
 
-# Example
-#   In : git_repo = "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
-#        git_api_base_url undefined
-#   Out: git_repo_slug = "imanassypov/CatalystCenter-BGP-EVPN-VXLAN"
-#        git_api_base  = "https://api.github.com"
-- name: Parse GitHub repository slug from git_repo URL
-  ansible.builtin.set_fact:
-    git_repo_slug: "{{ git_repo | regex_replace('https://github\\.com/', '') | regex_replace('\\.git$', '') }}"
-    git_api_base: "{{ git_api_base_url | default('https://api.github.com') }}"
-
-# git_token is optional for public repositories.
-# When defined (private repos or to raise API rate limits), an Authorization header is included.
-# When absent, requests are made unauthenticated (GitHub allows ~60 requests/hour for public repos).
-# Example
-#   In : git_token = "ghp_AbCd1234EfGh5678IjKl9012MnOp3456Qr"
-#   Out: git_auth_header = {
-#          "Authorization": "Bearer ghp_AbCd1234EfGh5678IjKl9012MnOp3456Qr"
-#        }
-#   In : git_token undefined or ""
-#   Out: git_auth_header = {}   — combined into every request header dict, so
-#                               an empty dict simply adds nothing.
-- name: Build GitHub auth header
-  ansible.builtin.set_fact:
-    git_auth_header: "{{ {'Authorization': 'Bearer ' + git_token} if (git_token is defined and git_token | length > 0) else {} }}"
-
-- name: Verify GitHub repository is accessible
-  ansible.builtin.uri:
-    url: "{{ git_api_base }}/repos/{{ git_repo_slug }}"
-    method: GET
-    headers: "{{ git_auth_header | combine({'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}) }}"
-    status_code: [200, 401, 404]
-  register: git_repo_check
-
-- name: Fail if GitHub token is invalid
+- name: Fail if template_source is not recognised
   ansible.builtin.fail:
-    msg: >-
-      GitHub rejected git_token (HTTP 401 Bad credentials).
-      For public repositories, remove git_token from catalyst_center/vault.yml.
-      For private repositories, create a new PAT with repo scope and update vault.
-  when: git_repo_check.status == 401
-
-- name: Fail if GitHub repository not found
-  ansible.builtin.fail:
-    msg: "Repository not found: '{{ git_repo_slug }}'. Verify git_repo in inventory (HTTP {{ git_repo_check.status }})."
-  when: git_repo_check.status != 200
-
-- name: Verify Git branch exists in repository
-  ansible.builtin.uri:
-    url: "{{ git_api_base }}/repos/{{ git_repo_slug }}/branches/{{ git_branch | default('HEAD') }}"
-    method: GET
-    headers: "{{ git_auth_header | combine({'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}) }}"
-    status_code: [200, 404]
-  register: git_branch_check
-
-- name: Fail if Git branch not found in repository
-  ansible.builtin.fail:
-    msg: "Branch '{{ git_branch | default('HEAD') }}' not found in '{{ git_repo_slug }}'. Verify git_branch in inventory (HTTP {{ git_branch_check.status }})."
-  when: git_branch_check.status != 200
-
-# Example
-#   In : GET {git_api_base}/repos/{git_repo_slug}/git/trees/main?recursive=1
-#   Out: repo_tree_response.json.tree = [
-#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
-#            "mode": "100644", "type": "blob",
-#            "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048 },
-#          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
-#            "mode": "100644", "type": "blob",
-#            "sha":  "d4e5f6a7b8c9d0e1f2031425364758697a8b9c0d", "size": 512 },
-#          { "path": "Catalyst Center Templates/DMZ BGP EVPN Templates",
-#            "mode": "040000", "type": "tree",
-#            "sha":  "99aabbccddeeff00112233445566778899aabbcc" } ]
-#        repo_tree_response.json.truncated = false
-#   One recursive call returns the whole repo; process-subfolder.yml filters
-#   this single tree per subfolder instead of re-querying GitHub.
-- name: Fetch repository file tree from GitHub API
-  ansible.builtin.uri:
-    url: "{{ git_api_base }}/repos/{{ git_repo_slug }}/git/trees/{{ git_branch | default('HEAD') }}?recursive=1"
-    method: GET
-    headers: "{{ git_auth_header | combine({'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}) }}"
-    status_code: 200
-  register: repo_tree_response
+    msg: "template_source must be 'git' or 'local' (got '{{ template_source | default('git') }}')."
+  when: (template_source | default('git')) not in ['git', 'local']
 
 # MULTI-PROJECT SUBFOLDER SUPPORT
 # The playbook syncs one or more repository subfolders, each into its own
 # Catalyst Center Template-Programmer Project. `git_repo_subfolders` (a list
-# of { path, project_name } entries) defines what to sync.
+# of { path, project_name } entries) defines what to sync. Validated before
+# discovery because the local source scans exactly these paths.
 - name: Fail if git_repo_subfolders is not defined
   ansible.builtin.fail:
     msg: "git_repo_subfolders must be defined in group_vars as a non-empty list of { path, project_name } entries."
   when: git_repo_subfolders is not defined or git_repo_subfolders | length == 0
 
+# Both sources converge on repo_tree_entries — a list of { path } dicts whose
+# paths are relative to the repository root (git) or to template_local_root
+# (local). process-subfolder.yml filters that one list with the
+# git_repo_subfolders prefixes and never learns which source produced it.
+- name: Discover templates in GitHub repository
+  when: (template_source | default('git')) == 'git'
+  block:
+    # Example
+    #   In : git_repo = "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
+    #        git_api_base_url undefined
+    #   Out: git_repo_slug = "imanassypov/CatalystCenter-BGP-EVPN-VXLAN"
+    #        git_api_base  = "https://api.github.com"
+    - name: Parse GitHub repository slug from git_repo URL
+      ansible.builtin.set_fact:
+        git_repo_slug: "{{ git_repo | regex_replace('https://github\\.com/', '') | regex_replace('\\.git$', '') }}"
+        git_api_base: "{{ git_api_base_url | default('https://api.github.com') }}"
+
+    # git_token is optional for public repositories.
+    # When defined (private repos or to raise API rate limits), an Authorization header is included.
+    # When absent, requests are made unauthenticated (GitHub allows ~60 requests/hour for public repos).
+    # Example
+    #   In : git_token = "ghp_AbCd1234EfGh5678IjKl9012MnOp3456Qr"
+    #   Out: git_auth_header = {
+    #          "Authorization": "Bearer ghp_AbCd1234EfGh5678IjKl9012MnOp3456Qr"
+    #        }
+    #   In : git_token undefined or ""
+    #   Out: git_auth_header = {}   — combined into every request header dict, so
+    #                               an empty dict simply adds nothing.
+    - name: Build GitHub auth header
+      ansible.builtin.set_fact:
+        git_auth_header: "{{ {'Authorization': 'Bearer ' + git_token} if (git_token is defined and git_token | length > 0) else {} }}"
+
+    - name: Verify GitHub repository is accessible
+      ansible.builtin.uri:
+        url: "{{ git_api_base }}/repos/{{ git_repo_slug }}"
+        method: GET
+        headers: "{{ git_auth_header | combine({'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}) }}"
+        status_code: [200, 401, 404]
+      register: git_repo_check
+
+    - name: Fail if GitHub token is invalid
+      ansible.builtin.fail:
+        msg: >-
+          GitHub rejected git_token (HTTP 401 Bad credentials).
+          For public repositories, remove git_token from catalyst_center/vault.yml.
+          For private repositories, create a new PAT with repo scope and update vault.
+      when: git_repo_check.status == 401
+
+    - name: Fail if GitHub repository not found
+      ansible.builtin.fail:
+        msg: "Repository not found: '{{ git_repo_slug }}'. Verify git_repo in inventory (HTTP {{ git_repo_check.status }})."
+      when: git_repo_check.status != 200
+
+    - name: Verify Git branch exists in repository
+      ansible.builtin.uri:
+        url: "{{ git_api_base }}/repos/{{ git_repo_slug }}/branches/{{ git_branch | default('HEAD') }}"
+        method: GET
+        headers: "{{ git_auth_header | combine({'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}) }}"
+        status_code: [200, 404]
+      register: git_branch_check
+
+    - name: Fail if Git branch not found in repository
+      ansible.builtin.fail:
+        msg: "Branch '{{ git_branch | default('HEAD') }}' not found in '{{ git_repo_slug }}'. Verify git_branch in inventory (HTTP {{ git_branch_check.status }})."
+      when: git_branch_check.status != 200
+
+    # Example
+    #   In : GET {git_api_base}/repos/{git_repo_slug}/git/trees/main?recursive=1
+    #   Out: repo_tree_response.json.tree = [
+    #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2",
+    #            "mode": "100644", "type": "blob",
+    #            "sha":  "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "size": 2048 },
+    #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml",
+    #            "mode": "100644", "type": "blob",
+    #            "sha":  "d4e5f6a7b8c9d0e1f2031425364758697a8b9c0d", "size": 512 },
+    #          { "path": "Catalyst Center Templates/DMZ BGP EVPN Templates",
+    #            "mode": "040000", "type": "tree",
+    #            "sha":  "99aabbccddeeff00112233445566778899aabbcc" } ]
+    #        repo_tree_response.json.truncated = false
+    #   One recursive call returns the whole repo; process-subfolder.yml filters
+    #   this single tree per subfolder instead of re-querying GitHub.
+    - name: Fetch repository file tree from GitHub API
+      ansible.builtin.uri:
+        url: "{{ git_api_base }}/repos/{{ git_repo_slug }}/git/trees/{{ git_branch | default('HEAD') }}?recursive=1"
+        method: GET
+        headers: "{{ git_auth_header | combine({'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}) }}"
+        status_code: 200
+      register: repo_tree_response
+
+    # Example
+    #   In : repo_tree_response.json.tree as above
+    #   Out: repo_tree_entries = [
+    #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2", ... },
+    #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml", ... } ]
+    #        The "tree" entry is dropped — directories are not syncable content.
+    - name: Build source file list from repository tree
+      ansible.builtin.set_fact:
+        repo_tree_entries: "{{ repo_tree_response.json.tree | selectattr('type', 'eq', 'blob') | list }}"
+
+- name: Discover templates in local directory
+  when: (template_source | default('git')) == 'local'
+  block:
+    - name: Stat local template root
+      ansible.builtin.stat:
+        path: "{{ template_local_root }}"
+      register: local_root_stat
+
+    - name: Fail if local template root is missing
+      ansible.builtin.fail:
+        msg: "template_local_root '{{ template_local_root }}' does not exist or is not a directory."
+      when: not (local_root_stat.stat.exists and local_root_stat.stat.isdir)
+
+    # Only the configured subfolders are scanned. A recursive walk of
+    # template_local_root would descend into .git and .venv, whose .yml/.j2 files
+    # are then discarded by the prefix filter anyway.
+    - name: Find template and composite files under local template root
+      ansible.builtin.find:
+        paths: "{{ git_repo_subfolders | map(attribute='path') | map('regex_replace', '^', template_local_root + '/') | list }}"
+        patterns:
+          - "*.{{ template_extension }}"
+          - "*.yml"
+        recurse: true
+        file_type: file
+      register: local_files_found
+
+    # Example
+    #   In : template_local_root = "/Users/me/repo"
+    #        local_files_found.files = [
+    #          { "path": "/Users/me/repo/Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2", ... },
+    #          { "path": "/Users/me/repo/Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml", ... } ]
+    #   Out: repo_tree_entries = [
+    #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/DEFN-VRF.j2" },
+    #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates/BGP-EVPN-BUILD.yml" } ]
+    #   Paths are made root-relative so git_repo_subfolders prefixes match the
+    #   same way they do against a GitHub tree.
+    - name: Build source file list from local directory
+      ansible.builtin.set_fact:
+        repo_tree_entries: "{{ repo_tree_entries | default([]) + [{'path': item | relpath(template_local_root)}] }}"
+      loop: "{{ local_files_found.files | map(attribute='path') | list }}"
+      loop_control:
+        label: "{{ item | basename }}"
+
+- name: --DEBUG-- Source file count
+  when: catc_debug | default(false) | bool
+  ansible.builtin.debug:
+    msg: "{{ repo_tree_entries | default([]) | length }} candidate files from source '{{ template_source | default('git') }}'"
+
+# MULTI-PROJECT SUBFOLDER SUPPORT
+# The playbook syncs one or more repository subfolders, each into its own
+# Catalyst Center Template-Programmer Project. `git_repo_subfolders` (a list
+# of { path, project_name } entries) defines what to sync.
 # Example
 #   In : git_repo_subfolders = [
 #          { "path": "Catalyst Center Templates/Site BGP EVPN Templates",

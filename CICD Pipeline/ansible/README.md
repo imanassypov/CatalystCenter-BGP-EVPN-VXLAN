@@ -61,7 +61,7 @@ ansible-playbook playbooks/00_site_deploy.yml
 | `05_assign_to_site.yml` | 5 | Assign devices to sites |
 | `06.0`–`06.5_swim_*.yml` | 6 | SWIM lifecycle (run in order; see below) |
 | `06.6_swim_rollback.yml` | 6 | SWIM rollback — manual, guarded (see Common Overrides) |
-| `07_template_sync.yml` | 7 | GitHub template sync |
+| `07_template_sync.yml` | 7 | Template sync from GitHub or a local directory |
 | `08_network_profile.yml` | 8 | Network profiles |
 | `09_provision_devices.yml` | 9 | Device provisioning |
 | `10_deploy_composite.yml` | 10 | Composite template deploy |
@@ -194,6 +194,46 @@ ansible-playbook playbooks/06.5_swim_postcheck.yml
 ```
 
 `06.4_swim_activate.yml` reloads devices. `06.6_swim_rollback.yml` is out-of-band and runs only on failure.
+
+### Template sync (stage 7)
+
+`07_template_sync.yml` reads the `.j2` templates and the composite YAML from one of two sources, selected by `template_source` in `inventory/group_vars/catalyst_center/connection.yml`. Both sources produce the same fact — `repo_tree_entries`, a list of `{path: <root-relative path>}` — so everything downstream (ordering, composite parsing, the `template_workflow_manager` payload) is identical either way.
+
+| `template_source` | Reads from | Auth | Commit metadata | Diff header |
+|---|---|---|---|---|
+| `git` (default) | GitHub REST API on `git_repo` / `git_branch` | `git_token` (vault) — optional for public repos, lifts the 60 req/hr anonymous limit | Real commit message, author, SHA | Honours `include_diff_header` |
+| `local` | `template_local_root` on the machine running Ansible | none | Synthesised `Synced from local directory <date> <time>` | Always off — there is no commit to diff |
+
+```bash
+ansible-playbook playbooks/07_template_sync.yml                          # GitHub
+ansible-playbook playbooks/07_template_sync.yml -e template_source=local  # this working tree
+ansible-playbook playbooks/07_template_sync.yml -e template_source=local \
+  -e template_local_root=/abs/path/to/templates
+```
+
+| Variable | Default | Description |
+|---|---|---|
+| `template_source` | `git` | `git` or `local`. Any other value fails the run immediately. |
+| `template_local_root` | repository root (derived from `playbook_dir`) | Directory the `local` source scans. Must exist and be a directory. |
+| `git_repo_subfolders[].path` | see `connection.yml` | Relative to the repo root (`git`) **or** to `template_local_root` (`local`) — one list drives both. |
+| `git_repo_subfolders[].project_name` | see `connection.yml` | Catalyst Center Template Programmer project each subfolder syncs into. |
+
+**How the `template_local_root` default resolves.** `playbook_dir` is `<repo>/CICD Pipeline/ansible/playbooks`, so the three `dirname` calls in `template_local_root: "{{ playbook_dir | dirname | dirname | dirname }}"` walk up to the repository root:
+
+| Step | Value |
+|---|---|
+| `playbook_dir` | `<repo>/CICD Pipeline/ansible/playbooks` |
+| `\| dirname` | `<repo>/CICD Pipeline/ansible` |
+| `\| dirname` | `<repo>/CICD Pipeline` |
+| `\| dirname` | `<repo>` ← `template_local_root` |
+
+The default therefore points at whichever clone the playbook is running from, with no absolute path hard-coded. Move `07_template_sync.yml` to a different directory depth and this expression must be adjusted, or `template_local_root` set explicitly. Note that `playbook_dir` only equals `playbooks/` under `ansible-playbook` — an ad-hoc `ansible ... -m debug -a var=template_local_root` sets it to the cwd and so reports a path one level too high.
+
+Only the directories named in `git_repo_subfolders` are scanned in `local` mode — a recursive walk of the whole root would descend into `.git` and `.venv`, whose `.yml`/`.j2` files are noise. A subfolder with no `.j2` files logs a warning and is skipped, which is why the empty DMZ folder does not fail the run.
+
+File contents are read with `slurp` + `b64decode` rather than the `file` lookup, so bytes — including trailing newlines — match what the Git path produces.
+
+`local` mode still requires a reachable Catalyst Center and the `dnacentersdk` Python package in the interpreter running the play; only the *source* of the template text changes.
 
 ### YANG Suite (Docker)
 
@@ -347,6 +387,7 @@ ansible-playbook playbooks/11_backup_lab_configs.yml -e '{"backup_cml_tags":["dm
 ```bash
 DEBUG=true ansible-playbook playbooks/04_device_discovery.yml
 ansible-playbook playbooks/01_site_hierarchy.yml -e state=deleted
+ansible-playbook playbooks/07_template_sync.yml -e template_source=local
 ansible-playbook playbooks/06.6_swim_rollback.yml -e rollback_confirm=YES -e rollback_reload_ack=RELOAD_OK
 ansible-playbook playbooks/06.0_swim_deploy_http_image_server.yml \
   -e '{"image_local_paths":["/abs/cat9kv.SSA.bin","/abs/cat9kv.SPA.bin"]}'

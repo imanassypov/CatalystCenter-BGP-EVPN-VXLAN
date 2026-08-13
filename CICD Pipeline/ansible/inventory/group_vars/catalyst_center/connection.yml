@@ -62,6 +62,21 @@ discovery_netconf_credentials:
     - description: NETCONF-netadmin
 
 # Template sync / GitHub (stage 7)
+# template_source selects where the .j2 templates and composite YAML are read from:
+#   git   — GitHub REST API, using git_repo / git_branch / git_token below
+#   local — a directory on the machine running Ansible, rooted at template_local_root
+# git_repo_subfolders applies to both: its paths are relative to the repository
+# root (git) or to template_local_root (local).
+template_source: git
+# playbook_dir is <repo>/CICD Pipeline/ansible/playbooks, so three dirname calls
+# walk up to the repository root:
+#   playbook_dir            <repo>/CICD Pipeline/ansible/playbooks
+#   | dirname               <repo>/CICD Pipeline/ansible
+#   | dirname               <repo>/CICD Pipeline
+#   | dirname               <repo>
+# Ad-hoc `ansible` sets playbook_dir to the cwd, so this resolves one level too
+# high there; it is correct under `ansible-playbook playbooks/...`.
+template_local_root: "{{ playbook_dir | dirname | dirname | dirname }}"
 git_repo: "https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git"
 git_branch: main
 git_repo_subfolders:

@@ -396,7 +396,7 @@ See [`CICD Pipeline/ansible/README.md`](CICD%20Pipeline/ansible/README.md) for v
 | 4 Device Discovery | `playbooks/04_device_discovery.yml` | Discover reachable devices and add them to CatC inventory |
 | 5 Assign To Site | `playbooks/05_assign_to_site.yml` | Move discovered devices from Global into their designated site |
 | 6 SWIM | `06.0_swim_deploy_http_image_server.yml` → `06.1_swim_preflight.yml` → `06.2_swim_import_and_tag.yml` → `06.3_swim_distribute.yml` → `06.4_swim_activate.yml` → `06.5_swim_postcheck.yml` (rollback: `06.6_swim_rollback.yml`) | Phased software image lifecycle |
-| 7 Templates (GitOps) | `playbooks/07_template_sync.yml` | Sync Jinja2 templates from GitHub into a CatC Template Project (incl. composites) |
+| 7 Templates (GitOps) | `playbooks/07_template_sync.yml` | Sync Jinja2 templates from GitHub — or a local directory — into a CatC Template Project (incl. composites) |
 | 8 Network Profile | `playbooks/08_network_profile.yml` | Create switching network profiles and bind Day-N templates to sites |
 | 9 Provision Devices | `playbooks/09_provision_devices.yml` | Provision devices to their sites (push site settings + licensing) |
 | 10 Provision Composite | `playbooks/10_deploy_composite.yml` | Deploy the composite (multi-member) Day-N template to target devices |
@@ -409,15 +409,21 @@ Supporting directories:
 
 #### Template GitOps (Stage 7.0) in detail
 
-Template sync is implemented by [`playbooks/07_template_sync.yml`](CICD%20Pipeline/ansible/playbooks/07_template_sync.yml) and the `template_sync` role. It publishes BGP EVPN templates from Git to Catalyst Center:
+Template sync is implemented by [`playbooks/07_template_sync.yml`](CICD%20Pipeline/ansible/playbooks/07_template_sync.yml) and the `template_sync` role. It publishes BGP EVPN templates to Catalyst Center:
 
-1. Fetch `.j2` templates from the Git repository
-2. Enrich each template with Git commit metadata (version description + diff header)
+1. Discover `.j2` templates — from the Git repository, or from a local directory when `template_source: local`
+2. Enrich each template with Git commit metadata (version description + diff header); the local source substitutes a timestamped description
 3. Read `BGP-EVPN-BUILD.yml` to determine composite ordering
 4. Sync to the Catalyst Center Template Project via `cisco.dnac.template_workflow_manager`
 5. Create/update the `BGP-EVPN-BUILD` composite and bind it to a CLI Network Profile
 
-It supports **multiple subfolders** (`git_repo_subfolders` in `inventory/group_vars/catalyst_center/connection.yml`), each synced to its own CatC project. See [`ansible/README.md`](CICD%20Pipeline/ansible/README.md) for configuration details.
+It supports **multiple subfolders** (`git_repo_subfolders` in `inventory/group_vars/catalyst_center/connection.yml`), each synced to its own CatC project. `template_source: local` reuses that same subfolder list against `template_local_root`, so you can push uncommitted template edits straight into Catalyst Center while iterating:
+
+```bash
+ansible-playbook playbooks/07_template_sync.yml -e template_source=local
+```
+
+See [`ansible/README.md`](CICD%20Pipeline/ansible/README.md) for configuration details.
 
 ### 8.2 Provisioning Workflow
 

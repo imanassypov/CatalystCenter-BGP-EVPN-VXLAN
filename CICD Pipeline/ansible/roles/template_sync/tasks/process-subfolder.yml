@@ -13,15 +13,21 @@
 # =============================================================================
 # Syncs a single repository subfolder into its own Catalyst Center Template
 # Programmer project. Included once per entry of git_repo_subfolders by
-# roles/template_sync/tasks/main.yml. The repository file tree is fetched once
-# at play level and re-filtered here per subfolder.
+# roles/template_sync/tasks/main.yml. The source file list is built once at play
+# level and re-filtered here per subfolder.
+#
+# Content is read from GitHub (raw.githubusercontent.com) or from
+# template_local_root, depending on template_source. Commit metadata and diff
+# headers exist only for the Git source; local syncs get a timestamp comment.
 #
 # Processing order is derived from the composite definitions, not hardcoded:
 # regular templates are pushed first so that composite members already exist.
 #
 # Pre:  subfolder_item (loop var): { path, project_name }
-#       repo_tree_response.json.tree — full recursive GitHub tree (play level)
-#       git_repo_slug, git_branch, git_api_base, git_auth_header
+#       repo_tree_entries — unified [{ path }] file list built at play level by
+#                           main.yml from either GitHub or template_local_root
+#       template_source, template_local_root
+#       git_repo_slug, git_branch, git_api_base, git_auth_header (git source only)
 #       template_extension (j2), include_diff_header,
 #       catc_template_summary_maxchar, default_device_types,
 #       default_software_type / _variant, default_template_version
@@ -129,12 +135,12 @@
 #            "mode": "100644", "type": "blob",
 #            "sha":  "d4e5f6a7b8c9d0e1f2031425364758697a8b9c0d", "size": 512 }
 #        ]
-# The tree entry and the DMZ blob are both dropped: the first fails the
-# type == blob test, the second fails the prefix search.
+# The tree entry and the DMZ blob are both dropped: the first never reaches this
+# list (main.yml keeps blobs only), the second fails the prefix search.
 - name: Build template and composite file lists from repository tree
   set_fact:
-    api_template_files: "{{ repo_tree_response.json.tree | selectattr('type', 'eq', 'blob') | selectattr('path', 'search', '^' + git_tree_prefix) | selectattr('path', 'search', '\\.' + template_extension + '$') | list }}"
-    api_composite_files: "{{ repo_tree_response.json.tree | selectattr('type', 'eq', 'blob') | selectattr('path', 'search', '^' + git_tree_prefix) | selectattr('path', 'search', '\\.yml$') | list }}"
+    api_template_files: "{{ repo_tree_entries | selectattr('path', 'search', '^' + git_tree_prefix) | selectattr('path', 'search', '\\.' + template_extension + '$') | list }}"
+    api_composite_files: "{{ repo_tree_entries | selectattr('path', 'search', '^' + git_tree_prefix) | selectattr('path', 'search', '\\.yml$') | list }}"
 
 - name: Warn and skip empty subfolder
   when: api_template_files | length == 0
@@ -189,6 +195,7 @@
         msg: "Subfolder '{{ subfolder_item.path | default('(repo root)') }}' -> project '{{ project_name }}'"
 
     - name: Fetch template file contents from GitHub
+      when: (template_source | default('git')) == 'git'
       uri:
         url: "https://raw.githubusercontent.com/{{ git_repo_slug }}/{{ git_branch | default('HEAD') }}/{{ item.path | replace(' ', '%20') }}"
         method: GET
@@ -200,7 +207,19 @@
         label: "{{ item.path | basename }}"
       register: template_content_results
 
+    # slurp rather than the file lookup so content is byte-identical to the Git
+    # path, which preserves trailing newlines.
+    - name: Read template file contents from local directory
+      when: (template_source | default('git')) == 'local'
+      ansible.builtin.slurp:
+        src: "{{ template_local_root }}/{{ item.path }}"
+      loop: "{{ api_template_files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      register: local_template_content_results
+
     - name: Fetch last commit info for each template file
+      when: (template_source | default('git')) == 'git'
       uri:
         url: "{{ git_api_base }}/repos/{{ git_repo_slug }}/commits?path={{ item.path | replace(' ', '%20') }}&per_page=1&sha={{ git_branch | default('HEAD') }}"
         method: GET
@@ -212,7 +231,9 @@
       register: template_commit_results
 
     - name: Fetch commit diff for each template file
-      when: include_diff_header and template_commit_results.results[diff_idx].json | length > 0
+      when:
+        - (template_source | default('git')) == 'git'
+        - include_diff_header and template_commit_results.results[diff_idx].json | length > 0
       uri:
         url: "{{ git_api_base }}/repos/{{ git_repo_slug }}/commits/{{ template_commit_results.results[diff_idx].json[0].sha }}"
         method: GET
@@ -267,21 +288,28 @@
     #   In : template_commit_results.results[0].json = []
     #   Out: enriched_template_files[0].commit_message = "Synced from Git"
     #        enriched_template_files[0].diff_content   = ""
+    # Example - local source, no commit history available
+    #   In : template_source = "local"
+    #        start_timestamp.date = "2026-08-13", start_timestamp.time = "09:14:22"
+    #   Out: enriched_template_files[0].commit_message = "Synced from local directory 2026-08-13 09:14:22"
+    #        enriched_template_files[0].diff_content   = ""
     # commit_message becomes the Catalyst Center template version comment, so it
     # is truncated to catc_template_summary_maxchar to avoid an API rejection.
     - name: Build enriched template file objects
       set_fact:
         enriched_template_files: "{{ enriched_template_files | default([]) + [enriched] }}"
       vars:
-        _commit_list: "{{ template_commit_results.results[tmpl_idx].json }}"
+        _from_git: "{{ (template_source | default('git')) == 'git' }}"
+        _commit_list: "{{ template_commit_results.results[tmpl_idx].json if (template_source | default('git')) == 'git' else [] }}"
         _commit: "{{ _commit_list[0] if _commit_list | length > 0 else {} }}"
-        _commit_message: "{{ (_commit.commit.author.date | default('') + ' | ' + _commit.commit.message | default('') + ' [' + _commit.commit.author.name | default('') + ']')[:catc_template_summary_maxchar] if _commit else 'Synced from Git' }}"
-        _diff_files: "{{ template_diff_results.results[tmpl_idx].json.files | default([]) if (include_diff_header and template_diff_results is defined and not (template_diff_results.results[tmpl_idx].skipped | default(false))) else [] }}"
+        _local_message: "{{ 'Synced from local directory ' + start_timestamp.date + ' ' + start_timestamp.time }}"
+        _commit_message: "{{ (_commit.commit.author.date | default('') + ' | ' + _commit.commit.message | default('') + ' [' + _commit.commit.author.name | default('') + ']')[:catc_template_summary_maxchar] if _commit else (_local_message if not (_from_git | bool) else 'Synced from Git') }}"
+        _diff_files: "{{ template_diff_results.results[tmpl_idx].json.files | default([]) if ((template_source | default('git')) == 'git' and include_diff_header and template_diff_results is defined and not (template_diff_results.results[tmpl_idx].skipped | default(false))) else [] }}"
         _file_patch: "{{ (_diff_files | selectattr('filename', 'eq', item.path) | list | first).patch | default('') if _diff_files | length > 0 else '' }}"
         enriched:
           name: "{{ item.path | basename }}"
           path: "{{ item.path }}"
-          content: "{{ template_content_results.results[tmpl_idx].content }}"
+          content: "{{ template_content_results.results[tmpl_idx].content if (template_source | default('git')) == 'git' else (local_template_content_results.results[tmpl_idx].content | b64decode) }}"
           commit_message: "{{ _commit_message }}"
           diff_content: "{{ _file_patch }}"
       loop: "{{ api_template_files }}"
@@ -290,7 +318,9 @@
         label: "{{ item.path | basename }}"
 
     - name: Fetch composite definition file contents from GitHub
-      when: api_composite_files | length > 0
+      when:
+        - (template_source | default('git')) == 'git'
+        - api_composite_files | length > 0
       uri:
         url: "https://raw.githubusercontent.com/{{ git_repo_slug }}/{{ git_branch | default('HEAD') }}/{{ item.path | replace(' ', '%20') }}"
         method: GET
@@ -301,6 +331,17 @@
       loop_control:
         label: "{{ item.path | basename }}"
       register: composite_content_results
+
+    - name: Read composite definition file contents from local directory
+      when:
+        - (template_source | default('git')) == 'local'
+        - api_composite_files | length > 0
+      ansible.builtin.slurp:
+        src: "{{ template_local_root }}/{{ item.path }}"
+      loop: "{{ api_composite_files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      register: local_composite_content_results
 
     # Example
     #   In : item = {
@@ -328,7 +369,7 @@
         enriched:
           name: "{{ item.path | basename }}"
           path: "{{ item.path }}"
-          content: "{{ composite_content_results.results[comp_idx].content }}"
+          content: "{{ composite_content_results.results[comp_idx].content if (template_source | default('git')) == 'git' else (local_composite_content_results.results[comp_idx].content | b64decode) }}"
       loop: "{{ api_composite_files }}"
       loop_control:
         index_var: comp_idx
