@@ -57,8 +57,15 @@ route-map FABRIC-LOOPBACKS permit 10
 {# OSPF 1 would decouple peer reachability from tunnel state,         #}
 {# preventing fall-over from triggering on tunnel failure.            #}
 {# Gated on RR role (spines) + DEFN_TUNNELS.                         #}
+{# Rebuilt from scratch each push: CatC templates are additive, so a  #}
+{# stale entry squatting on a seq number (e.g. the day-0 CML config   #}
+{# 'seq 15 permit 198.19.1.200/32') would block the intended prefix   #}
+{# and leave a permanent compliance deviation.                        #}
 {# ================================================================== #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['RR'] and DEFN_TUNNELS is defined and DEFN_TUNNELS | length > 0 %}
+! @start-ignore-compliance
+no ip prefix-list MCLUSTER-LOOPBACKS
+! @end-ignore-compliance
 {% for remote in DEFN_NODE_ROLES['MCLUSTER'] %}
 ip prefix-list MCLUSTER-LOOPBACKS seq {{loop.index * 10 + 5}} permit {{DEFN_LOOP_MCLUSTER[remote]['gre_src']}}/32
 {% endfor %}
