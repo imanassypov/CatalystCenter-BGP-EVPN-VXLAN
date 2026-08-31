@@ -957,9 +957,9 @@ nodes:
           \ authentication local\nip http secure-server\nip route vrf Mgmt-vrf 0.0.0.0\
           \ 0.0.0.0 198.18.128.1\nip ssh bulk-mode 131072\n!\n!\n!\nip prefix-list\
           \ DEFAULTRT seq 10 permit 0.0.0.0/0\n!\nip prefix-list DHCP-SERVER seq 5\
-          \ permit 198.19.2.76/30\n!\nip prefix-list FABRIC-LOOPBACKS seq 10 permit\
-          \ 198.19.1.0/24 ge 32\n!\nip prefix-list MCLUSTER-LOOPBACKS seq 15 permit\
-          \ 198.19.1.200/32\nroute-map BGP-TO-OSPF permit 10\n match ip address prefix-list\
+          \ permit 198.19.2.76/30\n!\nip prefix-list MCLUSTER-LOOPBACKS seq 15 permit\
+          \ 10.100.2.1/32\n!\nip prefix-list MCLUSTER-LOOPBACKS seq 25 permit\
+          \ 10.100.4.1/32\nroute-map BGP-TO-OSPF permit 10\n match ip address prefix-list\
           \ DHCP-SERVER\n!\nroute-map BGP-TO-OSPF permit 20\n match ip address prefix-list\
           \ DEFAULTRT\n!\nroute-map BGP-TO-OSPF permit 30\n match ip address prefix-list\
           \ MCLUSTER-LOOPBACKS\n!\nroute-map OSPF-TO-BGP permit 10\n match ip address\
@@ -2181,9 +2181,9 @@ nodes:
           \ authentication local\nip http secure-server\nip route vrf Mgmt-vrf 0.0.0.0\
           \ 0.0.0.0 198.18.128.1\nip ssh bulk-mode 131072\n!\n!\n!\nip prefix-list\
           \ DEFAULTRT seq 10 permit 0.0.0.0/0\n!\nip prefix-list DHCP-SERVER seq 5\
-          \ permit 198.19.2.76/30\n!\nip prefix-list FABRIC-LOOPBACKS seq 10 permit\
-          \ 198.19.1.0/24 ge 32\n!\nip prefix-list MCLUSTER-LOOPBACKS seq 15 permit\
-          \ 198.19.1.200/32\nroute-map BGP-TO-OSPF permit 10\n match ip address prefix-list\
+          \ permit 198.19.2.76/30\n!\nip prefix-list MCLUSTER-LOOPBACKS seq 15 permit\
+          \ 10.100.2.1/32\n!\nip prefix-list MCLUSTER-LOOPBACKS seq 25 permit\
+          \ 10.100.4.1/32\nroute-map BGP-TO-OSPF permit 10\n match ip address prefix-list\
           \ DHCP-SERVER\n!\nroute-map BGP-TO-OSPF permit 20\n match ip address prefix-list\
           \ DEFAULTRT\n!\nroute-map BGP-TO-OSPF permit 30\n match ip address prefix-list\
           \ MCLUSTER-LOOPBACKS\n!\nroute-map OSPF-TO-BGP permit 10\n match ip address\
