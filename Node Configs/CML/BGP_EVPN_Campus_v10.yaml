@@ -5072,7 +5072,9 @@ nodes:
           \ connected\n  default-information originate\n exit-address-family\n!\n\
           ip forward-protocol nd\nip tcp mss 1280\nip tcp window-size 212000\nip http\
           \ server\nip http authentication local\nip http secure-server\nip route\
-          \ vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1\nip ssh bulk-mode 131072\n!\n\
+          \ vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1\nip route vrf blue 0.0.0.0\
+          \ 0.0.0.0 198.19.2.94\nip route vrf green 0.0.0.0 0.0.0.0 198.19.2.94\n\
+          ip route vrf shared 0.0.0.0 0.0.0.0 198.19.2.94\nip ssh bulk-mode 131072\n!\n\
           ip as-path access-list 1 permit _$\n!\n!\nip prefix-list evpn-to-shared\
           \ seq 5 permit 0.0.0.0/0 le 32\n!\nip prefix-list shared-to-evpn seq 5 permit\
           \ 0.0.0.0/0\nroute-map DMZ-policy-out permit 10\n match as-path 1\n!\nroute-map\

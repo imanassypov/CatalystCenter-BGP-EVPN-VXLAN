@@ -29,3 +29,17 @@
   'Border-01.dcloud.cisco.com': ['902','903'],
   'Border-02.dcloud.cisco.com': ['902','903']
 } %}
+{# -------------------------------------------------------------------- #}
+{# DEFN_VRF_BORDER_IMPORT_RTS - extra RTs imported on BORDER VRFs only  #}
+{#                                                                      #}
+{# After rewrite-evpn-rt-asn, DMZ shared-services Type-5 (RT             #}
+{# 65003:1000 / 65004:1000) becomes 65001:1000. Campus tenant VRFs      #}
+{# otherwise import only :902 / :903, so dmz2's shared prefix is         #}
+{# received but never installed (PfxRcd=0).                              #}
+{#                                                                      #}
+{# Mirrors the DMZ-side leak (blue/green import :1000). Do NOT add a    #}
+{# campus 'shared' VRF or L3VNI — shared stays at the DMZ/firewall.     #}
+{# Emitted by FABRIC-VRF.j2 when DEVICE is BORDER and DEFN_TUNNELS is   #}
+{# non-empty.                                                            #}
+{# -------------------------------------------------------------------- #}
+{% set DEFN_VRF_BORDER_IMPORT_RTS = ['1000'] %}
