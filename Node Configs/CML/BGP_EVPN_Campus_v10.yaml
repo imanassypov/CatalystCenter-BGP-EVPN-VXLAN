@@ -4100,7 +4100,7 @@ nodes:
           ip route vrf green 0.0.0.0 0.0.0.0 198.18.130.74\nip route vrf green 0.0.0.0\
           \ 0.0.0.0 198.19.2.74\nip route vrf shared 0.0.0.0 0.0.0.0 198.19.2.74\n\
           ip ssh bulk-mode 131072\nip ssh source-interface Loopback0\n!\nip as-path\
-          \ access-list 1 permit _$\n!\n!\nip prefix-list evpn-to-shared seq 5 permit\
+          \ access-list 1 permit ^$\n!\n!\nip prefix-list evpn-to-shared seq 5 permit\
           \ 0.0.0.0/0 le 32\n!\nip prefix-list shared-to-evpn seq 5 permit 0.0.0.0/0\n\
           logging source-interface Loopback0\nlogging source-interface GigabitEthernet0/0\
           \ vrf Mgmt-vrf\nlogging host 10.0.10.104 vrf Mgmt-vrf\nlogging host 10.0.10.86\
@@ -5075,7 +5075,7 @@ nodes:
           \ vrf Mgmt-vrf 0.0.0.0 0.0.0.0 198.18.128.1\nip route vrf blue 0.0.0.0\
           \ 0.0.0.0 198.19.2.94\nip route vrf green 0.0.0.0 0.0.0.0 198.19.2.94\n\
           ip route vrf shared 0.0.0.0 0.0.0.0 198.19.2.94\nip ssh bulk-mode 131072\n!\n\
-          ip as-path access-list 1 permit _$\n!\n!\nip prefix-list evpn-to-shared\
+          ip as-path access-list 1 permit ^$\n!\n!\nip prefix-list evpn-to-shared\
           \ seq 5 permit 0.0.0.0/0 le 32\n!\nip prefix-list shared-to-evpn seq 5 permit\
           \ 0.0.0.0/0\nroute-map DMZ-policy-out permit 10\n match as-path 1\n!\nroute-map\
           \ EVPN-TYPE5-ONLY permit 10\n match evpn route-type 5\n!\nroute-map TO-BGP\

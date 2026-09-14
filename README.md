@@ -80,7 +80,7 @@ Borders peer with the DMZ gateway over a **GRE underlay** to decouple EVPN sessi
 > **Operator note**: The DMZ gateways are not provisioned by this template set. Configure them to mirror the live design:
 > - `dmz1` (ASN 65003): Lo0 = `198.19.1.200/32` (OSPF 100 RID, EVPN update-source), Lo1 = `10.100.2.1/32` (GRE hub source), `Tunnel10/11` destinations = `10.100.2.5` / `10.100.2.6`, EVPN neighbors = `10.101.1.2` / `10.101.2.2`.
 > - `dmz2` (ASN 65004): Lo0 = `198.19.2.200/32`, Lo1 = `10.100.4.1/32`, `Tunnel10/11` addresses `10.100.102.1` / `10.100.103.1`, destinations = `10.100.2.5` / `10.100.2.6`, EVPN neighbors = `10.101.1.2` / `10.101.2.2` (shared border Lo2s). Both DMZs also peer the cores directly over their `/30` uplinks (`remote-as 65002`).
-> - Tenant Type-5 origin: `dmz1` needs blue/green default statics (`198.18.130.74` / `198.19.2.74`); `dmz2` needs the same toward the Location-B FW (`198.19.2.94`) so `default-information originate` actually advertises 902/903. Keep `DMZ-policy-out` as `as-path _$` — do not soften it.
+> - Tenant Type-5 origin: `dmz1` needs blue/green default statics (`198.18.130.74` / `198.19.2.74`); `dmz2` needs the same toward the Location-B FW (`198.19.2.94`) so `default-information originate` actually advertises 902/903. `DMZ-policy-out` must match `ip as-path access-list 1 permit ^$` (locally originated only) - do not soften it, and do **not** use `_$`: in IOS AS-path regex `_` also matches the zero-width end-of-string, so `_$` is a permit-any that filters nothing. See [Release Notes/2026-09-14-as-path-regex-permit-any-fix.md](Release%20Notes/2026-09-14-as-path-regex-permit-any-fix.md).
 
 ### 1.4 Platform and Software Requirements
 

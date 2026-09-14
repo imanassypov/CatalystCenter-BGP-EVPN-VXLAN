@@ -18,10 +18,19 @@
 {# Dummy set to satisfy CatC static UDV scanner - overridden at runtime by for-loop #}
 {% set vrf = {'name': '', 'id': '', 'mdt_default': '', 'mdt_data': ''} %}
 {# =========================================== #}
-{# BGP Border Prefix-List to prevent loops     #}
+{# BGP Border AS-path filter to prevent loops  #}
+{# ^$ = empty AS-path = originated inside the  #}
+{# fabric ASN. _$ would match EVERY path (_     #}
+{# also matches the zero-width end-of-string), #}
+{# so it is a permit-any and filters nothing.  #}
+{# Rebuilt each push: as-path ACLs are append- #}
+{# only, so a stale _$ entry would defeat ^$.  #}
 {# =========================================== #}
 {% if DEVICE_HOSTNAME in DEFN_NODE_ROLES['RR'] %}
-ip as-path access-list 100 permit _$
+! @start-ignore-compliance
+no ip as-path access-list 100
+! @end-ignore-compliance
+ip as-path access-list 100 permit ^$
 !
 route-map EVPN-PEER-BORDER-OUT permit 10 
  match as-path 100

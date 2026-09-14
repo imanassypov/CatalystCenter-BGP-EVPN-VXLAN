@@ -39,8 +39,13 @@ ip route vrf green 0.0.0.0 0.0.0.0 198.19.2.94
 ip route vrf shared 0.0.0.0 0.0.0.0 198.19.2.94
 ```
 
-`DMZ-policy-out` (`as-path _$`) is unchanged so DMZ sites do not re-advertise
+`DMZ-policy-out` is unchanged so DMZ sites do not re-advertise
 campus prefixes back into the fabric.
+
+> **Correction (2026-09-14)**: the AS-path ACL backing `DMZ-policy-out` was
+> written as `permit _$`, which is a permit-any and never filtered anything.
+> It is now `permit ^$`. See
+> [2026-09-14-as-path-regex-permit-any-fix.md](2026-09-14-as-path-regex-permit-any-fix.md).
 
 ## Validation
 
