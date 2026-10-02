@@ -107,8 +107,12 @@ fi
 
 # Any pre-existing vault must open with the passphrase we are about to use,
 # otherwise a freshly created one would silently orphan real credentials.
+# Unencrypted files are skipped rather than failed: they cannot be a passphrase
+# mismatch, and step 5 reports them separately. Testing them here would turn a
+# plaintext placeholder into a misleading "wrong passphrase" error.
 for existing in "$GROUP_VARS"/*/vault.yml; do
     [ -e "$existing" ] || continue
+    [ "$(head -c 14 "$existing")" = '$ANSIBLE_VAULT' ] || continue
     ansible-vault view "$existing" --vault-password-file "$VAULT_PASS" >/dev/null 2>&1 ||
         die "$existing does not decrypt with $VAULT_PASS.
        Restore the original passphrase, or remove the stale vault and re-run."
@@ -173,19 +177,26 @@ for example in "$GROUP_VARS"/*/vault.yml.example; do
     elif [ "$REPORT_ONLY" = yes ]; then
         skip "$group/vault.yml MISSING"
     else
-        cp "$example" "$target"
-        chmod 600 "$target"
-        # Only files seeded here — ansible-vault errors on already-encrypted
-        # input, and re-encrypting someone else's vault would destroy it.
-        #
+        # Encrypt a temporary copy and move it into place only on success.
+        # Encrypting $target directly leaves a PLAINTEXT vault behind if the
+        # encrypt step fails, which then looks like a legitimate existing file
+        # to the next run and is silently skipped. mv is atomic here because
+        # the temp file shares a directory with the target.
+        tmp="$target.tmp.$$"
+        cp "$example" "$tmp"
+        chmod 600 "$tmp"
         # --encrypt-vault-id is mandatory: ansible.cfg already sets
         # vault_password_file, so passing it again on the command line yields
         # two vault-ids both named "default" and encrypt refuses to choose
         # ("The vault-ids default,default are available to encrypt").
         # Decryption is unaffected, as view/edit simply try every id.
-        ansible-vault encrypt "$target" \
-            --vault-password-file "$VAULT_PASS" \
-            --encrypt-vault-id default >/dev/null
+        if ! ansible-vault encrypt "$tmp" \
+                --vault-password-file "$VAULT_PASS" \
+                --encrypt-vault-id default >/dev/null; then
+            rm -f "$tmp"
+            die "failed to encrypt $group/vault.yml; no file was written"
+        fi
+        mv "$tmp" "$target"
         chg "seeded and encrypted $group/vault.yml"
         note_created "$target"
     fi
