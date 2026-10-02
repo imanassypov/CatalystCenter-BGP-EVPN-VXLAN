@@ -22,14 +22,18 @@
 #      vault.yml.example. Created from their examples ONLY when absent, with
 #      new vaults encrypted via ansible-vault. Existing files are never
 #      overwritten or re-encrypted.
+#   5. direnv plus its bash hook, so .env re-exports on cd instead of having to
+#      be sourced by hand every session. Unset CML_HOST is the single most
+#      common cause of a stage silently configuring nothing.
 #
 # Shell rather than a playbook because step 1 cannot be done from Ansible:
 # ansible.cfg sets vault_password_file, and ansible-core resolves that path at
 # startup, before the first task runs. A playbook that creates .vault_pass can
 # therefore never start on a fresh clone.
 #
-# Does NOT touch apt or /usr/bin/python3 — install-ansible.sh repoints those at
-# 3.8 so apt_pkg keeps working, and fighting it breaks package management.
+# Installs only direnv from apt, and never touches /usr/bin/python3 —
+# install-ansible.sh repoints it at 3.8 so apt_pkg keeps working, and fighting
+# it breaks package management.
 #
 # Idempotent and safe to re-run.
 #
@@ -51,7 +55,7 @@ GROUP_VARS="$ANSIBLE_DIR/inventory/group_vars"
 REPORT_ONLY=no
 case "${1:-}" in
     --report-only) REPORT_ONLY=yes ;;
-    -h|--help) sed -n '2,37p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,41p' "$0"; exit 0 ;;
     "") ;;
     *) printf 'unknown argument: %s (try --help)\n' "$1" >&2; exit 2 ;;
 esac
@@ -214,7 +218,72 @@ for example in "$GROUP_VARS"/*/vault.yml.example; do
     fi
 done
 
-# ── 5. Report ────────────────────────────────────────────────────────────────
+# ── 5. Shell integration ─────────────────────────────────────────────────────
+step "Shell integration (direnv)"
+
+# .envrc already runs dotenv_if_exists .env, so direnv is the only missing piece
+# that makes CML_HOST populate itself on cd. Convenience only, so nothing here
+# is fatal: the pipeline works with a manual `set -a; . ../.env; set +a`, and
+# this step must not break a laptop that has no apt.
+HOOK_ADDED=no
+
+if [ "$REPORT_ONLY" = yes ]; then
+    if command -v direnv >/dev/null 2>&1; then ok "direnv installed"; else skip "direnv MISSING"; fi
+else
+    if command -v direnv >/dev/null 2>&1; then
+        ok "direnv $(direnv version 2>/dev/null)"
+    else
+        if [ "$(id -u)" = 0 ]; then
+            APT_SUDO=""
+        elif sudo -n true 2>/dev/null; then
+            APT_SUDO="sudo -n"
+        else
+            APT_SUDO=unavailable
+        fi
+
+        if ! command -v apt-get >/dev/null 2>&1; then
+            warn "direnv missing and apt-get unavailable; install it yourself"
+        elif [ "$APT_SUDO" = unavailable ]; then
+            warn "direnv missing and not root; run: sudo apt-get install -y direnv"
+        else
+            # Retry behind apt-get update: a long-lived pod's package lists go
+            # stale and the first install then 404s on a moved .deb.
+            if ! $APT_SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -q direnv >/dev/null 2>&1; then
+                $APT_SUDO apt-get update -q >/dev/null 2>&1 || true
+                $APT_SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -q direnv >/dev/null 2>&1 || true
+            fi
+            if command -v direnv >/dev/null 2>&1; then
+                chg "installed direnv $(direnv version 2>/dev/null)"
+            else
+                warn "direnv install failed; export .env by hand"
+            fi
+        fi
+    fi
+
+    if command -v direnv >/dev/null 2>&1; then
+        if grep -q 'direnv hook bash' "$HOME/.bashrc" 2>/dev/null; then
+            ok "direnv hook already in ~/.bashrc"
+        else
+            cat >> "$HOME/.bashrc" <<'BASHRC_HOOK'
+
+# Re-export "CICD Pipeline/.env" on cd (added by bootstrap.sh)
+eval "$(direnv hook bash)"
+BASHRC_HOOK
+            chg "added direnv hook to ~/.bashrc"
+            HOOK_ADDED=yes
+        fi
+
+        # .envrc is untrusted on every fresh clone; without this direnv refuses
+        # to load it and only prints a "blocked" notice.
+        if direnv allow "$PIPELINE_DIR" 2>/dev/null; then
+            ok "trusted $(basename "$PIPELINE_DIR")/.envrc"
+        else
+            warn "direnv allow failed for $PIPELINE_DIR"
+        fi
+    fi
+fi
+
+# ── 6. Report ────────────────────────────────────────────────────────────────
 step "Summary"
 
 if [ -n "$CREATED" ]; then
@@ -223,15 +292,19 @@ else
     ok "nothing to create, all files present"
 fi
 
-# direnv is not installed on the dCloud jump host, so .env is never loaded
-# automatically there. With CML_HOST unset the CML inventory plugin returns zero
-# fabric hosts while still exiting 0, and later stages skip every device without
-# reporting an error.
+# With CML_HOST unset the CML inventory plugin resolves an empty hostname and
+# reports "[Errno -2] Name or service not known", which reads as a dead CML
+# rather than a missing variable. Worse, a stage whose inventory yields zero
+# hosts still exits 0, so it skips every device without reporting an error.
 if [ -n "${CML_HOST:-}" ]; then
     ok "CML_HOST exported, dynamic inventory will resolve"
 else
     warn "CML_HOST not exported. Run:  set -a; . ../.env; set +a"
     printf '           Without it the CML inventory silently returns ZERO fabric hosts.\n'
+    # The hook lives in .bashrc, so the shell that invoked bootstrap.sh never
+    # picks it up regardless of how this script exits.
+    [ "$HOOK_ADDED" = no ] ||
+        printf '           direnv will do this automatically in NEW shells.\n'
 fi
 
 [ -z "$PLAINTEXT" ] || warn "these vaults are NOT encrypted: $PLAINTEXT"
