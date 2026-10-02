@@ -6,6 +6,11 @@ Single Ansible project for Catalyst Center provisioning (stages 1–11), SWIM, a
 
 First-time environment setup — installer, vault password, group vaults, encryption, `.env` — lives in one place: **[GETTING_STARTED.md](GETTING_STARTED.md)**. Follow it once per jump host, then come back here for the playbook reference.
 
+Once the repo is cloned and the venv is active, **`./bootstrap.sh`** performs that
+setup end to end (vault passphrase, CML SDK, pinned collections, `.env`, group
+vaults, direnv). It is idempotent, and `--report-only` shows what is missing
+without writing anything.
+
 Already set up? Every session needs:
 
 ```bash
@@ -13,6 +18,9 @@ source ~/tecops-venv/bin/activate
 cd "CICD Pipeline" && set -a && . ./.env && set +a
 cd ansible
 ```
+
+With direnv installed by `bootstrap.sh`, the `.env` line is handled automatically
+in new shells.
 
 The optional group vaults for SWIM (`image_servers`) and YANG Suite (`yangsuite_servers`) are covered in [GETTING_STARTED.md](GETTING_STARTED.md#optional-group-vaults). Stage 11 device SSH credentials come from `Settings/settings.json` — there is no separate vault for them.
 

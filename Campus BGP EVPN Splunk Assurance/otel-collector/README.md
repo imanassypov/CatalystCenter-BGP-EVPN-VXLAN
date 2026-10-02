@@ -213,7 +213,7 @@ Expected dims now **include** `vni` and `evni` (in addition to
 | [`../README.md`](../README.md) | Full pipeline architecture, CCIE-oriented telemetry primer, operator guide |
 | [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Install `otelcol-yangfix`, HEC token, systemd override |
 | [`../campus_evpn_assurance/README.md`](../campus_evpn_assurance/README.md) | Splunk app queries, macros, troubleshooting |
-| [`../Model Maps/README.md`](../Model Maps/README.md) | CLI ⇄ Cisco YANG xpath mappings for streamed models |
+| [`../Model Maps/README.md`](../Model%20Maps/README.md) | CLI ⇄ Cisco YANG xpath mappings for streamed models |
 | [`yanggrpcreceiver-numeric-key-issue.md`](yanggrpcreceiver-numeric-key-issue.md) | Numeric list-key root cause and patch analysis |
 
 External:

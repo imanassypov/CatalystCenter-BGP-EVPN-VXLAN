@@ -14,6 +14,9 @@ cd .                    # or cd away and back — direnv loads .env
 
 Requires [direnv](https://direnv.net/) with the shell hook enabled (`eval "$(direnv hook zsh)"` in `~/.zshrc`).
 
+On the dCloud jump host, `ansible/bootstrap.sh` installs direnv, adds the bash
+hook, and runs `direnv allow` for you.
+
 Without direnv, source manually:
 
 ```bash

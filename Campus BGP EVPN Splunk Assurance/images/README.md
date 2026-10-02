@@ -7,7 +7,7 @@ PNG only** — they do not render `.mmd` inline.
 | PNG | Source `.mmd` | Used in |
 |---|---|---|
 | `build-assure-lifecycle.png` | `build-assure-lifecycle.mmd` | [`../README.md`](../README.md) — Build vs. Assure |
-| `pipeline-flow.png` | `pipeline-flow.mmd` | [`../README.md`](../README.md), [`../Model Maps/README.md`](../Model Maps/README.md) |
+| `pipeline-flow.png` | `pipeline-flow.mmd` | [`../README.md`](../README.md), [`../Model Maps/README.md`](../Model%20Maps/README.md) |
 | `telemetry-two-halves.png` | `telemetry-two-halves.mmd` | [`../README.md`](../README.md) — Telemetry Foundations |
 | `metric-journey.png` | `metric-journey.mmd` | [`../README.md`](../README.md) — Worked Example |
 | `splunk_executive.png` | *(screenshot)* | Source capture for Summary dashboard snippets (10 rows); also embedded in [`../README.md`](../README.md) Introduction |

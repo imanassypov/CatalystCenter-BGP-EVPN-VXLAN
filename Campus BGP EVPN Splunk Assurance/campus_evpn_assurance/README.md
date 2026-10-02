@@ -329,5 +329,5 @@ upgrade, and telemetry-pipeline procedures.
 | [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Install app + OTel collector, HEC, subscriptions |
 | [`../otel-collector/README.md`](../otel-collector/README.md) | `otelcol-yangfix`, numeric YANG keys, collector troubleshooting |
 | [`../model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](../model-config-snippets/telemetry-subscriptions.ios-xe.cfg) | IOS-XE subscription IDs 40101–40121 |
-| [`../Model Maps/README.md`](../Model Maps/README.md) | CLI ⇄ Cisco YANG xpath reference (when available locally) |
+| [`../Model Maps/README.md`](../Model%20Maps/README.md) | CLI ⇄ Cisco YANG xpath reference (when available locally) |
 | [`../images/README.md`](../images/README.md) | Pipeline diagram assets |

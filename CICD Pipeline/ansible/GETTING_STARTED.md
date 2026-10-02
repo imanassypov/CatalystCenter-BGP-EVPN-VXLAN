@@ -19,6 +19,28 @@ laptop. It is the only host in the pod with reachability to both Catalyst Center
 | 7 | Create and encrypt `inventory/group_vars/catalyst_center/vault.yml` | 2 min |
 | 8 | Verify, then run stage 01 | 5 min |
 
+### Fast path — `bootstrap.sh` does steps 4–7 for you
+
+After step 3, one script performs every remaining setup step and is safe to
+re-run:
+
+```bash
+cd ~/CatalystCenter-BGP-EVPN-VXLAN/CICD\ Pipeline/ansible
+source ~/tecops-venv/bin/activate
+./bootstrap.sh              # --report-only to see what is missing, writing nothing
+```
+
+It creates `.vault_pass`, installs the pinned CML SDK and collections, seeds and
+encrypts `.env` plus every group vault, and installs direnv with its bash hook so
+`.env` loads on `cd`. Existing files are never overwritten.
+
+It cannot be an Ansible playbook: `ansible.cfg` sets `vault_password_file`, and
+ansible-core resolves that path at startup, so on a fresh clone any playbook
+aborts before its first task — including one meant to create that very file.
+
+The manual steps below still document what each piece does, and remain the way to
+troubleshoot a bootstrap that warns.
+
 ---
 
 ## Prerequisites
