@@ -280,6 +280,18 @@ BASHRC_HOOK
         else
             warn "direnv allow failed for $PIPELINE_DIR"
         fi
+
+        # Prove it actually exports rather than assuming. An .envrc stdlib
+        # function the installed direnv lacks fails as "command not found" and
+        # direnv continues, exporting nothing while looking perfectly healthy.
+        if [ -f "$ENV_FILE" ]; then
+            if [ -n "$(direnv exec "$PIPELINE_DIR" printenv CML_HOST 2>/dev/null)" ]; then
+                ok ".envrc exports CML_HOST"
+            else
+                warn ".envrc did NOT export CML_HOST. Check: direnv exec '$PIPELINE_DIR' env"
+                HOOK_ADDED=no
+            fi
+        fi
     fi
 fi
 
