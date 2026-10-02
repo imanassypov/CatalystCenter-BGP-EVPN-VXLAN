@@ -239,6 +239,14 @@
       ansible.builtin.set_fact:
         _vault_plaintext: "{{ _vault_hdr.results | selectattr('rc', 'equalto', 0) | rejectattr('stdout', 'equalto', '$ANSIBLE_VAULT') | map(attribute='item') | list }}"
 
+    # direnv is not installed on the dCloud jump host, so .env is never loaded
+    # automatically there. Unset CML_HOST makes the CML inventory plugin return
+    # zero fabric hosts while still exiting 0 - later stages would then skip
+    # every device without reporting an error.
+    - name: "Check whether .env has been exported into the current shell"
+      ansible.builtin.set_fact:
+        _cml_host_env: "{{ lookup('ansible.builtin.env', 'CML_HOST') }}"
+
     # ── 4. Report ────────────────────────────────────────────────────────────
     - name: "Bootstrap summary"
       ansible.builtin.debug:
@@ -248,6 +256,7 @@
           - "collections      : installed from {{ _jumphost_requirements | basename }}"
           - "credential files : {{ 'all present' if _missing | length == 0 else (_missing | map('basename') | join(', ')) ~ ' were missing' }}"
           - "group_vars vaults: {{ _vault_targets | length }} found, {{ _vaults_to_create | length }} seeded and encrypted this run"
+          - "shell env        : {{ 'CML_HOST exported, dynamic inventory will resolve' if _cml_host_env else 'CML_HOST NOT exported - run `set -a; . ../.env; set +a` or the CML inventory silently returns ZERO fabric hosts' }}"
           - "{{ 'ACTION REQUIRED — these hold placeholder values. Edit with `ansible-vault edit <file>` before running stage 01:' if (_missing + _vaults_to_create) | length > 0 else 'No further action required.' }}"
           - "{{ (_missing + _vaults_to_create) | join(', ') }}"
           - "{{ 'WARNING — these vaults are NOT encrypted: ' ~ (_vault_plaintext | join(', ')) if _vault_plaintext | length > 0 else '' }}"
