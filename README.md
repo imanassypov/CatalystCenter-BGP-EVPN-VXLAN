@@ -413,16 +413,17 @@ Supporting directories:
 
 Template sync is implemented by [`playbooks/07_template_sync.yml`](CICD%20Pipeline/ansible/playbooks/07_template_sync.yml) and the `template_sync` role. It publishes BGP EVPN templates to Catalyst Center:
 
-1. Discover `.j2` templates — from the Git repository, or from a local directory when `template_source: local`
+1. Discover `.j2` templates — from the local clone by default, or from the Git repository when `template_source: git`
 2. Enrich each template with Git commit metadata (version description + diff header); the local source substitutes a timestamped description
 3. Read `BGP-EVPN-BUILD.yml` to determine composite ordering
 4. Sync to the Catalyst Center Template Project via `cisco.dnac.template_workflow_manager`
 5. Create/update the `BGP-EVPN-BUILD` composite and bind it to a CLI Network Profile
 
-It supports **multiple subfolders** (`git_repo_subfolders` in `inventory/group_vars/catalyst_center/connection.yml`), each synced to its own CatC project. `template_source: local` reuses that same subfolder list against `template_local_root`, so you can push uncommitted template edits straight into Catalyst Center while iterating:
+It supports **multiple subfolders** (`git_repo_subfolders` in `inventory/group_vars/catalyst_center/connection.yml`), each synced to its own CatC project. The same subfolder list drives both sources. `template_source: local` is the default — the clone already holds the templates, so edits go straight to Catalyst Center with no commit, push, or internet access:
 
 ```bash
-ansible-playbook playbooks/07_template_sync.yml -e template_source=local
+ansible-playbook playbooks/07_template_sync.yml                        # local clone
+ansible-playbook playbooks/07_template_sync.yml -e template_source=git  # published branch
 ```
 
 See [`ansible/README.md`](CICD%20Pipeline/ansible/README.md) for configuration details.

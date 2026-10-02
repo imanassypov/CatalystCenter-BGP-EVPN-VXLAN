@@ -209,19 +209,24 @@ ansible-playbook playbooks/06.5_swim_postcheck.yml
 
 | `template_source` | Reads from | Auth | Commit metadata | Diff header |
 |---|---|---|---|---|
-| `git` (default) | GitHub REST API on `git_repo` / `git_branch` | `git_token` (vault) — optional for public repos, lifts the 60 req/hr anonymous limit | Real commit message, author, SHA | Honours `include_diff_header` |
-| `local` | `template_local_root` on the machine running Ansible | none | Synthesised `Synced from local directory <date> <time>` | Always off — there is no commit to diff |
+| `local` (default) | `template_local_root` on the machine running Ansible | none | Synthesised `Synced from local directory <date> <time>` | Always off — there is no commit to diff |
+| `git` | GitHub REST API on `git_repo` / `git_branch` | `git_token` (vault) — optional for public repos, lifts the 60 req/hr anonymous limit | Real commit message, author, SHA | Honours `include_diff_header` |
+
+`local` is the default because the clone already contains the templates: it needs
+no internet and no token, and it syncs the checkout being edited rather than
+whatever happens to be on the remote branch. Use `git` to push a specific
+published branch instead of the working tree.
 
 ```bash
-ansible-playbook playbooks/07_template_sync.yml                          # GitHub
-ansible-playbook playbooks/07_template_sync.yml -e template_source=local  # this working tree
-ansible-playbook playbooks/07_template_sync.yml -e template_source=local \
+ansible-playbook playbooks/07_template_sync.yml                          # this working tree
+ansible-playbook playbooks/07_template_sync.yml -e template_source=git    # GitHub branch
+ansible-playbook playbooks/07_template_sync.yml \
   -e template_local_root=/abs/path/to/templates
 ```
 
 | Variable | Default | Description |
 |---|---|---|
-| `template_source` | `git` | `git` or `local`. Any other value fails the run immediately. |
+| `template_source` | `local` | `git` or `local`. Any other value fails the run immediately. |
 | `template_local_root` | repository root (derived from `playbook_dir`) | Directory the `local` source scans. Must exist and be a directory. |
 | `git_repo_subfolders[].path` | see `connection.yml` | Relative to the repo root (`git`) **or** to `template_local_root` (`local`) — one list drives both. |
 | `git_repo_subfolders[].project_name` | see `connection.yml` | Catalyst Center Template Programmer project each subfolder syncs into. |
