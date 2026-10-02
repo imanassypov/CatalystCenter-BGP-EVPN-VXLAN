@@ -30,8 +30,16 @@
 #
 # Idempotent and safe to re-run.
 #
-# Run: ansible-playbook playbooks/00_bootstrap_script_server.yml
-#      ansible-playbook playbooks/00_bootstrap_script_server.yml -e scaffold_secrets=false
+# Run via the wrapper, which creates ../.vault_pass first:
+#   ./bootstrap.sh
+#   ./bootstrap.sh -e scaffold_secrets=false   # report only, write nothing
+#
+# Invoking this playbook directly on a fresh clone fails before the first task
+# with "The vault password file ... was not found", because ansible.cfg sets
+# vault_password_file and ansible-core resolves it at startup. Supply an
+# existing one if you need to bypass the wrapper:
+#   ansible-playbook playbooks/00_bootstrap_script_server.yml \
+#     --vault-password-file ~/.vault_pass
 # =============================================================================
 - name: Bootstrap the dCloud script server for the BGP EVPN pipeline
   hosts: localhost
