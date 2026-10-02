@@ -177,7 +177,15 @@ for example in "$GROUP_VARS"/*/vault.yml.example; do
         chmod 600 "$target"
         # Only files seeded here — ansible-vault errors on already-encrypted
         # input, and re-encrypting someone else's vault would destroy it.
-        ansible-vault encrypt "$target" --vault-password-file "$VAULT_PASS" >/dev/null
+        #
+        # --encrypt-vault-id is mandatory: ansible.cfg already sets
+        # vault_password_file, so passing it again on the command line yields
+        # two vault-ids both named "default" and encrypt refuses to choose
+        # ("The vault-ids default,default are available to encrypt").
+        # Decryption is unaffected, as view/edit simply try every id.
+        ansible-vault encrypt "$target" \
+            --vault-password-file "$VAULT_PASS" \
+            --encrypt-vault-id default >/dev/null
         chg "seeded and encrypted $group/vault.yml"
         note_created "$target"
     fi
