@@ -1,7 +1,7 @@
 ---
 # SECRETS — copy to vault.yml and encrypt:
 #   cp vault.yml.example vault.yml
-#   ansible-vault encrypt vault.yml --vault-password-file ../../../.vault_pass
+#   ansible-vault encrypt vault.yml --vault-password-file ../../../../.vault_pass
 #
 # YS admin username must NOT be "admin" (upstream Django constraint).
 

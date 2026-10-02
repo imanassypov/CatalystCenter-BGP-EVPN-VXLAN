@@ -1,7 +1,7 @@
 ---
 # vault.yml.example — copy to vault.yml and encrypt:
 #   cp vault.yml.example vault.yml
-#   ansible-vault encrypt vault.yml --vault-password-file ../.vault_pass
+#   ansible-vault encrypt vault.yml --vault-password-file ../../../../.vault_pass
 #
 # Catalyst Center API credentials (used by all pipeline stages).
 catc_username: admin
