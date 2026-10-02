@@ -64,7 +64,9 @@ warn() { printf '   WARN    %s\n' "$*"; }
 die()  { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
 
 CREATED=""
-note_created() { CREATED="${CREATED}${CREATED:+, }$(basename "$1")"; }
+# Relative to the pipeline root, not basename: three group_vars files are all
+# called vault.yml, so basenames would report "vault.yml, vault.yml, vault.yml".
+note_created() { CREATED="${CREATED}${CREATED:+, }${1#"$PIPELINE_DIR/"}"; }
 
 # ── Preflight ────────────────────────────────────────────────────────────────
 step "Preflight"
