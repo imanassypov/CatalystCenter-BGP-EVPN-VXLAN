@@ -4,8 +4,9 @@
 #   ansible-vault encrypt vault.yml --vault-password-file ../../../../.vault_pass
 #
 # Catalyst Center API credentials (used by all pipeline stages).
+# Default dCloud lab password — change for any non-lab deployment.
 catc_username: admin
-catc_password: your_catc_password_here
+catc_password: C1sco12345
 
 # GitHub token (stage 7 template sync) — optional if using SSH deploy keys
 # git_token: your_github_token_here
