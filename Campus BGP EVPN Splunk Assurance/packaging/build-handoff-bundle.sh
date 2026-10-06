@@ -22,8 +22,8 @@ if [[ -z "${version}" ]]; then
   exit 1
 fi
 
-if [[ ! -f "${OTEL_DIR}/receiver_yang_26_05_27.tar.gz" ]]; then
-  echo "Missing required collector source bundle: ${OTEL_DIR}/receiver_yang_26_05_27.tar.gz" >&2
+if [[ ! -f "${OTEL_DIR}/agent_config.running.yaml" ]]; then
+  echo "Missing required collector config: ${OTEL_DIR}/agent_config.running.yaml" >&2
   exit 1
 fi
 
@@ -43,7 +43,6 @@ trap cleanup EXIT
 mkdir -p "${bundle_root}"
 
 cp "${app_package}" "${bundle_root}/"
-cp "${ASSURANCE_DIR}/SETUP_GUIDE.md" "${bundle_root}/"
 cp "${ASSURANCE_DIR}/README.md" "${bundle_root}/"
 cp "${ASSURANCE_DIR}/model-config-snippets/telemetry-subscriptions.ios-xe.cfg" "${bundle_root}/"
 cp "${SCRIPT_DIR}/evpn_device_inventory.template.csv" "${bundle_root}/evpn_device_inventory.template.csv"
@@ -52,6 +51,9 @@ cp "${SCRIPT_DIR}/evpn_segment_inventory.template.csv" "${bundle_root}/evpn_segm
 rsync -a \
   --exclude '.DS_Store' \
   --exclude '._*' \
+  --exclude 'builder.yaml' \
+  --exclude 'receiver_yang_26_05_27.tar.gz' \
+  --exclude 'systemd/' \
   "${OTEL_DIR}/" "${bundle_root}/otel-collector/"
 
 rm -f "${bundle_path}"

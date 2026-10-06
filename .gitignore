@@ -18,7 +18,8 @@ Linkedin Blogposts/
 Lantern Blogposts/
 # Ansible runtime artifacts
 .ansible/
-Campus BGP EVPN Splunk Assurance/packaging/dist/
+Campus BGP EVPN Splunk Assurance/packaging/dist/*
+!Campus BGP EVPN Splunk Assurance/packaging/dist/campus_evpn_assurance-1.5.0.spl
 
 # Ansible vault password files (secrets — never commit)
 .vault_pass

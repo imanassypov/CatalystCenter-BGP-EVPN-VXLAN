@@ -123,7 +123,7 @@ Campus BGP EVPN Splunk Assurance/  # Streaming telemetry assurance
 ├── otel-collector/                # OpenTelemetry collector config
 ├── packaging/                     # Build scripts (.spl + handoff bundle)
 ├── Model Maps/                    # YANG → Splunk metric mappings
-└── SETUP_GUIDE.md                 # Install procedure
+└── README.md                     # Architecture, installation, operator guide
 
 DIAGRAMS/                          # Architecture diagrams (.mmd/.drawio source + .png)
 Release Notes/                     # Dated feature and behavior change notes
@@ -466,12 +466,12 @@ Fabric nodes (MDT/YANG, gRPC dial-out) → OpenTelemetry collector → splunk_he
 | `campus_evpn_assurance/` | Packaged Splunk app (Summary, Details with role filter, Alerts dashboards) |
 | `otel-collector/` | OpenTelemetry config: YANG gRPC → `splunk_hec` |
 | `packaging/` | Build scripts for `.spl` package and customer handoff bundle |
-| `SETUP_GUIDE.md` | Install workflow for Splunk app + patched `otelcol-yangfix` |
+| [Assurance README deployment](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md#7-deployment) | Manual install workflow for Splunk app + official `otelcol-contrib` >= 0.161.0 |
 | `Model Maps/` | YANG → Splunk metric model mappings — see [`Model Maps/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/Model%20Maps/README.md) |
 
 The assurance suite shares the same fabric model (roles, tenants, VNIs, loopbacks) as the provisioning templates, so dashboard logic maps directly onto what was provisioned.
 
-See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md) and [`SETUP_GUIDE.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/SETUP_GUIDE.md) for details.
+See [`Campus BGP EVPN Splunk Assurance/README.md`](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md), including [Deployment](Campus%20BGP%20EVPN%20Splunk%20Assurance/README.md#7-deployment), for details.
 
 ---
 

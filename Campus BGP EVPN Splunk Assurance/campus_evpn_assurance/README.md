@@ -5,7 +5,8 @@ EVPN VXLAN** fabric, fed by Model-Driven Telemetry (MDT) over an OpenTelemetry
 Collector pipeline into a Splunk **metrics** index.
 
 > **Installing this app?** Follow the step-by-step
-> [`SETUP_GUIDE.md`](../SETUP_GUIDE.md) shipped alongside the package. It covers
+> [Deployment section in the parent README](../README.md#7-deployment) shipped
+> in the handoff bundle. It covers
 > Splunk prerequisites, the telemetry collector install, and the per-device
 > configuration required for these dashboards to populate.
 >
@@ -31,8 +32,8 @@ Collector pipeline into a Splunk **metrics** index.
 | Requirement | Value |
 |---|---|
 | Splunk Enterprise / Cloud | **8.0+** (Dashboard Studio v2) |
-| Metrics index | `evpn_assurance` (type **metric**) — created by the admin; see [`SETUP_GUIDE.md`](../SETUP_GUIDE.md) |
-| Data source | OpenTelemetry Collector `otelcol-yangfix` → Splunk HEC → `index=evpn_assurance` |
+| Metrics index | `evpn_assurance` (type **metric**) — created by the admin; see [Deployment](../README.md#72-prepare-splunk) |
+| Data source | Official `otelcol-contrib` >= 0.161.0 → Splunk HEC → `index=evpn_assurance` |
 | Search permissions | Splunk user must have search access to the **metrics** index (not all lab accounts do) |
 | JavaScript in dashboards | enabled (`ui-prefs.conf`) |
 
@@ -125,7 +126,7 @@ regular `search index=evpn_assurance` on `_raw` events.
 | `cisco.encoding_path` | YANG model path in the collector | Filter to a specific model/list (BGP, NVE, interfaces, …) |
 | `name` | YANG list key | Interface name, VRF, neighbor-id context, etc. |
 | `value` | Enum/string companion dimension | Human-readable state when the leaf is an IOS-XE enumeration |
-| `vni`, `vni-id`, `evni` | Numeric YANG list keys (patched receiver) | Per-VNI panels, throughput (Sub 40115) |
+| `vni`, `vni-id`, `evni` | Numeric YANG list keys (`otelcol-contrib` >= 0.161.0) | Per-VNI panels, throughput (Sub 40115) |
 | `subscription` | Subscription ID (when tagged) | Tie-back to `show telemetry ietf subscription <id>` on device |
 
 > **Do not use Splunk `source` as the device identity.** HEC metrics arrive with
@@ -316,7 +317,7 @@ Collector-side checks (on the OTel host): see
 
 ## Version
 
-`1.5.0` (build 85). See [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) for install,
+`1.5.0` (build 85). See [Deployment](../README.md#7-deployment) for install,
 upgrade, and telemetry-pipeline procedures.
 
 ---
@@ -326,8 +327,8 @@ upgrade, and telemetry-pipeline procedures.
 | Document | Contents |
 |---|---|
 | [`../README.md`](../README.md) | Full pipeline architecture, CCIE-oriented telemetry primer, operator guide |
-| [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Install app + OTel collector, HEC, subscriptions |
-| [`../otel-collector/README.md`](../otel-collector/README.md) | `otelcol-yangfix`, numeric YANG keys, collector troubleshooting |
+| [Deployment](../README.md#7-deployment) | Install app + OTel collector, HEC, subscriptions |
+| [`../otel-collector/README.md`](../otel-collector/README.md) | Official `otelcol-contrib`, numeric YANG keys, collector troubleshooting |
 | [`../model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](../model-config-snippets/telemetry-subscriptions.ios-xe.cfg) | IOS-XE subscription IDs 40101–40121 |
 | [`../Model Maps/README.md`](../Model%20Maps/README.md) | CLI ⇄ Cisco YANG xpath reference (when available locally) |
 | [`../images/README.md`](../images/README.md) | Pipeline diagram assets |

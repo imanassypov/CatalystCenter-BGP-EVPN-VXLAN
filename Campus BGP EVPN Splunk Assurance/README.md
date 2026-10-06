@@ -53,7 +53,7 @@ troubleshooting — but who may be new to **streaming telemetry, OpenTelemetry, 
 | Role | Start here | Then |
 |---|---|---|
 | **Operator on shift** | [§3](#3-system-architecture) → [§6](#6-operators-guide) | Skim [§4](#4-telemetry-and-data-model) on first pass |
-| **Installer** | [`SETUP_GUIDE.md`](SETUP_GUIDE.md) → [§7](#7-deployment) | [§3](#3-system-architecture) |
+| **Installer** | [§7 Deployment](#7-deployment) | [§3](#3-system-architecture) |
 | **Telemetry engineer** | [§4](#4-telemetry-and-data-model) | [`otel-collector/README.md`](otel-collector/README.md) |
 | **Splunk maintainer** | [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) | Macros, `mstats` patterns, inventory lookup |
 
@@ -211,7 +211,7 @@ EVPN telemetry lands in metrics index `evpn_assurance` (not event search). Dashb
 
 **String enums are not metrics.** Splunk discards string-only values. Dashboards work around
 this by: (1) keying BGP up/down off numeric negotiated `hold-time`; (2) emitting numeric
-companion metrics from the patched `yang_grpc` receiver with enum strings in dimensions.
+companion metrics from the `yang_grpc` receiver with enum strings in dimensions.
 
 Example panel query:
 
@@ -640,19 +640,416 @@ show nve vni interface nve 1 detail
 
 ## 7. Deployment
 
+This section installs the Splunk app and the separate OpenTelemetry
+collector needed to populate its dashboards. Installing the app alone does not
+collect telemetry.
+
+### 7.1 Download the app or build from source
+
+This repository provides one Splunk app, `campus_evpn_assurance`, not separate
+`TA-*` packages.
+
+**Manual upload, no build required:**
+[Download campus_evpn_assurance-1.5.0.spl](https://raw.githubusercontent.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN/main/Campus%20BGP%20EVPN%20Splunk%20Assurance/packaging/dist/campus_evpn_assurance-1.5.0.spl).
+The versioned package is tracked under `packaging/dist/`; other generated
+archives remain excluded from Git. Keep the `.spl` on the computer whose
+browser you use for Splunk Web, then complete §7.2–§7.7. Uploading the app
+alone does not create the index, HEC token, or your fabric inventory.
+
+**Optional source build:** follow the steps below to rebuild the app or prepare
+the collector handoff bundle. **Code > Download ZIP** now includes the tracked
+`.spl` as well as the source; extract the ZIP before accessing the package.
+
+1. Open [the GitHub repository](https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN).
+2. Select **Code > Download ZIP**, extract the ZIP, and open a terminal in the
+  extracted repository folder. Alternatively, clone with the commands below.
+3. Build on Linux or macOS with Bash, `rsync`, `tar`, `awk`, and `shasum`
+  installed. On Windows, use a Linux environment such as WSL with these tools.
+
 ```bash
-cd "Campus BGP EVPN Splunk Assurance"
-./packaging/build-app.sh              # .spl package only
-./packaging/build-handoff-bundle.sh   # .spl + SETUP_GUIDE + otel-collector
+git clone https://github.com/imanassypov/CatalystCenter-BGP-EVPN-VXLAN.git
+cd CatalystCenter-BGP-EVPN-VXLAN
 ```
 
-Output: `packaging/dist/`. Full install: [`SETUP_GUIDE.md`](SETUP_GUIDE.md).
+From the extracted or cloned repository root:
 
-Validate dashboards against a live instance:
+```bash
+cd "Campus BGP EVPN Splunk Assurance"
+./packaging/build-app.sh
+```
+
+The installable file is `packaging/dist/campus_evpn_assurance-1.5.0.spl`.
+Keep it on the computer whose browser you use to access Splunk Web, or transfer
+it there before uploading. Building the package does not require a local
+Splunk installation.
+
+For a handoff archive containing the app, this README, collector config/reference,
+IOS-XE subscriptions, and device/segment inventory templates, run:
+
+```bash
+./packaging/build-handoff-bundle.sh
+```
+
+This also builds the `.spl` and creates
+`packaging/dist/campus-bgp-evpn-splunk-assurance-bundle-1.5.0.tar.gz`.
+Extract that archive on the collector host before following the collector
+steps below. **Do not upload the source ZIP or handoff archive to Splunk.**
+
+### 7.2 Prepare Splunk
+
+**Required even for manual app upload:** the `.spl` supplies dashboards, macros,
+lookup definitions, and example CSVs. It does **not** create the metrics index,
+HEC token, user-role index permissions, or collector service, and its example
+inventory does not describe your fabric. Complete §7.2–§7.7 in order.
+
+These instructions assume a self-managed Splunk Enterprise instance with the
+collector on the same Linux host. In a distributed deployment, create the
+index and HEC input on the ingest/indexing tier and install the app and lookups
+on the search head; point the collector at that HEC endpoint. Splunk Cloud
+requires its supported app-install and HEC procedures, with the collector on
+a separate Linux host rather than the managed Splunk instance.
+
+#### Create the metrics index
+
+1. Sign in to Splunk Web as an administrator and open
+  **Settings > Indexes > New Index**.
+2. Set **Index Name** to `evpn_assurance` and **Data Type** to **Metrics**.
+  Configure storage/retention for your deployment and save.
+3. Verify the index exists with the Metrics type. Do not reuse an Events index
+  with this name; the dashboards use `mstats`, not event searches.
+
+The app's `evpn_index` macro and collector config both use `evpn_assurance`.
+Keep that name for this workflow. If you deliberately choose another name,
+update the macro in the app context, the HEC token's allowed/default index,
+the collector's `exporters.splunk_hec.index`, and role permissions together.
+
+#### Enable HEC and create its token
+
+1. Open **Settings > Data Inputs > HTTP Event Collector > Global Settings**.
+2. Set **All Tokens** to **Enabled**, enable SSL, and use HTTP port `8088`.
+3. Create a new token named `evpn-collector` (or another descriptive name).
+4. Under its index settings, select `evpn_assurance` as an **allowed index**
+  and its **default index**. A token defaulting to `main` will not populate
+  the app's metrics searches.
+5. Finish the wizard, keep the token private, and enter it in the collector
+  config during §7.5. The `***REMOVED***` placeholder is not a usable token.
+
+The exporter sends structured HEC metrics; no separate Technology Add-on or
+event sourcetype parsing configuration is needed for this pipeline.
+
+#### Allow dashboard users to search the index
+
+In **Settings > Roles**, edit the role assigned to your dashboard users and
+add `evpn_assurance` to its allowed searchable indexes. The queries explicitly
+name the index, so it does not have to be a default search index. Users also
+need read access to the app, dashboards, macros, and both lookup tables and
+definitions. Verify these permissions with a non-admin dashboard account
+after completing the installation.
+
+The bundled collector config uses
+`https://localhost:8088/services/collector`, assuming Splunk and the collector
+share a host. Change the endpoint when Splunk runs on another host.
+
+### 7.3 Install the app manually in Splunk Web
+
+1. Sign in to Splunk Web as an administrator.
+2. Open **Apps > Manage Apps > Install app from file**.
+3. Choose `campus_evpn_assurance-1.5.0.spl` from the build output.
+4. For an existing installation, select **Upgrade app** to replace it.
+5. Select **Upload** and follow any restart prompt from Splunk.
+6. Open **Campus EVPN Assurance** from the Apps menu. Confirm the **Summary**,
+  **Details**, and **Alerts** tabs are present.
+
+The package is marked `state = enabled`. Empty dashboards are expected until
+both inventory lookups and the telemetry pipeline are configured. Continue
+with §7.4; seeing the app in the Apps menu is not an end-to-end validation.
+
+Alternatively, copy the `.spl` to a self-managed Splunk host and install by CLI:
+
+```bash
+sudo /opt/splunk/bin/splunk install app /path/to/campus_evpn_assurance-1.5.0.spl
+```
+
+### 7.4 Configure both inventory lookups
+
+The app ships these lookup definitions in `default/transforms.conf`:
+
+| Lookup definition | CSV file | Used for |
+|---|---|---|
+| `evpn_device_inventory` | `evpn_device_inventory.csv` | Device name, site, role, addressing, external peer labels |
+| `evpn_segment_inventory` | `evpn_segment_inventory.csv` | Tenant/VNI segment inventory and access vs overlay-only leaf placement |
+
+Prepare **both** CSV files with your actual fabric data, then upload them using
+**Settings > Lookups > Lookup table files > Add new** with destination app
+`campus_evpn_assurance` and the exact destination filenames above. If a file
+already exists, use the overwrite/replace option. Under **Permissions**, share
+each table with the app and grant read access to the dashboard user roles;
+do not leave uploaded files private to your administrator account.
+
+In **Settings > Lookups > Lookup definitions**, select the app context and
+confirm each packaged definition points to its matching CSV. If a definition
+is missing, create a **File-based** definition with the exact name above,
+choose the matching file, and share it with the app with the same read access.
+No automatic lookup is needed: dashboard macros invoke the definitions
+explicitly. The packaged `evpn_lookup` and `evpn_segment_lookup` macros should
+remain available in the `campus_evpn_assurance` app context.
+
+#### Device inventory
+
+Replace `campus_evpn_assurance/lookups/evpn_device_inventory.csv` with your
+actual devices. Start with
+[`packaging/evpn_device_inventory.template.csv`](packaging/evpn_device_inventory.template.csv).
+The required columns are:
+
+```csv
+source,hostname,ip_address,loopback,site,role,description
+```
+
+Ensure `hostname` matches the actual telemetry `cisco.node_id` exactly, including
+case. IOS-XE normally sends the configured short hostname, not the Catalyst
+Center inventory FQDN; confirm it with the raw metrics query in §7.7. Use fabric
+roles `leaf`, `spine`, or `border`, and set `site` consistently because the
+dashboard Site selector filters on this field. Preserve the CSV header and
+remove template comment lines and example rows that do not belong to your fabric.
+
+**Map external core / DMZ eBGP peers too.** Device × Peer matrices resolve peer
+IPs using the lookup's `loopback` column. Unmapped peers appear as raw IPs.
+Add one row per external peer IP with a distinct role (`core` or `dmz`) so
+these rows do not enter fabric role filters. Multiple peer links may share a
+hostname:
+
+```csv
+dmz1.dcloud.cisco.com,dmz1,198.19.1.200,198.19.1.200,Building P0,dmz,DMZ Gateway (external eBGP EVPN peer)
+Core-01,Core-01,198.19.2.49,198.19.2.49,Building P0,core,Enterprise Core 01 (Spine-01 uplink1)
+Core-01,Core-01,198.19.2.57,198.19.2.57,Building P0,core,Enterprise Core 01 (Spine-02 uplink1)
+Core-02,Core-02,198.19.2.53,198.19.2.53,Building P0,core,Enterprise Core 02 (Spine-01 uplink2)
+Core-02,Core-02,198.19.2.61,198.19.2.61,Building P0,core,Enterprise Core 02 (Spine-02 uplink2)
+```
+
+#### Segment inventory
+
+Start with
+[`packaging/evpn_segment_inventory.template.csv`](packaging/evpn_segment_inventory.template.csv)
+and create `evpn_segment_inventory.csv` with this header:
+
+```csv
+vlan,l2vni,l3vni,vrf,segment_name,overlay_leaves,access_leaves
+```
+
+Add one row per L2 segment, matching the deployed VLAN, L2VNI, tenant L3VNI,
+VRF name, and segment name. `overlay_leaves` lists leaves where the SVI/NVE
+segment is programmed; `access_leaves` lists leaves with client access ports.
+Space-separate multiple hostnames, using exactly the same names as the device
+inventory `hostname` column. Remove the template's `#` comment lines before
+upload; they are documentation, not inventory records. For example:
+
+```csv
+vlan,l2vni,l3vni,vrf,segment_name,overlay_leaves,access_leaves
+101,50101,50901,red,corp-101,"Leaf-01 Leaf-02",Leaf-02
+```
+
+Keep a copy of your customized CSVs outside the generated package and restore
+or verify them after app upgrades; never assume the packaged lab examples
+are correct for your deployment.
+
+### 7.5 Install and configure the official OpenTelemetry collector
+
+Run these steps **on the Linux Splunk instance**, using a Linux SSH account
+with sudo access. This is separate from your Splunk Web administrator account.
+Use the official **`otelcol-contrib` release package, version 0.161.0 or later**.
+The core `otelcol` distribution does not include `yang_grpc`. No Go toolchain,
+custom receiver build, Splunk-distro collector, or systemd override is needed.
+
+The version floor matters: numeric YANG list keys such as `vni`, `evni`, and
+`vlan-id` are emitted as dimensions in the reference project's upstream
+0.161.0 deployment. Older receivers can collapse distinct per-VNI series. See
+[`otel-collector/yanggrpcreceiver-numeric-key-issue.md`](otel-collector/yanggrpcreceiver-numeric-key-issue.md).
+
+Download a package directly from the
+[official releases](https://github.com/open-telemetry/opentelemetry-collector-releases/releases).
+The examples pin the reference project's version. Use `amd64` for x86_64 hosts
+or `arm64` for aarch64 hosts; check with `uname -m`.
+
+On Debian / Ubuntu:
+
+```bash
+VER=0.161.0
+ARCH=amd64
+curl -fLO "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${VER}/otelcol-contrib_${VER}_linux_${ARCH}.deb"
+sudo apt-get install -y "./otelcol-contrib_${VER}_linux_${ARCH}.deb"
+```
+
+On RHEL / Amazon Linux / other RPM-based hosts:
+
+```bash
+VER=0.161.0
+ARCH=amd64
+curl -fLO "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${VER}/otelcol-contrib_${VER}_linux_${ARCH}.rpm"
+sudo rpm -Uvh "otelcol-contrib_${VER}_linux_${ARCH}.rpm"
+```
+
+Installing the local release file avoids a package repository refresh. The host
+needs HTTPS access to GitHub; otherwise transfer the matching release package
+from a trusted download host. Confirm the version and compiled-in receiver:
+
+```bash
+otelcol-contrib --version
+otelcol-contrib components | grep yang_grpc
+```
+
+**Migrating from the former custom collector?** Back up its config and unit
+before changing anything. Stop and disable `splunk-otel-collector` if installed,
+so it cannot compete with the new service for ports `57444` and `8888`:
+
+```bash
+sudo systemctl disable --now splunk-otel-collector.service
+```
+
+Skip that command on fresh installations. Preserve the old config and drop-in
+for rollback, but do not copy that drop-in onto the new service.
+
+From the assurance source directory or extracted handoff directory on the
+Splunk host, discover the packaged service account and install the template:
+
+```bash
+OTEL_USER=$(systemctl show -p User --value otelcol-contrib.service)
+OTEL_GROUP=$(id -gn "${OTEL_USER:-otelcol-contrib}")
+sudo install -o root -g "$OTEL_GROUP" -m 0640 \
+  otel-collector/agent_config.running.yaml /etc/otelcol-contrib/config.yaml
+sudoedit /etc/otelcol-contrib/config.yaml
+```
+
+Replace `exporters.splunk_hec.token` with the HEC token created in §7.2. Keep
+`index: evpn_assurance` and, for this co-located deployment, the loopback endpoint
+`https://localhost:8088/services/collector`. Never use the Splunk instance's
+public address to reach HEC from the same host. The file contains a live
+credential: keep mode `0640`, do not commit it, and restrict access to the
+packaged service group. The example skips HEC certificate verification for
+the lab; configure trusted certificates for production.
+
+Validate the edited config as the service account, then start the service:
+
+```bash
+sudo -u "${OTEL_USER:-otelcol-contrib}" otelcol-contrib validate --config=/etc/otelcol-contrib/config.yaml
+sudo systemctl enable otelcol-contrib.service
+sudo systemctl restart otelcol-contrib.service
+```
+
+The package owns the binary, unit, service account, and EnvironmentFile; its
+unit already reads `/etc/otelcol-contrib/config.yaml`. Do not add an `ExecStart`
+override. Long-lived gRPC streams can delay restart until `TimeoutStopSec`
+expires. Expect a telemetry gap (approximately 90 seconds with the old service);
+do not repeatedly restart while devices reconnect.
+
+### 7.6 Apply the IOS-XE telemetry subscriptions
+
+Apply
+[`model-config-snippets/telemetry-subscriptions.ios-xe.cfg`](model-config-snippets/telemetry-subscriptions.ios-xe.cfg)
+to each fabric node, replacing the lab receiver address with your collector:
+
+```text
+receiver ip address <collector-ip> 57444 protocol grpc-tcp
+```
+
+Allow device-to-collector TCP `57444` and collector-to-Splunk HEC TCP `8088`.
+The handoff bundle includes the subscription file at its top level.
+
+### 7.7 Verify telemetry and dashboards
+
+On the collector host:
+
+```bash
+systemctl is-active otelcol-contrib.service
+otelcol-contrib --version
+sudo journalctl -u otelcol-contrib --since '5 min ago' --no-pager | grep 'Everything is ready'
+ss -lntp | grep ':57444'
+ss -tn state established '( sport = :57444 )' | tail -n +2 | wc -l
+curl -s localhost:8888/metrics | grep otelcol_exporter_send_failed_metric_points
+```
+
+Confirm the service is `active`, the version is at least `0.161.0`, the journal
+shows `Everything is ready`, and MDT connections appear for your streaming
+devices (the reference lab has six). Exporter send failures should stay at
+`0` or be absent.
+
+In the app's Splunk search context, confirm metrics are arriving:
+
+```spl
+| mstats latest("cisco.cp-vnis.") WHERE index=evpn_assurance BY "cisco.node_id"
+| `evpn_lookup`
+```
+
+For the manual installation, also run these checks from **Search within the
+Campus EVPN Assurance app**, first as an administrator and then as a dashboard
+user. Select a recent time range containing telemetry.
+
+Verify both uploaded CSVs can be read:
+
+```spl
+| inputlookup evpn_device_inventory
+| table hostname site role ip_address loopback
+```
+
+```spl
+| inputlookup evpn_segment_inventory
+| table vlan l2vni l3vni vrf segment_name overlay_leaves access_leaves
+```
+
+Confirm actual telemetry names join to the device lookup:
+
+```spl
+| mstats latest("cisco.cp-vnis.") AS cp_vnis
+  WHERE `evpn_index` BY "cisco.node_id"
+| `evpn_lookup`
+| table hostname site role cp_vnis
+```
+
+Expected: both CSV searches return your own inventory, and the metrics search
+returns streaming devices with populated `site` and `role`. Blank metadata
+means hostname matching or lookup content is wrong; an unknown lookup/macro
+means app context, definitions, or permissions are wrong. If the administrator
+sees results but a dashboard user does not, fix role/index and knowledge-object
+permissions before changing the collector.
+
+Open **Campus EVPN Assurance** and check:
+
+1. **Site** lists your inventory sites.
+2. **Summary** shows non-zero up counts when telemetry is flowing.
+3. **Details > Fabric Node Role** filters correctly for Leafs, Spines, and Borders.
+4. **Alerts** displays the alarm and BGP session detail views.
+
+For empty panels, check the metrics index type, search permissions, inventory
+hostname matching, HEC token/endpoint, collector service, and device
+subscriptions. See
+[`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) for detailed
+app troubleshooting and [§6](#6-operators-guide) for panel interpretation.
+
+Optional: from the assurance source directory on the Splunk host, validate all
+three Dashboard Studio views and their panel SPL:
 
 ```bash
 python3 tools/validate_studio.py "$SPLUNK_ADMIN_USER" "$SPLUNK_ADMIN_PASS"
 ```
+
+### 7.8 Roll back the collector
+
+For a migration from the former deployment, stop the new collector before
+re-enabling the preserved old service:
+
+```bash
+sudo systemctl disable --now otelcol-contrib.service
+sudo systemctl enable splunk-otel-collector.service
+sudo systemctl restart splunk-otel-collector.service
+```
+
+Use this only if the old service and config were preserved, including its
+custom-binary override when applicable. Do not run both services together.
+For a fresh package deployment, back up `/etc/otelcol-contrib/config.yaml`
+before future changes; restore the last known-good config and restart
+`otelcol-contrib`. Do not downgrade below `0.161.0`: that can remove numeric
+key dimensions and break per-VNI panels.
+
+### 7.9 Maintainer lab deployment
 
 Deploy to lab Splunk: use skill `splunk-app-deploy` or
 [`packaging/deploy-splunk-app.sh`](packaging/deploy-splunk-app.sh).
@@ -664,8 +1061,8 @@ Deploy to lab Splunk: use skill `splunk-app-deploy` or
 ```text
 campus_evpn_assurance/     # Splunk app (views, lookups, macros)
 packaging/                 # build-app.sh, deploy-splunk-app.sh, dist/
-SETUP_GUIDE.md             # Customer install guide
-otel-collector/            # OTel config, yang_grpc patch, builder.yaml
+README.md                  # Architecture, manual installation, operator guide
+otel-collector/            # Official contrib collector config and references
 model-config-snippets/     # IOS-XE telemetry subscriptions 40101–40121
 images/                    # Diagrams, dashboard screenshots, snippets/
 tools/                     # validate_studio.py
@@ -678,7 +1075,7 @@ telegraf/                  # Alternative collector reference (lab)
 
 | Document | Contents |
 |---|---|
-| [`SETUP_GUIDE.md`](SETUP_GUIDE.md) | Splunk + `otelcol-yangfix` + HEC + device subscriptions |
+| [Deployment](#7-deployment) | Manual app install + official `otelcol-contrib` + HEC + device subscriptions |
 | [`campus_evpn_assurance/README.md`](campus_evpn_assurance/README.md) | Macros, `mstats`, inventory, app troubleshooting |
 | [`otel-collector/README.md`](otel-collector/README.md) | Collector config, YANG key patch, build/rollback |
 | [`images/README.md`](images/README.md) | Diagram assets, snippet regeneration |

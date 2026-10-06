@@ -2,7 +2,7 @@
 
 > **Note:** This directory documents an **alternative collector** used in a separate lab
 > deployment (Telegraf instead of OpenTelemetry). The **primary** assurance pipeline for this
-> project is `otel-collector/` → `otelcol-yangfix`. See the parent
+> project is `otel-collector/` → official `otelcol-contrib` >= 0.161.0. See the parent
 > [`README.md`](../README.md) for the supported architecture.
 
 ## Overview
@@ -394,6 +394,6 @@ Both instances run as the `telegraf` system user and share the same binary at `/
 | Document | Contents |
 |---|---|
 | [`../README.md`](../README.md) | Primary OTel pipeline architecture and operator guide |
-| [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Supported install path (`otelcol-yangfix` + Splunk app) |
+| [Deployment](../README.md#7-deployment) | Supported install path (official `otelcol-contrib` + Splunk app) |
 | [`../otel-collector/README.md`](../otel-collector/README.md) | OpenTelemetry collector configuration (recommended) |
 | [`../campus_evpn_assurance/README.md`](../campus_evpn_assurance/README.md) | Splunk app macros, `mstats` patterns, inventory lookup |

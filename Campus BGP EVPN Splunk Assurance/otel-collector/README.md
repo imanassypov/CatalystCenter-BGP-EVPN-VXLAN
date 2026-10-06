@@ -1,7 +1,7 @@
 # OTel Collector — Campus BGP EVPN Telemetry Pipeline
 
-This folder holds the source-of-truth mirror of the OpenTelemetry Collector
-configuration running on the cloud Splunk/OTel host. The collector ingests Cisco
+This folder holds the deployment template for the official `otelcol-contrib`
+package, version **0.161.0 or later**, on the Splunk instance. The collector ingests Cisco
 IOS-XE Model-Driven Telemetry (MDT) over gRPC dial-out and ships it, together
 with EC2 host metrics, to the co-located Splunk HEC.
 
@@ -14,11 +14,13 @@ with EC2 host metrics, to the co-located Splunk HEC.
 
 | File | Purpose |
 |---|---|
-| [`agent_config.running.yaml`](agent_config.running.yaml) | Mirror of the live collector config. Edit here, then deploy to the host as described in [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md). |
-| [`builder.yaml`](builder.yaml) | OpenTelemetry Collector Builder manifest for the custom `otelcol-yangfix` build. |
-| [`receiver_yang_26_05_27.tar.gz`](receiver_yang_26_05_27.tar.gz) | Bundled patched `yang_grpc` receiver source used to build `otelcol-yangfix`. |
-| [`systemd/override.conf.example`](systemd/override.conf.example) | Sample reversible systemd drop-in that switches the service to the custom binary. |
+| [`agent_config.running.yaml`](agent_config.running.yaml) | Credential-free deployment template; copy to `/etc/otelcol-contrib/config.yaml`, set the HEC token, and protect with mode `0640`. |
+| [`yanggrpcreceiver-numeric-key-issue.md`](yanggrpcreceiver-numeric-key-issue.md) | Why the minimum version matters; original custom-patch analysis retained as history. |
 | `README.md` | This document. |
+
+The legacy builder manifest, patched receiver tarball, and `systemd/` override
+are retained in the repository for historical reference only. They are excluded
+from new handoff bundles and are not used by the supported installation.
 
 ## Overview
 
@@ -27,7 +29,7 @@ with EC2 host metrics, to the co-located Splunk HEC.
 ```
 Cisco fabric switches (6)                 EC2 host 18.224.25.161 (ip-172-31-30-149)
   Spine-01/02, Leaf-01/02,         gRPC   ┌────────────────────────────────────────┐
-  Border-01/02                  dial-out  │  splunk-otel-collector.service          │
+  Border-01/02                  dial-out  │  otelcol-contrib.service                │
   (NATed via 64.100.12.5) ───────────────▶│   receiver: yang_grpc  :57444           │
                                           │   receiver: hostmetrics                 │
   device config:                          │   processor: batch                      │
@@ -41,24 +43,25 @@ Cisco fabric switches (6)                 EC2 host 18.224.25.161 (ip-172-31-30-1
 | Item | Value |
 |---|---|
 | Host | `18.224.25.161` (internal `ip-172-31-30-149.us-east-2.compute.internal`) |
-| Active collector binary | `/usr/local/bin/otelcol-yangfix` (custom build with the numeric-key fix — see [Custom collector build & rollback](#custom-collector-build--rollback)) |
-| Stock binary (rollback) | `/usr/bin/otelcol` (opentelemetry-collector-contrib, **v0.154.2**, untouched rpm) |
-| systemd unit | `splunk-otel-collector.service` (+ drop-in `…/splunk-otel-collector.service.d/override.conf`) |
-| Live config path | `/etc/otel/collector/agent_config.yaml` |
-| Env file | `/etc/otel/collector/splunk-otel-collector.conf` (`SPLUNK_CONFIG=/etc/otel/collector/agent_config.yaml`) |
-| YANG gRPC receiver | `yang_grpc` (patched `yanggrpcreceiver`, build **`26_05_27`**, core v0.150.0) on `0.0.0.0:57444`, transport tcp |
+| Collector | Official `otelcol-contrib` release package, **>= 0.161.0** |
+| systemd unit | `otelcol-contrib.service` (package-owned; no override) |
+| Config path | `/etc/otelcol-contrib/config.yaml` |
+| Service account / EnvironmentFile | Owned and supplied by the package |
+| YANG gRPC receiver | `yang_grpc` on `0.0.0.0:57444`, transport tcp |
 | Exporter | `splunk_hec` → `https://localhost:8088/services/collector` (loopback — EC2 has no hairpin NAT to its own public IP) |
 | Target index | `evpn_assurance` (metric) |
 
-## Numeric YANG List Keys — RESOLVED (custom build deployed 2026-06-23)
+## Numeric YANG List Keys — Resolved Upstream
 
-> **✅ Numeric list keys are now emitted as dimensions.** The earlier limitation
-> (numeric YANG list keys silently dropped) is fixed by the patched
-> `yanggrpcreceiver` build **`26_05_27`**
-> ([`receiver_yang_26_05_27.tar.gz`](receiver_yang_26_05_27.tar.gz)), compiled
-> into the custom collector `otelcol-yangfix` now running on the host. Full
-> analysis and the resolution mechanism are in
-> [`yanggrpcreceiver-numeric-key-issue.md`](yanggrpcreceiver-numeric-key-issue.md).
+The reference deployment uses upstream **0.161.0** or later to preserve numeric
+list keys as dimensions. No local patch or compiler is required. Earlier
+receivers can silently collapse per-VNI series, so do not downgrade below this
+floor. The receiver has alpha stability: verify dimensions and dashboards after
+upgrades rather than assuming compatibility.
+
+The following analysis describes the original bug and the former local
+workaround, not the current service on the Splunk instance. Full historical
+details: [`yanggrpcreceiver-numeric-key-issue.md`](yanggrpcreceiver-numeric-key-issue.md).
 
 ### The original problem
 
@@ -107,79 +110,35 @@ The NVE peer Sankey can now be discriminated by the **VNI number** directly:
 enrichment is required anymore. (The `rmac` string is still emitted via
 `cisco.rmac_info` if you want it.)
 
-## Custom collector build & rollback
+## Package Deployment and Migration
 
-The fix ships as a **custom collector binary** (`otelcol-yangfix`) built from the
-patched receiver source. The stock Splunk-distro rpm binary at `/usr/bin/otelcol`
-is **left untouched**, so rollback is a one-liner.
+Follow [Deployment](../README.md#75-install-and-configure-the-official-opentelemetry-collector)
+for Debian/RPM download commands, version/component checks, config ownership,
+HEC credentials, startup, and migration from the old `splunk-otel-collector`
+service. The official package supplies the unit and points it at
+`/etc/otelcol-contrib/config.yaml`; do not override `ExecStart`.
 
-### How it was built (on the host)
+Splunk and the collector share a host. Keep HEC on loopback and explicitly set
+`index: evpn_assurance`. Protect the live config with `0640 root:<service-group>`.
+The example's HEC token is a placeholder and must be replaced on the host.
 
-The tarball [`receiver_yang_26_05_27.tar.gz`](receiver_yang_26_05_27.tar.gz) is
-bundled in this repo as receiver **source only** (no binary). The supported path is
-to build `otelcol-yangfix` from that source with Go 1.25+ and the
-OpenTelemetry Collector Builder. The exact staged install procedure is documented
-in [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md); the live host was originally compiled
-natively on Amazon Linux 2023 (x86_64) with:
+Back up configs before replacing them. Stop the old collector before starting
+the new one to avoid receiver/self-metrics port conflicts. Keep the former
+service and its custom override intact if you need migration rollback; see
+[Rollback](../README.md#78-roll-back-the-collector). No legacy override is
+needed for a fresh install.
 
-- Toolchain: Go 1.26.4 at `/usr/local/go`, `ocb` (collector builder) v0.150.0.
-- Build workspace `/tmp/otelbuild`: `builder.yaml` manifest, `src/` (the patched
-  receiver), `_build/` output.
-- Manifest pins core/contrib to **v0.150.0 / v1.56.0** (matching the receiver's
-  `go.mod`) and uses a `replaces:` directive pointing `yanggrpcreceiver` at the
-  patched source. Components built in: `hostmetrics`, `yang_grpc`,
-  `batchprocessor`, `splunkhecexporter` only.
-- Output binary installed at `/usr/local/bin/otelcol-yangfix` (~30 MB, `root:root` 0755).
-
-### How it is wired into systemd (reversible)
-
-The stock unit runs `/usr/bin/otelcol $OTELCOL_OPTIONS` and the Splunk distro
-auto-reads `SPLUNK_CONFIG`; a vanilla collector does not, so a **drop-in override**
-supplies the config explicitly:
-
-```ini
-# /etc/systemd/system/splunk-otel-collector.service.d/override.conf
-[Service]
-ExecStart=
-ExecStart=/usr/local/bin/otelcol-yangfix --config=${SPLUNK_CONFIG}
-```
-
-Everything else (User `splunk-otel-collector`, `EnvironmentFile`) is unchanged.
-This repo ships the sample as
-[`systemd/override.conf.example`](systemd/override.conf.example); install it as
-`override.conf`, then apply with
-`sudo systemctl daemon-reload && sudo systemctl restart splunk-otel-collector.service`.
-
-### Backups (on host) — `/opt/otel-backup/2026-06-23/`
-
-| File | What |
-|---|---|
-| `otelcol.v0.154.2.bak` | original 455 MB rpm Splunk-distro binary (sha256-verified) |
-| `agent_config.yaml.bak` | live config at deploy time |
-| `splunk-otel-collector.service.bak` | original unit file |
-| `splunk-otel-collector.conf.bak` | original env file |
-
-### Rollback to the stock Splunk distro
-
-```bash
-sudo rm /etc/systemd/system/splunk-otel-collector.service.d/override.conf
-sudo rmdir /etc/systemd/system/splunk-otel-collector.service.d 2>/dev/null
-sudo systemctl daemon-reload
-sudo systemctl restart splunk-otel-collector.service
-# the untouched /usr/bin/otelcol (rpm) runs again — numeric keys revert to dropped.
-```
-
-> **Restart gotcha:** the old process does **not** drain its gRPC dial-out
-> streams on `SIGTERM`. systemd waits out `TimeoutStopSec` (~90 s), logs
-> `Failed with result 'timeout'`, force-kills it, then the new process starts
-> cleanly. Expect a **~90 s telemetry gap** on every restart — verify the new
-> process logged `Everything is ready` afterwards.
+Long-lived MDT streams may delay shutdown until `TimeoutStopSec` expires.
+Expect a telemetry gap; check readiness after restart rather than repeatedly
+restarting the service.
 
 ### Verify after any restart
 
 ```bash
-sudo journalctl -u splunk-otel-collector --since '2 min ago' --no-pager | grep 'Everything is ready'
-ss -tnp | grep ':57444' | wc -l    # expect 6 (all fabric devices reconnected)
+systemctl is-active otelcol-contrib.service
+otelcol-contrib --version
+sudo journalctl -u otelcol-contrib --since '2 min ago' --no-pager | grep 'Everything is ready'
+ss -tn state established '( sport = :57444 )' | tail -n +2 | wc -l
 curl -s localhost:8888/metrics | grep otelcol_exporter_send_failed_metric_points   # expect 0 / absent
 ```
 
@@ -204,14 +163,14 @@ Expected dims now **include** `vni` and `evni` (in addition to
 | No data in `evpn_assurance` after restart | Devices not yet reconnected, or HEC (`:8088`) was down | Check `ss -tnp | grep 57444` for 6 ESTAB streams; check `ss -tlnp | grep 8088`; check `otelcol_exporter_send_failed_metric_points` at `http://localhost:8888/metrics`. |
 | `| mstats count WHERE index=evpn_assurance` returns 0 | Bare `count` with no `metric_name` filter is a known quirk on this metric index | Use a real metric, e.g. `mstats latest("cisco.cp-vnis.") BY "cisco.node_id"`. |
 | Panels grouped `BY "vni-type"`/`"nve-vni-vrf"`/`"last-update"`/`"ni-name"` return empty | Those string content leaves are no longer dimensions under the patched receiver — they are now `cisco.<leaf>_info` metrics with the string in the generic `value` attribute | Rewrite to group `BY "<numeric-key>"` (e.g. `"vni-id"`, `"vni"`) and join the `_info` metric on that key. The app v1.5.0/build 85 already does this. |
-| `vni`/`evni` missing on `peer-vni-group` | Running the **stock** `/usr/bin/otelcol` (rollback state) — it drops numeric list keys | Confirm `otelcol-yangfix` is active (`systemctl show -p ExecStart splunk-otel-collector`); if rolled back, re-apply the drop-in override (see [Custom collector build & rollback](#custom-collector-build--rollback)). |
+| `vni`/`evni` missing on `peer-vni-group` | Collector older than the supported version floor, or another collector still owns the receiver port | Check `otelcol-contrib --version` (>= 0.161.0), service state, and listening process; migrate using [Deployment](../README.md#75-install-and-configure-the-official-opentelemetry-collector). |
 
 ## Reference
 
 | Document | Contents |
 |---|---|
 | [`../README.md`](../README.md) | Full pipeline architecture, CCIE-oriented telemetry primer, operator guide |
-| [`../SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Install `otelcol-yangfix`, HEC token, systemd override |
+| [Deployment](../README.md#7-deployment) | Install official `otelcol-contrib`, HEC token, package-owned service |
 | [`../campus_evpn_assurance/README.md`](../campus_evpn_assurance/README.md) | Splunk app queries, macros, troubleshooting |
 | [`../Model Maps/README.md`](../Model%20Maps/README.md) | CLI ⇄ Cisco YANG xpath mappings for streamed models |
 | [`yanggrpcreceiver-numeric-key-issue.md`](yanggrpcreceiver-numeric-key-issue.md) | Numeric list-key root cause and patch analysis |

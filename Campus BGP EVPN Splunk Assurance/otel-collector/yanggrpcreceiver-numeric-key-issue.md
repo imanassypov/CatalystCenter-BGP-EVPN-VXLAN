@@ -1,6 +1,12 @@
 # yanggrpcreceiver — numeric YANG list keys are dropped (not emitted as dimensions or metrics)
 
-> **✅ RESOLVED** — Fixed in receiver build `receiver_yang_26_05_27` (tracked in
+> **Current deployment: resolved upstream.** Install official `otelcol-contrib`
+> **0.161.0 or later**, matching the reference project's package-based workflow.
+> Numeric list keys are preserved without a custom receiver build. Older versions
+> can collapse per-VNI series; verify dimensions after upgrading because the
+> receiver is alpha stability. See [Deployment](../README.md#75-install-and-configure-the-official-opentelemetry-collector).
+>
+> **Historical local resolution** — Fixed in receiver build `receiver_yang_26_05_27` (tracked in
 > [`receiver_yang_26_05_27.tar.gz`](receiver_yang_26_05_27.tar.gz)), built into the
 > custom collector `otelcol-yangfix` and **deployed live on 2026-06-23**. Numeric
 > list keys (`vni`, `vni-id`, `evni`, `unit-number`, `evpn-inst-id`, `vlan-id`,
